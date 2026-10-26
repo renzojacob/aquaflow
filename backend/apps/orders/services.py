@@ -4,6 +4,12 @@ from apps.inventory.services import apply_movement
 from .models import Order, OrderStatusHistory
 from django.db.models import F
 from apps.dispatch.models import Trip, TripStop, TripChangeLog
+from datetime import time, timedelta
+
+from django.contrib.auth import get_user_model
+from django.utils import timezone
+
+from apps.accounts.models import CustomerProfile
 
 S = Order.Status
 
@@ -57,3 +63,74 @@ def transition(order, to, by=None, reason="", note="", device_time=None):
     OrderStatusHistory.objects.create(order=order, from_status=frm, to_status=to,
                                       changed_by=by, device_time=device_time, note=note)
     return order
+
+# ---------------------------------------------------------------------------
+# Customer-facing rules
+# ---------------------------------------------------------------------------
+MAX_DAYS_AHEAD = 14
+SAME_DAY_CUTOFF = {
+    Order.Period.MORNING: time(9, 0),
+    Order.Period.AFTERNOON: time(14, 0),
+}
+ACTIVE_STATUSES = {S.PENDING, S.CONFIRMED, S.PREPARING, S.READY, S.OUT_FOR_DELIVERY}
+CUSTOMER_CANCELLABLE = {S.PENDING, S.CONFIRMED}
+SHOW_CODE_STATUSES = {S.CONFIRMED, S.PREPARING, S.READY, S.OUT_FOR_DELIVERY}
+
+
+@transaction.atomic
+def place_order(customer, *, address, product, quantity, delivery_date, period,
+                expected_empties=0, source=Order.Source.MANUAL):
+    # Lock the customer row so two simultaneous requests can't both pass the duplicate check.
+    get_user_model().objects.select_for_update().get(pk=customer.pk)
+
+    if address.customer_id != customer.pk or address.is_archived:
+        raise ValidationError({"address": ["Choose one of your saved addresses."]})
+
+    today = timezone.localdate()
+    if delivery_date < today:
+        raise ValidationError({"delivery_date": ["Delivery date cannot be in the past."]})
+    if delivery_date > today + timedelta(days=MAX_DAYS_AHEAD):
+        raise ValidationError(
+            {"delivery_date": [f"You can order at most {MAX_DAYS_AHEAD} days ahead."]}
+        )
+    if delivery_date == today and timezone.localtime().time() >= SAME_DAY_CUTOFF[period]:
+        cutoff = SAME_DAY_CUTOFF[period].strftime("%I:%M %p")
+        raise ValidationError(
+            {"period": [f"Same-day {period} orders close at {cutoff}. Pick a later slot."]}
+        )
+
+    profile, _ = CustomerProfile.objects.get_or_create(user=customer)
+    if expected_empties > profile.containers_held:
+        raise ValidationError(
+            {"expected_empties": [f"You only have {profile.containers_held} of our containers."]}
+        )
+
+    duplicate = Order.objects.filter(
+        customer=customer, address=address, delivery_date=delivery_date,
+        period=period, status__in=ACTIVE_STATUSES,
+    ).exists()
+    if duplicate:
+        raise ValidationError("You already have an active order for this address and time slot.")
+
+    # TODO Feature D: slot capacity check goes here (planner milestone #3).
+
+    order = Order(
+        customer=customer, address=address, product=product, quantity=quantity,
+        expected_empties=expected_empties, delivery_date=delivery_date,
+        period=period, source=source,
+    )
+    order.save()  # snapshots + confirmation code happen in Order.save()
+    OrderStatusHistory.objects.create(
+        order=order, from_status="", to_status=S.PENDING, changed_by=customer, note="Order placed",
+    )
+    return order
+
+
+@transaction.atomic
+def customer_cancel(order, customer, reason=""):
+    order = Order.objects.select_for_update().get(pk=order.pk, customer=customer)
+    if order.status not in CUSTOMER_CANCELLABLE:
+        raise ValidationError(
+            "This order can no longer be cancelled in the app. Please contact the station."
+        )
+    return transition(order, S.CANCELLED, by=customer, reason=reason or "Cancelled by customer")
