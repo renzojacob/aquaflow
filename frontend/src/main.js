@@ -30,6 +30,9 @@ import '@ionic/vue/css/text-transformation.css'
 import '@ionic/vue/css/flex-utils.css'
 import '@ionic/vue/css/display.css'
 
+import "./theme/tailwind.css";
+
+
 /* AquaFlow theme: our own light + dark tokens, then global styles */
 import './theme/variables.css'
 import './theme/global.css'

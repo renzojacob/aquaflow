@@ -65,72 +65,77 @@ def transition(order, to, by=None, reason="", note="", device_time=None):
     return order
 
 # ---------------------------------------------------------------------------
-# Customer-facing rules
+# Customer-facing services
 # ---------------------------------------------------------------------------
+
+MAX_QUANTITY = 20
 MAX_DAYS_AHEAD = 14
-SAME_DAY_CUTOFF = {
-    Order.Period.MORNING: time(9, 0),
-    Order.Period.AFTERNOON: time(14, 0),
+PERIOD_START = {
+    Order.Period.MORNING: time(8, 0),
+    Order.Period.AFTERNOON: time(13, 0),
 }
-ACTIVE_STATUSES = {S.PENDING, S.CONFIRMED, S.PREPARING, S.READY, S.OUT_FOR_DELIVERY}
 CUSTOMER_CANCELLABLE = {S.PENDING, S.CONFIRMED}
-SHOW_CODE_STATUSES = {S.CONFIRMED, S.PREPARING, S.READY, S.OUT_FOR_DELIVERY}
 
 
 @transaction.atomic
 def place_order(customer, *, address, product, quantity, delivery_date, period,
-                expected_empties=0, source=Order.Source.MANUAL):
-    # Lock the customer row so two simultaneous requests can't both pass the duplicate check.
-    get_user_model().objects.select_for_update().get(pk=customer.pk)
+                expected_empties=None, source=Order.Source.MANUAL):
+    if customer.role != "customer":
+        raise ValidationError("Only customer accounts can place orders.")
 
     if address.customer_id != customer.pk or address.is_archived:
         raise ValidationError({"address": ["Choose one of your saved addresses."]})
+
+    if not getattr(product, "is_active", True):
+        raise ValidationError({"product": ["This product is not available."]})
+
+    if quantity < 1 or quantity > MAX_QUANTITY:
+        raise ValidationError({"quantity": [f"Quantity must be between 1 and {MAX_QUANTITY}."]})
 
     today = timezone.localdate()
     if delivery_date < today:
         raise ValidationError({"delivery_date": ["Delivery date cannot be in the past."]})
     if delivery_date > today + timedelta(days=MAX_DAYS_AHEAD):
         raise ValidationError(
-            {"delivery_date": [f"You can order at most {MAX_DAYS_AHEAD} days ahead."]}
+            {"delivery_date": [f"You can order up to {MAX_DAYS_AHEAD} days ahead."]}
         )
-    if delivery_date == today and timezone.localtime().time() >= SAME_DAY_CUTOFF[period]:
-        cutoff = SAME_DAY_CUTOFF[period].strftime("%I:%M %p")
+    if delivery_date == today and timezone.localtime().time() >= PERIOD_START[period]:
         raise ValidationError(
-            {"period": [f"Same-day {period} orders close at {cutoff}. Pick a later slot."]}
+            {"period": ["That delivery window has already started. Pick a later one."]}
         )
 
-    profile, _ = CustomerProfile.objects.get_or_create(user=customer)
-    if expected_empties > profile.containers_held:
-        raise ValidationError(
-            {"expected_empties": [f"You only have {profile.containers_held} of our containers."]}
-        )
+    # TODO (#3, Feature D): reject the order here if the slot is full.
 
-    duplicate = Order.objects.filter(
-        customer=customer, address=address, delivery_date=delivery_date,
-        period=period, status__in=ACTIVE_STATUSES,
-    ).exists()
-    if duplicate:
-        raise ValidationError("You already have an active order for this address and time slot.")
+    if expected_empties is None:
+        profile = CustomerProfile.objects.filter(user=customer).first()
+        held = profile.containers_held if profile else 0
+        expected_empties = min(quantity, held)
 
-    # TODO Feature D: slot capacity check goes here (planner milestone #3).
-
-    order = Order(
-        customer=customer, address=address, product=product, quantity=quantity,
-        expected_empties=expected_empties, delivery_date=delivery_date,
-        period=period, source=source,
+    order = Order.objects.create(
+        customer=customer,
+        address=address,
+        product=product,
+        quantity=quantity,
+        expected_empties=expected_empties,
+        delivery_date=delivery_date,
+        period=period,
+        source=source,
     )
-    order.save()  # snapshots + confirmation code happen in Order.save()
     OrderStatusHistory.objects.create(
-        order=order, from_status="", to_status=S.PENDING, changed_by=customer, note="Order placed",
+        order=order, from_status="", to_status=order.status,
+        changed_by=customer, note="Order placed",
     )
     return order
 
 
 @transaction.atomic
-def customer_cancel(order, customer, reason=""):
+def cancel_by_customer(customer, order, reason=""):
     order = Order.objects.select_for_update().get(pk=order.pk, customer=customer)
     if order.status not in CUSTOMER_CANCELLABLE:
         raise ValidationError(
-            "This order can no longer be cancelled in the app. Please contact the station."
+            "This order can no longer be cancelled. Please contact the station."
         )
-    return transition(order, S.CANCELLED, by=customer, reason=reason or "Cancelled by customer")
+    return transition(
+        order, S.CANCELLED, by=customer,
+        reason=reason or "Cancelled by customer", note="Cancelled by customer",
+    )
