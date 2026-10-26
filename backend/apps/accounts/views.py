@@ -1,11 +1,12 @@
+from django.contrib.auth.models import update_last_login
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
-from drf_spectacular.utils import extend_schema
 
 from . import services
 from .models import CustomerProfile
@@ -15,10 +16,29 @@ from .serializers import (
 )
 
 
-class LoginView(TokenObtainPairView):
-    serializer_class = LoginSerializer
+def session_payload(user):
+    """Shape the frontend expects: {token, refresh, user}."""
+    refresh = RefreshToken.for_user(user)
+    return {
+        "token": str(refresh.access_token),
+        "refresh": str(refresh),
+        "user": MeSerializer(user).data,
+    }
+
+
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []  # an old token in the header must not block login
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "auth"
+
+    @extend_schema(request=LoginSerializer, responses={200: OpenApiTypes.OBJECT})
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data["user"]
+        update_last_login(None, user)
+        return Response(session_payload(user))
 
 
 class RegisterView(APIView):
@@ -27,20 +47,21 @@ class RegisterView(APIView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "auth"
 
-    @extend_schema(request=RegisterSerializer, responses={201: MeSerializer})
+    @extend_schema(request=RegisterSerializer, responses={201: OpenApiTypes.OBJECT})
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = services.register_customer(**serializer.validated_data)
-        refresh = RefreshToken.for_user(user)
-        return Response(
-            {
-                "user": MeSerializer(user).data,
-                "access": str(refresh.access_token),
-                "refresh": str(refresh),
-            },
-            status=status.HTTP_201_CREATED,
+        data = serializer.validated_data
+        first, _, last = data["full_name"].partition(" ")
+        user = services.register_customer(
+            username=data["email"],      # the email doubles as the username
+            password=data["password"],
+            email=data["email"],
+            phone=data["phone"],
+            first_name=first,
+            last_name=last,
         )
+        return Response(session_payload(user), status=status.HTTP_201_CREATED)
 
 
 class MeView(generics.RetrieveUpdateAPIView):

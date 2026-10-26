@@ -14,6 +14,9 @@ class Address(models.Model):
     label = models.CharField(max_length=50)                  # "Home", "Store"
     address_text = models.CharField(max_length=255)
     landmark = models.CharField(max_length=255, blank=True)  # "blue gate beside sari-sari store"
+    label = models.CharField(max_length=40, blank=True)      # "Home", "Work"
+    street = models.CharField(max_length=200, blank=True)
+    barangay = models.CharField(max_length=100, blank=True)
     lat = models.DecimalField(max_digits=9, decimal_places=6, validators=LAT_VALIDATORS)
     lng = models.DecimalField(max_digits=9, decimal_places=6, validators=LNG_VALIDATORS)
     is_default = models.BooleanField(default=False)

@@ -15,6 +15,7 @@ export default defineConfig({
   },
   server: {
     port: 8100, // backend CORS already allows this port
+    strictPort: true,
     host: true, // also reachable from your phone on the same Wi-Fi
   },
 })

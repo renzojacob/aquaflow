@@ -40,7 +40,7 @@ class Order(models.Model):
     expected_empties = models.PositiveSmallIntegerField(default=0)
     delivery_date = models.DateField()
     period = models.CharField(max_length=10, choices=Period.choices)
-
+    notes = models.CharField(max_length=255, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     rejection_reason = models.CharField(max_length=255, blank=True)
     cancel_reason = models.CharField(max_length=255, blank=True)

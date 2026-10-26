@@ -1,6 +1,6 @@
 // Login, register, password reset.
 // Mock mode checks the fake users in mocks/seed.js.
-// Real mode calls FastAPI (endpoints built in the backend phase).
+// Real mode calls the Django REST API.
 import { env } from '@/config/env'
 import { db, mockDelay, mockError, publicUser, saveDb } from '@/mocks/db'
 import { http } from './http'
@@ -21,7 +21,8 @@ export async function login(email, password) {
     }
     return { token: `mock.${user.id}`, user: publicUser(user) }
   }
-  const { data } = await http.post('/api/v1/auth/login', { email, password })
+  // Django URLs end with "/" — without it, POST requests fail
+  const { data } = await http.post('/api/auth/login/', { email: email.trim(), password })
   return data
 }
 
@@ -51,7 +52,12 @@ export async function register(payload) {
     saveDb()
     return { token: `mock.${user.id}`, user: publicUser(user) }
   }
-  const { data } = await http.post('/api/v1/auth/register', payload)
+  const { data } = await http.post('/api/auth/register/', {
+    full_name: payload.full_name.trim(),
+    phone: payload.phone.trim(),
+    email: payload.email.trim(),
+    password: payload.password,
+  })
   return data
 }
 
@@ -60,12 +66,14 @@ export async function register(payload) {
  * Always "succeeds" so nobody can use this form to check which emails have accounts.
  * @param {string} email
  */
+// eslint-disable-next-line no-unused-vars
 export async function requestPasswordReset(email) {
   if (env.useMock) {
     await mockDelay(600)
     return
   }
-  await http.post('/api/v1/auth/forgot-password', { email })
+  // TODO: call POST /api/auth/forgot-password/ once the Brevo email step is built
+  return
 }
 
 /** Demo accounts shown on the login screen in mock mode. */

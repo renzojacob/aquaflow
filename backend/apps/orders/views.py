@@ -29,7 +29,7 @@ class CustomerOrderViewSet(
     def get_queryset(self):
         qs = (
             Order.objects.filter(customer=self.request.user)
-            .select_related("product")
+            .select_related("product", "address")
             .prefetch_related("history")
         )
         statuses = self.request.query_params.get("status")

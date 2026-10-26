@@ -1,19 +1,18 @@
 // Everything the customer screens need.
-// Each function: mock mode -> fake data, real mode -> FastAPI.
-// The backend must enforce the same rules (it is the real security);
-// the mock copies them so the UI behaves the same before the backend exists.
+// Each function: mock mode -> fake data, real mode -> Django REST API.
+// The backend enforces the same rules (it is the real security);
+// the mock copies them so the UI behaves the same without a server.
 import { env } from '@/config/env'
 import { CUSTOMER_CANCELLABLE, isActive } from '@/constants/orderStatus'
 import { clone, currentUser, db, mockDelay, mockError, saveDb } from '@/mocks/db'
 import { dateISO } from '@/utils/format'
 import { insideArea } from '@/utils/geo'
+import { fromAddress, toAddress, toOrder, toOrderPayload } from './adapters'
 import { http } from './http'
 
 /** @typedef {import('@/types/models').Order} Order */
 /** @typedef {import('@/types/models').Address} Address */
 /** @typedef {import('@/types/models').OrderSettings} OrderSettings */
-
-const API = '/api/v1'
 
 // ---------- helpers ----------
 const newestFirst = (a, b) => b.created_at.localeCompare(a.created_at)
@@ -29,6 +28,12 @@ export function periodOpen(settings, deliveryDate, period, now = new Date()) {
   return now.getHours() * 60 + now.getMinutes() < h * 60 + m
 }
 
+/** All my orders from the API, already translated, newest first. */
+async function fetchMyOrders() {
+  const { data } = await http.get('/api/customer/orders/')
+  return data.map(toOrder).sort(newestFirst)
+}
+
 // ---------- settings ----------
 /** @returns {Promise<OrderSettings>} */
 export async function getOrderSettings() {
@@ -36,7 +41,7 @@ export async function getOrderSettings() {
     await mockDelay(150)
     return clone(db().settings)
   }
-  const { data } = await http.get(`${API}/settings/public`)
+  const { data } = await http.get('/api/settings/public/')
   return data
 }
 
@@ -55,8 +60,12 @@ export async function getCustomerSummary() {
       last_delivered: mine.find((o) => o.status === 'delivered') ?? null,
     })
   }
-  const { data } = await http.get(`${API}/customer/summary`)
-  return data
+  const [{ data: me }, mine] = await Promise.all([http.get('/api/me/'), fetchMyOrders()])
+  return {
+    containers_held: me.containers_held ?? 0,
+    active_orders: mine.filter(isActive),
+    last_delivered: mine.find((o) => o.status === 'delivered') ?? null,
+  }
 }
 
 // ---------- orders ----------
@@ -71,8 +80,8 @@ export async function listOrders(scope) {
     const mine = db().orders.filter((o) => o.customer_id === me.id).sort(newestFirst)
     return clone(mine.filter((o) => (scope === 'active' ? isActive(o) : !isActive(o))))
   }
-  const { data } = await http.get(`${API}/orders`, { params: { scope } })
-  return data
+  const mine = await fetchMyOrders()
+  return mine.filter((o) => (scope === 'active' ? isActive(o) : !isActive(o)))
 }
 
 /** @returns {Promise<Order>} */
@@ -85,8 +94,8 @@ export async function getOrder(id) {
     if (!order || order.customer_id !== me.id) throw mockError('not_found', 404, 'Order not found.')
     return clone(order)
   }
-  const { data } = await http.get(`${API}/orders/${id}`)
-  return data
+  const { data } = await http.get(`/api/customer/orders/${id}/`)
+  return toOrder(data)
 }
 
 /**
@@ -152,8 +161,8 @@ export async function createOrder(payload) {
     saveDb()
     return clone(order)
   }
-  const { data } = await http.post(`${API}/orders`, payload)
-  return data
+  const { data } = await http.post('/api/customer/orders/', toOrderPayload(payload))
+  return toOrder(data)
 }
 
 /** Customer cancel: allowed only while Pending or Confirmed. */
@@ -172,8 +181,8 @@ export async function cancelOrder(id, reason = '') {
     saveDb()
     return clone(order)
   }
-  const { data } = await http.post(`${API}/orders/${id}/cancel`, { reason })
-  return data
+  const { data } = await http.post(`/api/customer/orders/${id}/cancel/`, { reason })
+  return toOrder(data)
 }
 
 // ---------- addresses ----------
@@ -185,8 +194,8 @@ export async function listAddresses() {
     const mine = db().addresses.filter((a) => a.user_id === me.id)
     return clone(mine.sort((a, b) => Number(b.is_default) - Number(a.is_default)))
   }
-  const { data } = await http.get(`${API}/addresses`)
-  return data
+  const { data } = await http.get('/api/customer/addresses/')
+  return data.map(toAddress)
 }
 
 /**
@@ -224,10 +233,11 @@ export async function saveAddress(address) {
     saveDb()
     return clone(saved)
   }
+  const body = fromAddress(address)
   const { data } = address.id
-    ? await http.patch(`${API}/addresses/${address.id}`, address)
-    : await http.post(`${API}/addresses`, address)
-  return data
+    ? await http.patch(`/api/customer/addresses/${address.id}/`, body)
+    : await http.post('/api/customer/addresses/', body)
+  return toAddress(data)
 }
 
 export async function setDefaultAddress(id) {
@@ -242,7 +252,7 @@ export async function setDefaultAddress(id) {
     saveDb()
     return
   }
-  await http.post(`${API}/addresses/${id}/default`)
+  await http.post(`/api/customer/addresses/${id}/set-default/`)
 }
 
 export async function deleteAddress(id) {
@@ -262,5 +272,5 @@ export async function deleteAddress(id) {
     saveDb()
     return
   }
-  await http.delete(`${API}/addresses/${id}`)
+  await http.delete(`/api/customer/addresses/${id}/`)
 }

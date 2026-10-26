@@ -17,6 +17,9 @@ class OrderStatusHistorySerializer(serializers.ModelSerializer):
 
 class CustomerOrderSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="product.name", read_only=True)
+    address_label = serializers.CharField(source="address.label", read_only=True)
+    address_street = serializers.CharField(source="address.street", read_only=True)
+    address_barangay = serializers.CharField(source="address.barangay", read_only=True)
     total = serializers.SerializerMethodField()
     history = OrderStatusHistorySerializer(many=True, read_only=True)
 
@@ -25,9 +28,10 @@ class CustomerOrderSerializer(serializers.ModelSerializer):
         fields = [
             "id", "status",
             "product", "product_name", "quantity", "unit_price", "total",
-            "expected_empties",
+            "expected_empties", "notes",
             "delivery_date", "period",
-            "address", "address_text", "landmark", "lat", "lng",
+            "address", "address_label", "address_street", "address_barangay",
+            "address_text", "landmark", "lat", "lng",
             "confirmation_code",
             "rejection_reason", "cancel_reason",
             "source", "created_at", "updated_at",
@@ -42,19 +46,17 @@ class CustomerOrderSerializer(serializers.ModelSerializer):
 
 class OrderCreateSerializer(serializers.Serializer):
     address = serializers.PrimaryKeyRelatedField(queryset=Address.objects.none())
-    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), required=False)
     quantity = serializers.IntegerField(min_value=1, max_value=MAX_QUANTITY)
     delivery_date = serializers.DateField()
     period = serializers.ChoiceField(choices=Order.Period.choices)
-    expected_empties = serializers.IntegerField(
-        min_value=0, max_value=MAX_QUANTITY, required=False
-    )
+    expected_empties = serializers.IntegerField(min_value=0, max_value=MAX_QUANTITY, required=False)
+    notes = serializers.CharField(max_length=255, required=False, allow_blank=True)
 
     def get_fields(self):
         fields = super().get_fields()
         request = self.context.get("request")
         if request and request.user.is_authenticated:
-            # Another customer's address id gives "invalid pk", not a hint that it exists.
             fields["address"].queryset = Address.objects.filter(
                 customer=request.user, is_archived=False
             )

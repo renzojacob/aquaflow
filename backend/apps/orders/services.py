@@ -69,47 +69,60 @@ def transition(order, to, by=None, reason="", note="", device_time=None):
 # ---------------------------------------------------------------------------
 
 MAX_QUANTITY = 20
-MAX_DAYS_AHEAD = 14
+MAX_DAYS_AHEAD = 1
 PERIOD_START = {
     Order.Period.MORNING: time(8, 0),
     Order.Period.AFTERNOON: time(13, 0),
 }
 CUSTOMER_CANCELLABLE = {S.PENDING, S.CONFIRMED}
 
+def default_product():
+    """The station sells one main product (the 5-gallon refill): use the first active one."""
+    from apps.inventory.models import Product
+
+    qs = Product.objects.order_by("id")
+    if hasattr(Product, "is_active"):
+        qs = qs.filter(is_active=True)
+    return qs.first()
+
 
 @transaction.atomic
-def place_order(customer, *, address, product, quantity, delivery_date, period,
-                expected_empties=None, source=Order.Source.MANUAL):
+def place_order(customer, *, address, quantity, delivery_date, period,
+                product=None, expected_empties=None, notes="",
+                source=Order.Source.MANUAL):
     if customer.role != "customer":
         raise ValidationError("Only customer accounts can place orders.")
+
+    product = product or default_product()
+    if product is None:
+        raise ValidationError("No product is set up yet. Please contact the station.")
+    if not getattr(product, "is_active", True):
+        raise ValidationError({"product": ["This product is not available."]})
 
     if address.customer_id != customer.pk or address.is_archived:
         raise ValidationError({"address": ["Choose one of your saved addresses."]})
 
-    if not getattr(product, "is_active", True):
-        raise ValidationError({"product": ["This product is not available."]})
-
     if quantity < 1 or quantity > MAX_QUANTITY:
-        raise ValidationError({"quantity": [f"Quantity must be between 1 and {MAX_QUANTITY}."]})
+        raise ValidationError({"quantity": [f"Order between 1 and {MAX_QUANTITY} containers."]})
 
     today = timezone.localdate()
-    if delivery_date < today:
-        raise ValidationError({"delivery_date": ["Delivery date cannot be in the past."]})
-    if delivery_date > today + timedelta(days=MAX_DAYS_AHEAD):
-        raise ValidationError(
-            {"delivery_date": [f"You can order up to {MAX_DAYS_AHEAD} days ahead."]}
-        )
+    if delivery_date < today or delivery_date > today + timedelta(days=MAX_DAYS_AHEAD):
+        raise ValidationError({"delivery_date": ["You can order for today or tomorrow only."]})
     if delivery_date == today and timezone.localtime().time() >= PERIOD_START[period]:
         raise ValidationError(
-            {"period": ["That delivery window has already started. Pick a later one."]}
+            {"period": ["That delivery time is closed for today. Pick another time."]}
         )
 
     # TODO (#3, Feature D): reject the order here if the slot is full.
 
+    profile = CustomerProfile.objects.filter(user=customer).first()
+    held = profile.containers_held if profile else 0
     if expected_empties is None:
-        profile = CustomerProfile.objects.filter(user=customer).first()
-        held = profile.containers_held if profile else 0
         expected_empties = min(quantity, held)
+    elif expected_empties > held:
+        raise ValidationError(
+            {"expected_empties": [f"You can return up to {held} empty containers."]}
+        )
 
     order = Order.objects.create(
         customer=customer,
@@ -119,6 +132,7 @@ def place_order(customer, *, address, product, quantity, delivery_date, period,
         expected_empties=expected_empties,
         delivery_date=delivery_date,
         period=period,
+        notes=(notes or "").strip()[:255],
         source=source,
     )
     OrderStatusHistory.objects.create(
