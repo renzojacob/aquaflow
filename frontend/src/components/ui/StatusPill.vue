@@ -29,16 +29,18 @@ const info = computed(
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font: 700 13px/1 var(--af-font);
+  font: 750 12.5px/1 var(--af-font);
+  letter-spacing: 0.01em;
   padding: 7px 12px 7px 10px;
   border-radius: var(--af-r-pill);
   color: var(--c);
   background: var(--t);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 22%, transparent);
   white-space: nowrap;
 }
 .af-pill ion-icon { font-size: 15px; flex: none; }
 
-.af-pill__live { width: 8px; height: 8px; border-radius: 50%; background: var(--c); position: relative; flex: none; }
+.af-pill__live { width: 8px; height: 8px; border-radius: 50%; background: var(--c); position: relative; flex: none; box-shadow: 0 0 8px var(--c); }
 .af-pill__live::after {
   content: '';
   position: absolute;
@@ -46,11 +48,11 @@ const info = computed(
   border-radius: 50%;
   border: 2px solid var(--c);
   opacity: 0;
-  animation: af-ping 1.6s var(--af-ease) infinite;
+  animation: af-ping 1.8s var(--af-ease-out) infinite;
 }
 @keyframes af-ping {
   0% { transform: scale(0.5); opacity: 0.8; }
-  100% { transform: scale(1.6); opacity: 0; }
+  100% { transform: scale(1.7); opacity: 0; }
 }
 
 .af-pill--pending { --c: var(--af-st-pending); --t: var(--af-st-pending-t); }

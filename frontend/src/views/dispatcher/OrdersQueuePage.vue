@@ -228,44 +228,55 @@ const dayOptions = [
 .stock > :first-child { flex: 1; min-width: 240px; }
 
 .tools { display: flex; gap: var(--af-s3); align-items: center; flex-wrap: wrap; justify-content: space-between; }
-.tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; max-width: 100%; min-width: 0; scrollbar-width: none; }
+.tabs { display: flex; gap: 6px; overflow-x: auto; padding: 2px; max-width: 100%; min-width: 0; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
 .tab {
   flex: none;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 40px;
-  padding: 0 14px;
+  min-height: 44px;
+  padding: 0 10px 0 16px;
   border-radius: var(--af-r-pill);
-  border: 1.5px solid var(--af-line);
+  border: 1px solid var(--af-line);
   background: var(--af-surface);
   color: var(--af-ink-2);
-  font: 700 14px var(--af-font);
+  font: 750 14px var(--af-font);
   cursor: pointer;
+  transition: background var(--af-dur) var(--af-ease), color var(--af-dur) var(--af-ease), border-color var(--af-dur) var(--af-ease);
 }
-.tab[aria-selected='true'] { border-color: var(--af-navy); background: var(--af-navy); color: #fff; }
-.tab__n { min-width: 22px; padding: 1px 7px; border-radius: var(--af-r-pill); background: var(--af-surface-2); color: var(--af-ink); font-size: 12px; font-variant-numeric: tabular-nums; }
-.tab[aria-selected='true'] .tab__n { background: rgba(255, 255, 255, 0.18); color: #fff; }
+.tab:hover { color: var(--af-ink); border-color: var(--af-line-strong); }
+.tab[aria-selected='true'] { border-color: var(--af-primary); background: var(--af-primary); color: var(--af-on-primary); }
+.tab__n { min-width: 24px; padding: 3px 8px; border-radius: var(--af-r-pill); background: var(--af-surface-2); color: var(--af-ink); font-family: var(--af-mono); font-size: 12px; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; }
+.tab[aria-selected='true'] .tab__n { background: color-mix(in srgb, var(--af-on-primary) 16%, transparent); color: var(--af-on-primary); }
+
+.search { position: relative; flex: 1 1 220px; display: flex; justify-content: flex-end; }
 .search input {
-  width: min(320px, 100%);
-  min-height: 44px;
-  padding: 0 14px;
-  border-radius: var(--af-r-sm);
-  border: 1.5px solid var(--af-line);
-  background: var(--af-surface);
+  width: min(340px, 100%);
+  min-height: 46px;
+  padding: 0 16px 0 42px;
+  border-radius: var(--af-r-pill);
+  border: 1px solid var(--af-line-strong);
+  background: var(--af-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%238fb3ba' stroke-width='2' stroke-linecap='round' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 16px center;
   color: var(--af-ink);
-  font: 500 15px var(--af-font);
+  font: 550 15px var(--af-font);
+  transition: border-color var(--af-dur) var(--af-ease), box-shadow var(--af-dur) var(--af-ease);
 }
-.search input:focus { outline: none; border-color: var(--af-primary); box-shadow: 0 0 0 3px var(--af-primary-tint); }
-.search { flex: 1 1 220px; display: flex; justify-content: flex-end; }
+.search input::placeholder { color: color-mix(in srgb, var(--af-ink-2) 80%, transparent); }
+.search input:focus { outline: none; border-color: var(--af-primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--af-primary) 18%, transparent); }
 
 .split { display: grid; gap: var(--af-s4); }
 .split--wide { grid-template-columns: minmax(360px, 440px) minmax(0, 1fr); align-items: start; }
 .list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--af-s2); }
-.detail { position: sticky; top: var(--af-s4); }
+.list li { animation: af-rise var(--af-dur-3) var(--af-ease-out) both; }
+.list li:nth-child(2) { animation-delay: 30ms; }
+.list li:nth-child(3) { animation-delay: 60ms; }
+.list li:nth-child(4) { animation-delay: 90ms; }
+.list li:nth-child(n + 5) { animation-delay: 120ms; }
+.detail { position: sticky; top: var(--af-s4); border-radius: var(--af-r-lg); box-shadow: var(--af-shadow-2); }
 
-.err { display: grid; gap: var(--af-s2); justify-items: start; }
-.err b { color: var(--af-danger); }
+.err { display: grid; gap: var(--af-s2); justify-items: start; border-color: color-mix(in srgb, var(--af-danger) 40%, var(--af-line)); }
+.err b { color: var(--af-danger); font-weight: 800; }
 .err p { margin: 0; color: var(--af-ink-2); }
 
 @media (max-width: 640px) {

@@ -5,13 +5,16 @@ import { IonicVue } from '@ionic/vue'
 import App from './App.vue'
 import router from './router'
 import { initTheme } from './composables/useTheme'
+import { initSpotlight } from './theme/spotlight'
+import { oceanPageTransition } from './theme/pageTransition'
 import { setUnauthorizedHandler } from './services/http'
 import { useAuthStore } from './stores/auth'
 
 /* Fonts are bundled with the app (not loaded from Google),
    so they still work when the rider is offline. */
-import '@fontsource-variable/plus-jakarta-sans'
-import '@fontsource/jetbrains-mono/500.css'
+import '@fontsource-variable/unbounded'   // display: headings + big numbers
+import '@fontsource-variable/manrope'     // text
+import '@fontsource/jetbrains-mono/500.css' // codes + small labels
 import '@fontsource/jetbrains-mono/600.css'
 
 /* Core CSS required for Ionic components to work properly */
@@ -30,22 +33,22 @@ import '@ionic/vue/css/text-transformation.css'
 import '@ionic/vue/css/flex-utils.css'
 import '@ionic/vue/css/display.css'
 
-import "./theme/tailwind.css";
-
-
 /* AquaFlow theme: our own light + dark tokens, then global styles */
 import './theme/variables.css'
 import './theme/global.css'
+import './theme/tailwind.css' // Tailwind utilities (no reset), added by the team
 
 // Set light/dark before anything shows, so there's no flash
 initTheme()
+initSpotlight()
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 const pinia = createPinia()
 
 const app = createApp(App)
-  .use(IonicVue, { animated: !reduceMotion }) // no page animations if the user asked for less motion
+  // no page animations if the user asked for less motion; our own fade otherwise
+  .use(IonicVue, { animated: !reduceMotion, navAnimation: oceanPageTransition })
   .use(pinia)
   .use(router)
 

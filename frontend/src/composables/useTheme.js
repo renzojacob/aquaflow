@@ -8,9 +8,10 @@ const media = window.matchMedia('(prefers-color-scheme: dark)')
 
 function readSaved() {
   try {
-    return localStorage.getItem(KEY) || 'system'
+    // First visit: start in dark, AquaFlow's main look. Users can still pick Light or System.
+    return localStorage.getItem(KEY) || 'dark'
   } catch {
-    return 'system'
+    return 'dark'
   }
 }
 

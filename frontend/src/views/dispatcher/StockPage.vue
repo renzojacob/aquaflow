@@ -8,6 +8,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import QuantityStepper from '@/components/form/QuantityStepper.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
 import StatCard from '@/components/ui/StatCard.vue'
+import LiquidFill from '@/components/ui/LiquidFill.vue'
 import TextField from '@/components/form/TextField.vue'
 import WaterLevelBar from '@/components/ui/WaterLevelBar.vue'
 import { showToast } from '@/composables/useToast'
@@ -101,8 +102,20 @@ async function saveCount() {
             <StatCard label="Empties at station" :value="stock.empty_at_station" unit="containers" delta="Waiting to be washed and filled" />
           </div>
 
-          <section class="af-card">
-            <WaterLevelBar label="Ready stock promised to orders" :value="stock.reserved" :max="Math.max(stock.filled_ready, 1)" size="lg" />
+          <section class="tank af-hero-surface af-glow-edge af-deep-scope">
+            <LiquidFill
+              shape="orb"
+              :size="128"
+              :level="stock.filled_ready ? stock.available / stock.filled_ready : 0"
+              :tone="stock.available <= 5 ? 'warn' : 'water'"
+              :text="stock.available"
+              class="tank__orb"
+            />
+            <div class="tank__text">
+              <span class="af-caption">Free to confirm right now</span>
+              <p class="tank__big">{{ stock.available }} <small>of {{ stock.filled_ready }} filled containers</small></p>
+              <WaterLevelBar label="Promised to orders" :value="stock.reserved" :max="Math.max(stock.filled_ready, 1)" size="lg" />
+            </div>
           </section>
 
           <div class="forms">
@@ -156,18 +169,25 @@ async function saveCount() {
 .form { display: grid; gap: var(--af-s3); align-content: start; justify-items: start; }
 .form > :deep(.af-field) { width: 100%; }
 .form h2, .form p { margin: 0; }
-.form__err { color: var(--af-danger); font-weight: 600; font-size: 14px; }
+.form__err { color: var(--af-danger); font-weight: 650; font-size: 14px; }
+.tank { display: flex; align-items: center; gap: var(--af-s6); padding: var(--af-s5) var(--af-s6); flex-wrap: wrap; }
+.tank__orb { filter: drop-shadow(0 0 30px rgba(79, 224, 210, 0.35)); }
+.tank__text { flex: 1; min-width: 220px; display: grid; gap: var(--af-s3); }
+.tank__big { margin: 0; font-family: var(--af-display); font-size: 40px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
+.tank__big small { font-family: var(--af-font); font-size: 15px; font-weight: 650; letter-spacing: 0; color: var(--af-ink-2); }
+@media (max-width: 480px) { .tank { justify-content: center; padding: var(--af-s5); } }
 .hist-title { margin: 0 0 var(--af-s3); }
 .log { list-style: none; margin: 0; padding: 0; display: grid; }
-.log li { display: grid; grid-template-columns: 56px 1fr; gap: var(--af-s3); align-items: center; padding: var(--af-s3) 0; border-top: 1px solid var(--af-line); }
+.log li { display: grid; grid-template-columns: 64px 1fr; gap: var(--af-s3); align-items: center; padding: var(--af-s3) 0; border-top: 1px solid var(--af-line); }
 .log li:first-child { border-top: 0; }
-.log__delta { font-weight: 800; font-size: 18px; font-variant-numeric: tabular-nums; text-align: right; }
-.log__delta--up { color: var(--af-success); }
-.log__delta--down { color: var(--af-danger); }
+.log__delta { justify-self: start; min-width: 52px; text-align: center; padding: 6px 10px; border-radius: var(--af-r-pill); font-family: var(--af-mono); font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; }
+.log__delta--up { color: var(--af-success); background: var(--af-success-tint); }
+.log__delta--down { color: var(--af-danger); background: var(--af-danger-tint); }
 .log__text { display: grid; gap: 2px; min-width: 0; }
+.log__text b { font-weight: 800; }
 .log__text span { font-size: 13px; color: var(--af-ink-2); }
-.err { display: grid; gap: var(--af-s2); justify-items: start; }
-.err b { color: var(--af-danger); }
+.err { display: grid; gap: var(--af-s2); justify-items: start; border-color: color-mix(in srgb, var(--af-danger) 40%, var(--af-line)); }
+.err b { color: var(--af-danger); font-weight: 800; }
 .err p { margin: 0; color: var(--af-ink-2); }
 
 @media (max-width: 900px) {
@@ -175,6 +195,7 @@ async function saveCount() {
   .forms { grid-template-columns: 1fr; }
 }
 @media (max-width: 480px) {
-  .stats { grid-template-columns: 1fr; }
+  .stats { gap: var(--af-s3); }
+  .stats :deep(.af-card) { padding: var(--af-s4); }
 }
 </style>

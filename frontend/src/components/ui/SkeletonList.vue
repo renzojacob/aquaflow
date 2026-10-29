@@ -33,23 +33,25 @@ const widths = [
 
 <style scoped>
 .af-sk { display: grid; gap: var(--af-s4); }
-.af-sk__item { display: grid; grid-template-columns: 40px 1fr; gap: var(--af-s3); align-items: center; }
+.af-sk__item { display: grid; grid-template-columns: 44px 1fr; gap: var(--af-s3); align-items: center; }
 .af-sk__item--noavatar { grid-template-columns: 1fr; }
-.af-sk__avatar { width: 40px; height: 40px; border-radius: var(--af-r-sm); }
-.af-sk__lines { display: grid; gap: 8px; }
+.af-sk__avatar { width: 44px; height: 44px; border-radius: var(--af-r-sm); }
+.af-sk__lines { display: grid; gap: 10px; }
 .af-sk__b {
   border-radius: 8px;
   background: linear-gradient(
-    90deg,
+    100deg,
     var(--af-surface-2) 0%,
-    color-mix(in srgb, var(--af-surface-2) 40%, var(--af-surface)) 50%,
+    var(--af-surface-2) 35%,
+    color-mix(in srgb, var(--af-primary) 14%, var(--af-surface-2)) 50%,
+    var(--af-surface-2) 65%,
     var(--af-surface-2) 100%
   );
-  background-size: 200% 100%;
-  animation: af-shimmer 1.4s ease-in-out infinite;
+  background-size: 250% 100%;
+  animation: af-shimmer 1.6s ease-in-out infinite;
 }
 @keyframes af-shimmer {
   0% { background-position: 100% 0; }
-  100% { background-position: -100% 0; }
+  100% { background-position: -50% 0; }
 }
 </style>

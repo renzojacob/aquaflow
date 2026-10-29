@@ -100,7 +100,12 @@ const empty = computed(() =>
 <style scoped>
 .narrow { max-width: 720px; gap: var(--af-s4); }
 .list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--af-s3); }
-.err { display: grid; gap: var(--af-s2); justify-items: start; }
-.err b { color: var(--af-danger); }
+.list li { animation: af-rise var(--af-dur-3) var(--af-ease-out) both; }
+.list li:nth-child(2) { animation-delay: 40ms; }
+.list li:nth-child(3) { animation-delay: 80ms; }
+.list li:nth-child(4) { animation-delay: 120ms; }
+.list li:nth-child(n + 5) { animation-delay: 160ms; }
+.err { display: grid; gap: var(--af-s2); justify-items: start; border-color: color-mix(in srgb, var(--af-danger) 40%, var(--af-line)); }
+.err b { color: var(--af-danger); font-weight: 800; }
 .err p { margin: 0; color: var(--af-ink-2); }
 </style>

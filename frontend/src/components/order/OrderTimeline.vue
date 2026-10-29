@@ -67,24 +67,28 @@ const steps = computed(() => {
 
 <style scoped>
 .af-tl { list-style: none; margin: 0; padding: 0; display: grid; }
-.af-tl li { display: grid; grid-template-columns: 28px 1fr; gap: var(--af-s3); position: relative; padding-bottom: var(--af-s5); }
+.af-tl li { display: grid; grid-template-columns: 30px 1fr; gap: var(--af-s3); position: relative; padding-bottom: var(--af-s5); animation: af-rise var(--af-dur-3) var(--af-ease-out) both; }
+.af-tl li:nth-child(2) { animation-delay: 50ms; }
+.af-tl li:nth-child(3) { animation-delay: 100ms; }
+.af-tl li:nth-child(4) { animation-delay: 150ms; }
+.af-tl li:nth-child(n + 5) { animation-delay: 200ms; }
 .af-tl li:last-child { padding-bottom: 0; }
 .af-tl li::before {
   content: '';
   position: absolute;
-  left: 13px;
-  top: 30px;
+  left: 14px;
+  top: 32px;
   bottom: 2px;
   width: 2px;
   border-radius: 2px;
   background: var(--af-line);
 }
 .af-tl li:last-child::before { display: none; }
-.af-tl--done::before { background: var(--af-water) !important; }
+.af-tl--done::before { background: linear-gradient(180deg, var(--af-water), var(--af-water-deep)) !important; } /* beats the base rule above */
 
 .af-tl__dot {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -94,14 +98,15 @@ const steps = computed(() => {
   border: 2px solid var(--af-line);
   z-index: 1;
 }
-.af-tl--done .af-tl__dot { background: var(--af-water); border-color: var(--af-water); color: #fff; }
-.af-tl--now .af-tl__dot { background: var(--af-primary); border-color: var(--af-primary); box-shadow: 0 0 0 5px var(--af-primary-tint); }
+.af-tl--done .af-tl__dot { background: var(--af-water); border-color: var(--af-water); color: var(--af-on-primary); }
+.af-tl--now .af-tl__dot { background: var(--af-primary); border-color: var(--af-primary); box-shadow: 0 0 0 6px var(--af-primary-tint), 0 0 18px color-mix(in srgb, var(--af-primary) 50%, transparent); }
 .af-tl--now .af-tl__dot::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--af-on-primary); }
 .af-tl--bad .af-tl__dot { background: var(--af-danger-tint); border-color: var(--af-danger); color: var(--af-danger); }
 
-.af-tl__text { display: grid; gap: 2px; padding-top: 3px; min-width: 0; }
-.af-tl__text b { font-size: 15px; }
+.af-tl__text { display: grid; gap: 2px; padding-top: 4px; min-width: 0; }
+.af-tl__text b { font-size: 15px; font-weight: 750; }
 .af-tl__text span { font-size: 13px; color: var(--af-ink-2); font-variant-numeric: tabular-nums; }
+.af-tl--now b { color: var(--af-primary); }
 .af-tl--todo b { color: var(--af-ink-2); font-weight: 600; }
 .af-tl--bad b { color: var(--af-danger); }
 </style>

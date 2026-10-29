@@ -32,6 +32,7 @@ defineEmits(['update:modelValue'])
 .af-seg {
   display: inline-flex;
   background: var(--af-surface-2);
+  border: 1px solid var(--af-line);
   border-radius: var(--af-r-pill);
   padding: 4px;
   gap: 2px;
@@ -39,7 +40,7 @@ defineEmits(['update:modelValue'])
 .af-seg--block { display: flex; width: 100%; }
 .af-seg--block button { flex: 1; }
 .af-seg button {
-  font: 600 14px var(--af-font);
+  font: 700 14px var(--af-font);
   color: var(--af-ink-2);
   background: transparent;
   border: 0;
@@ -47,8 +48,9 @@ defineEmits(['update:modelValue'])
   min-height: 40px;
   border-radius: var(--af-r-pill);
   cursor: pointer;
-  transition: background var(--af-dur) var(--af-ease), color var(--af-dur) var(--af-ease);
+  transition: background var(--af-dur) var(--af-ease), color var(--af-dur) var(--af-ease), box-shadow var(--af-dur) var(--af-ease);
 }
-.af-seg button[aria-checked='true'] { background: var(--af-surface); color: var(--af-ink); box-shadow: var(--af-shadow-1); }
+.af-seg button:hover:not(:disabled):not([aria-checked='true']) { color: var(--af-ink); }
+.af-seg button[aria-checked='true'] { background: var(--af-primary); color: var(--af-on-primary); box-shadow: var(--af-shadow-1); }
 .af-seg button:disabled { opacity: 0.45; cursor: not-allowed; }
 </style>

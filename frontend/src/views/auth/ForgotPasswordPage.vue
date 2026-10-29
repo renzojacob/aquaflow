@@ -51,7 +51,9 @@ async function submit() {
 <style scoped>
 .af-form,
 .af-sent { display: grid; gap: var(--af-s4); }
-.af-sent p { margin: 0; line-height: 1.5; }
-.af-link { color: var(--af-primary); font-weight: 700; text-decoration: none; }
+.af-sent { padding: var(--af-s5); border-radius: var(--af-r-md); background: var(--af-surface); border: 1px solid var(--af-line); }
+.af-sent p { margin: 0; line-height: 1.55; }
+.af-link { color: var(--af-primary); font-weight: 750; text-decoration: none; }
+.af-link:hover { text-decoration: underline; }
 .af-switch { margin: 0; text-align: center; font-size: 14px; }
 </style>

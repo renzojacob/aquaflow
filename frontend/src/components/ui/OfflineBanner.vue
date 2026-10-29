@@ -51,8 +51,9 @@ const count = computed(() => {
   padding: 12px 16px;
   border-radius: var(--af-r-sm);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 650;
   flex-wrap: wrap;
+  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
 }
 .af-banner ion-icon { font-size: 20px; flex: none; }
 .af-banner--offline { background: var(--af-amber-tint); color: var(--af-amber-fg); }
@@ -60,11 +61,12 @@ const count = computed(() => {
 .af-banner--synced { background: var(--af-success-tint); color: var(--af-success); }
 .af-banner__text { flex: 1; min-width: 160px; }
 .af-banner__count {
+  font-family: var(--af-mono);
   font-variant-numeric: tabular-nums;
   background: color-mix(in srgb, currentColor 14%, transparent);
-  padding: 3px 9px;
+  padding: 4px 10px;
   border-radius: var(--af-r-pill);
-  font-size: 13px;
+  font-size: 12px;
 }
 .af-banner__spin {
   width: 16px;

@@ -15,6 +15,7 @@ import {
 } from '@ionic/vue'
 
 import AppButton from '@/components/ui/AppButton.vue'
+import CausticLayer from '@/components/ui/CausticLayer.vue'
 import MapPicker from '@/components/map/MapPicker.vue'
 import OrderTimeline from '@/components/order/OrderTimeline.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
@@ -107,7 +108,8 @@ async function doCancel(reason) {
           </header>
 
           <!-- Delivery code -->
-          <section v-if="showCode" class="codecard" aria-labelledby="code-title">
+          <section v-if="showCode" class="codecard af-deep-scope af-glow-edge" aria-labelledby="code-title">
+            <CausticLayer :strength="0.8" />
             <div>
               <h2 id="code-title" class="af-caption codecard__label">Delivery code</h2>
               <p class="codecard__help">Give this code to the rider when your water arrives. It proves you received it.</p>
@@ -169,9 +171,14 @@ async function doCancel(reason) {
 .narrow { max-width: 720px; gap: var(--af-s4); }
 .head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--af-s3); flex-wrap: wrap; }
 .head p, .head h1 { margin: 0; }
+.head h1 { margin-top: 6px; }
 .sec { margin: 0 0 var(--af-s4); }
 
+/* Delivery code: deep water, glowing digits */
 .codecard {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -179,30 +186,34 @@ async function doCancel(reason) {
   flex-wrap: wrap;
   padding: var(--af-s5);
   border-radius: var(--af-r-lg);
-  background: var(--af-navy);
-  color: #fff;
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgba(79, 224, 210, 0.18) 0%, transparent 55%),
+    linear-gradient(160deg, #0a3440 0%, #052832 45%, #02121a 100%);
+  border: 1px solid rgba(79, 224, 210, 0.18);
+  box-shadow: var(--af-shadow-3);
 }
+.codecard > :not(.af-caustic) { position: relative; z-index: 1; }
 .codecard h2, .codecard p { margin: 0; }
-.codecard__label { color: #9fd9e0; }
-.codecard__help { margin-top: 4px !important; color: #b9c8da; font-size: 14px; max-width: 34ch; }
-.codecard__code { font-size: 40px; color: #fff; line-height: 1; }
+.codecard__label { color: var(--af-primary); }
+.codecard__help { margin-top: 6px !important; color: var(--af-ink-2); font-size: 14px; line-height: 1.5; max-width: 34ch; } /* beats .codecard p reset */
+.codecard__code { font-size: 44px; color: var(--af-ink); line-height: 1; text-shadow: 0 0 24px rgba(79, 224, 210, 0.55); }
 
-.notice { margin: 0; padding: 12px 16px; border-radius: var(--af-r-sm); background: var(--af-primary-tint); color: var(--af-primary); font-weight: 600; font-size: 14px; }
-.notice--warn { background: var(--af-amber-tint); color: var(--af-amber-fg); }
+.notice { margin: 0; padding: 12px 16px; border-radius: var(--af-r-sm); background: var(--af-primary-tint); color: var(--af-primary); border: 1px solid color-mix(in srgb, var(--af-primary) 25%, transparent); font-weight: 650; font-size: 14px; line-height: 1.5; }
+.notice--warn { background: var(--af-amber-tint); color: var(--af-amber-fg); border-color: color-mix(in srgb, var(--af-amber) 35%, transparent); }
 
-.dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 10px var(--af-s5); margin: 0 0 var(--af-s4); }
-.dl dt { font-size: 14px; color: var(--af-ink-2); font-weight: 600; }
+.dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 12px var(--af-s5); margin: 0 0 var(--af-s5); }
+.dl dt { font-family: var(--af-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--af-ink-2); font-weight: 600; padding-top: 3px; }
 .dl dd { margin: 0; font-size: 15px; line-height: 1.5; font-variant-numeric: tabular-nums; }
 
 .cancel { display: grid; gap: var(--af-s2); text-align: center; }
 .cancel p { margin: 0; }
 
-.err { display: grid; gap: var(--af-s2); justify-items: start; }
-.err b { color: var(--af-danger); }
+.err { display: grid; gap: var(--af-s2); justify-items: start; border-color: color-mix(in srgb, var(--af-danger) 40%, var(--af-line)); }
+.err b { color: var(--af-danger); font-weight: 800; }
 .err p { margin: 0; color: var(--af-ink-2); }
 
 @media (max-width: 480px) {
-  .dl { grid-template-columns: 1fr; gap: 2px; }
-  .dl dd { margin-bottom: var(--af-s2); }
+  .dl { grid-template-columns: 1fr; gap: 4px; }
+  .dl dd { margin-bottom: var(--af-s3); }
 }
 </style>

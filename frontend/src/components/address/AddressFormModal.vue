@@ -167,39 +167,41 @@ async function submit() {
 
 <style scoped>
 .af-addr { display: grid; gap: var(--af-s4); padding: var(--af-s5) var(--af-s4); max-width: 640px; margin: 0 auto; }
-.af-addr__alert { margin: 0; padding: 12px 14px; border-radius: var(--af-r-sm); background: var(--af-danger-tint); color: var(--af-danger); font-weight: 600; font-size: 14px; }
+.af-addr__alert { margin: 0; padding: 12px 16px; border-radius: var(--af-r-sm); background: var(--af-danger-tint); color: var(--af-danger); border: 1px solid color-mix(in srgb, var(--af-danger) 30%, transparent); font-weight: 650; font-size: 14px; }
 .af-addr__labels { display: flex; gap: var(--af-s2); flex-wrap: wrap; }
 .af-chip {
-  min-height: 40px;
-  padding: 0 14px;
+  min-height: 44px;
+  padding: 0 16px;
   border-radius: var(--af-r-pill);
-  border: 1.5px solid var(--af-line);
+  border: 1.5px solid var(--af-line-strong);
   background: var(--af-surface);
   color: var(--af-ink);
-  font: 600 14px var(--af-font);
+  font: 700 14px var(--af-font);
   cursor: pointer;
+  transition: border-color var(--af-dur) var(--af-ease), background var(--af-dur) var(--af-ease), color var(--af-dur) var(--af-ease);
 }
+.af-chip:hover { border-color: var(--af-primary); }
 .af-chip[aria-pressed='true'] { border-color: var(--af-primary); background: var(--af-primary-tint); color: var(--af-primary); }
 
-.af-field-select { display: grid; gap: 6px; }
-.af-field-select label { font-size: 14px; font-weight: 700; }
+.af-field-select { display: grid; gap: 8px; }
+.af-field-select label { font-size: 14px; font-weight: 750; }
 .af-field-select select {
-  min-height: 48px;
-  padding: 0 12px;
-  font: 500 16px var(--af-font);
+  min-height: 52px;
+  padding: 0 14px;
+  font: 550 16px var(--af-font);
   color: var(--af-ink);
   background: var(--af-surface);
-  border: 1.5px solid var(--af-line);
+  border: 1.5px solid var(--af-line-strong);
   border-radius: var(--af-r-sm);
 }
-.af-field-select select:focus { outline: none; border-color: var(--af-primary); box-shadow: 0 0 0 3px var(--af-primary-tint); }
+.af-field-select select:focus { outline: none; border-color: var(--af-primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--af-primary) 18%, transparent); }
 
 .af-addr__map { display: grid; gap: var(--af-s2); }
 .af-addr__maphead { display: flex; justify-content: space-between; align-items: center; gap: var(--af-s2); flex-wrap: wrap; }
-.af-addr__maplabel { font-size: 14px; font-weight: 700; }
-.af-addr__dist { margin: 0; font-size: 13px; font-weight: 600; color: var(--af-success); }
+.af-addr__maplabel { font-size: 14px; font-weight: 750; }
+.af-addr__dist { margin: 0; font-size: 13px; font-weight: 650; color: var(--af-success); }
 .af-addr__dist--out { color: var(--af-danger); }
-.af-err { margin: 0; font-size: 13px; font-weight: 600; color: var(--af-danger); }
+.af-err { margin: 0; font-size: 13px; font-weight: 650; color: var(--af-danger); }
 .af-addr__footer { padding: var(--af-s3) var(--af-s4) calc(var(--af-s3) + env(safe-area-inset-bottom, 0px)); background: var(--af-surface); border-top: 1px solid var(--af-line); }
 .af-addr__footer > * { max-width: 640px; margin: 0 auto; display: flex; }
 </style>

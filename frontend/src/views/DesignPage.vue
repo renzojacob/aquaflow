@@ -25,8 +25,8 @@ const themes = [
 ]
 
 const colors = [
-  { token: '--af-navy', name: 'Navy', use: 'brand, sidebar' },
-  { token: '--af-primary', name: 'Aqua primary', use: 'actions' },
+  { token: '--af-deep', name: 'Deep water', use: 'hero cards, sidebar' },
+  { token: '--af-primary', name: 'Mint primary', use: 'actions' },
   { token: '--af-water', name: 'Water', use: 'fills, progress' },
   { token: '--af-amber', name: 'Amber', use: 'warnings only' },
   { token: '--af-bg', name: 'Ground', use: 'page background' },
@@ -36,14 +36,14 @@ const colors = [
 ]
 
 const typeScale = [
-  { cls: 'af-display', spec: 'Display 40/48 · 800', text: 'Plan Deliveries' },
-  { cls: 'af-h1', spec: 'H1 32/40 · 700', text: "Today's orders" },
-  { cls: 'af-h2', spec: 'H2 24/32 · 700', text: 'Trip T-02 · Morning' },
-  { cls: 'af-h3', spec: 'H3 20/28 · 600', text: 'Stop 2 of 6 · Santos Store' },
-  { cls: 'af-body', spec: 'Body 16/24 · 400', text: "Your order of 3 containers is being prepared. We'll notify you when the rider leaves." },
-  { cls: 'af-small', spec: 'Small 14/20', text: 'Landmark: blue gate beside the chapel, Camilmil' },
-  { cls: 'af-caption', spec: 'Caption 12/16 · 700', text: 'Containers on hand' },
-  { cls: 'af-metric', spec: 'Metric 48 · tabular', text: '1,284' },
+  { cls: 'af-display', spec: 'Display · Unbounded 40 · 700', text: 'Plan Deliveries' },
+  { cls: 'af-h1', spec: 'H1 · Unbounded 30 · 600', text: "Today's orders" },
+  { cls: 'af-h2', spec: 'H2 · Unbounded 22 · 600', text: 'Trip T-02 · Morning' },
+  { cls: 'af-h3', spec: 'H3 · Manrope 18 · 800', text: 'Stop 2 of 6 · Santos Store' },
+  { cls: 'af-body', spec: 'Body · Manrope 16 · 500', text: "Your order of 3 containers is being prepared. We'll notify you when the rider leaves." },
+  { cls: 'af-small', spec: 'Small · Manrope 14', text: 'Landmark: blue gate beside the chapel, Camilmil' },
+  { cls: 'af-caption', spec: 'Caption · Mono 11 caps', text: 'Containers on hand' },
+  { cls: 'af-metric', spec: 'Metric · Unbounded 52 · tabular', text: '1,284' },
   { cls: 'af-code af-h2', spec: 'Code · mono', text: '4827' },
 ]
 

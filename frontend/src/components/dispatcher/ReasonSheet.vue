@@ -70,20 +70,22 @@ function submit() {
 </template>
 
 <style scoped>
-.sheet { display: grid; gap: var(--af-s4); padding: var(--af-s5) var(--af-s4) var(--af-s6); max-width: 560px; margin: 0 auto; }
-.sheet header { display: grid; gap: 4px; }
+.sheet { display: grid; gap: var(--af-s4); padding: var(--af-s6) var(--af-s4) var(--af-s6); max-width: 560px; margin: 0 auto; }
+.sheet header { display: grid; gap: 6px; }
 .sheet h2, .sheet p { margin: 0; }
 .chips { display: flex; flex-wrap: wrap; gap: var(--af-s2); }
 .chip {
-  min-height: 40px;
-  padding: 0 14px;
+  min-height: 44px;
+  padding: 0 16px;
   border-radius: var(--af-r-pill);
-  border: 1.5px solid var(--af-line);
+  border: 1.5px solid var(--af-line-strong);
   background: var(--af-surface);
   color: var(--af-ink);
-  font: 600 14px var(--af-font);
+  font: 700 14px var(--af-font);
   cursor: pointer;
+  transition: border-color var(--af-dur) var(--af-ease), background var(--af-dur) var(--af-ease), color var(--af-dur) var(--af-ease);
 }
+.chip:hover { border-color: var(--af-danger); }
 .chip[aria-pressed='true'] { border-color: var(--af-danger); background: var(--af-danger-tint); color: var(--af-danger); }
 .actions { display: flex; justify-content: flex-end; gap: var(--af-s2); flex-wrap: wrap; }
 </style>

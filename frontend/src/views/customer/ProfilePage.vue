@@ -184,31 +184,34 @@ function resetDemo() {
 .stack h2 { margin: 0; }
 .row { display: flex; justify-content: space-between; align-items: center; gap: var(--af-s2); }
 
-.me { display: flex; align-items: center; gap: var(--af-s4); }
+.me { display: flex; align-items: center; gap: var(--af-s4); overflow: hidden; }
 .me__text { display: grid; gap: 2px; min-width: 0; }
-.me__text h1 { margin: 0 0 4px; }
+.me__text h1 { margin: 0 0 6px; }
 .me__text p { margin: 0; color: var(--af-ink-2); font-size: 14px; overflow-wrap: anywhere; }
 .avatar {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   flex: none;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--af-navy);
-  color: #fff;
-  font-size: 22px;
-  font-weight: 800;
+  background: linear-gradient(140deg, #4fe0d2 0%, #1aa6b5 100%);
+  color: #022320;
+  font-family: var(--af-display);
+  font-size: 24px;
+  font-weight: 700;
+  box-shadow: 0 0 0 4px var(--af-surface), 0 0 0 5px color-mix(in srgb, var(--af-primary) 40%, transparent), 0 10px 28px rgba(26, 166, 181, 0.3);
 }
 
-.addr { display: grid; gap: var(--af-s3); padding: var(--af-s4); }
-.addr__text { display: grid; gap: 2px; }
+.addr { display: grid; gap: var(--af-s3); padding: var(--af-s4) var(--af-s5); }
+.addr__text { display: grid; gap: 4px; }
+.addr__text b { font-size: 16px; font-weight: 800; }
 .addr__text span, .addr__text i { font-size: 14px; color: var(--af-ink-2); }
 .addr__title { display: flex; align-items: center; gap: var(--af-s2); }
-.badge { padding: 2px 8px; border-radius: var(--af-r-pill); background: var(--af-primary-tint); color: var(--af-primary) !important; font-size: 12px !important; font-weight: 700; }
+.badge { padding: 3px 9px; border-radius: var(--af-r-pill); background: var(--af-primary-tint); color: var(--af-primary) !important; font-family: var(--af-mono); font-size: 10px !important; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; } /* beats .addr__text span */
 .addr__actions { display: flex; gap: var(--af-s2); flex-wrap: wrap; }
 
-.err { display: grid; gap: var(--af-s2); justify-items: start; }
-.err b { color: var(--af-danger); }
+.err { display: grid; gap: var(--af-s2); justify-items: start; border-color: color-mix(in srgb, var(--af-danger) 40%, var(--af-line)); }
+.err b { color: var(--af-danger); font-weight: 800; }
 .err p { margin: 0; color: var(--af-ink-2); }
 </style>

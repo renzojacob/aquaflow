@@ -63,27 +63,29 @@ function logout() {
 <style scoped>
 .narrow { max-width: 720px; gap: var(--af-s4); }
 .me { display: flex; align-items: center; gap: var(--af-s3); }
+.me b { font-size: 16px; font-weight: 800; }
 .me p { margin: 2px 0 0; }
-.avatar { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--af-navy); color: #fff; font-weight: 800; flex: none; }
+.avatar { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(140deg, #4fe0d2 0%, #1aa6b5 100%); color: #022320; font-family: var(--af-display); font-weight: 700; flex: none; }
 .menu { padding: var(--af-s2); display: grid; }
 .menu__item {
   display: grid;
-  grid-template-columns: 24px 1fr 20px;
+  grid-template-columns: 36px 1fr 20px;
   align-items: center;
   gap: var(--af-s3);
-  min-height: 52px;
+  min-height: 56px;
   padding: 0 var(--af-s3);
   border: 0;
   border-radius: var(--af-r-sm);
   background: transparent;
   color: var(--af-ink);
-  font: 600 15px var(--af-font);
+  font: 700 15px var(--af-font);
   text-align: left;
   cursor: pointer;
+  transition: background var(--af-dur) var(--af-ease);
 }
 .menu__item:hover { background: var(--af-surface-2); }
-.menu__item ion-icon { font-size: 20px; color: var(--af-primary); }
-.menu__chev { color: var(--af-ink-2) !important; font-size: 16px !important; }
+.menu__item ion-icon:first-child { width: 20px; height: 20px; padding: 8px; border-radius: 12px; background: var(--af-primary-tint); color: var(--af-primary); }
+.menu__chev { color: var(--af-ink-2); font-size: 16px; }
 .stack { display: grid; gap: var(--af-s3); }
 .stack h2 { margin: 0; }
 </style>

@@ -40,27 +40,28 @@ function change(step) {
 .af-step__btn {
   width: 56px;
   height: 56px;
-  border-radius: var(--af-r-md);
-  border: 1.5px solid var(--af-line);
+  border-radius: 50%;
+  border: 1.5px solid var(--af-line-strong);
   background: var(--af-surface);
   color: var(--af-primary);
   display: grid;
   place-items: center;
   font-size: 24px;
   cursor: pointer;
-  transition: background var(--af-dur) var(--af-ease), transform 120ms var(--af-ease);
+  transition: background var(--af-dur) var(--af-ease), border-color var(--af-dur) var(--af-ease), transform var(--af-dur-1) var(--af-ease);
 }
-.af-step__btn:hover:not(:disabled) { background: var(--af-primary-tint); }
-.af-step__btn:active:not(:disabled) { transform: scale(0.95); }
-.af-step__btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.af-step__btn:hover:not(:disabled) { background: var(--af-primary-tint); border-color: var(--af-primary); }
+.af-step__btn:active:not(:disabled) { transform: scale(0.92); }
+.af-step__btn:disabled { opacity: 0.35; cursor: not-allowed; }
 .af-step__value {
-  min-width: 72px;
+  min-width: 84px;
   text-align: center;
-  font-size: 40px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-family: var(--af-display);
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
-.af-step__value small { display: block; margin-top: 4px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: var(--af-ink-2); text-transform: uppercase; }
+.af-step__value small { display: block; margin-top: 8px; font-family: var(--af-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.14em; color: var(--af-ink-2); text-transform: uppercase; }
 </style>

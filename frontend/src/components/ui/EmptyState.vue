@@ -5,6 +5,7 @@
 -->
 <script setup>
 import AppButton from './AppButton.vue'
+import LiquidFill from './LiquidFill.vue'
 
 defineProps({
   title: { type: String, required: true },
@@ -17,12 +18,12 @@ defineEmits(['action'])
 <template>
   <div class="af-empty">
     <slot name="icon">
-      <!-- 5-gallon container, partly filled -->
-      <svg width="56" height="56" viewBox="0 0 56 56" fill="none" aria-hidden="true">
-        <rect x="14" y="10" width="28" height="38" rx="8" fill="var(--af-primary-tint)" />
-        <rect x="21" y="5" width="14" height="7" rx="3" fill="var(--af-water)" />
-        <path d="M14 32c5-3 9 3 14 0s9-3 14 0v8a8 8 0 0 1-8 8H22a8 8 0 0 1-8-8v-8Z" fill="var(--af-water)" />
-      </svg>
+      <!-- An almost-empty 5-gallon container with ripples on the floor -->
+      <span class="af-empty__art" aria-hidden="true">
+        <span class="af-empty__ring"></span>
+        <span class="af-empty__ring af-empty__ring--2"></span>
+        <LiquidFill shape="jug" :level="0.14" :size="78" />
+      </span>
     </slot>
     <h3>{{ title }}</h3>
     <p v-if="message">{{ message }}</p>
@@ -38,6 +39,27 @@ defineEmits(['action'])
   gap: var(--af-s2);
   padding: var(--af-s6) var(--af-s4);
 }
-.af-empty h3 { margin: var(--af-s2) 0 0; font-size: 17px; font-weight: 700; }
-.af-empty p { margin: 0 0 var(--af-s3); color: var(--af-ink-2); font-size: 14px; max-width: 34ch; }
+.af-empty h3 { margin: var(--af-s3) 0 0; font-family: var(--af-display); font-size: 18px; font-weight: 600; letter-spacing: -0.015em; }
+.af-empty p { margin: 0 0 var(--af-s3); color: var(--af-ink-2); font-size: 14px; line-height: 1.5; max-width: 34ch; }
+
+.af-empty__art { position: relative; display: grid; place-items: center; width: 140px; height: 124px; }
+.af-empty__art :deep(svg) { position: relative; z-index: 1; filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.2)); animation: af-empty-bob 6s ease-in-out infinite; }
+.af-empty__ring {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 130px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--af-water) 60%, transparent);
+  transform: translateX(-50%) scale(0.4);
+  opacity: 0;
+  animation: af-ripple 3.6s var(--af-ease-out) infinite;
+}
+.af-empty__ring--2 { animation-delay: 1.8s; }
+@keyframes af-ripple {
+  0% { transform: translateX(-50%) scale(0.4); opacity: 0.8; }
+  100% { transform: translateX(-50%) scale(1.15); opacity: 0; }
+}
+@keyframes af-empty-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 </style>

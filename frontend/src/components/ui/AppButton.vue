@@ -29,33 +29,79 @@ const props = defineProps({
 
 <style scoped>
 .af-btn {
-  font: 700 15px/1 var(--af-font);
-  border-radius: var(--af-r-sm);
+  position: relative;
+  font: 750 15px/1 var(--af-font);
+  letter-spacing: 0.005em;
+  border-radius: var(--af-r-pill);
   border: 1px solid transparent;
   min-height: 48px;
-  padding: 0 20px;
+  padding: 0 22px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   cursor: pointer;
   white-space: nowrap;
-  transition: background var(--af-dur) var(--af-ease), transform 120ms var(--af-ease),
-    box-shadow var(--af-dur) var(--af-ease);
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--af-dur) var(--af-ease), color var(--af-dur) var(--af-ease),
+    border-color var(--af-dur) var(--af-ease), box-shadow var(--af-dur) var(--af-ease),
+    transform var(--af-dur-1) var(--af-ease);
 }
-.af-btn:active:not(:disabled) { transform: scale(0.98); }
-.af-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.af-btn:active:not(:disabled) { transform: scale(0.97); }
+.af-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+.af-btn :deep(ion-icon) { font-size: 18px; }
 
-.af-btn--primary { background: var(--af-primary); color: var(--af-on-primary); box-shadow: var(--af-shadow-1); }
-.af-btn--primary:hover:not(:disabled) { background: var(--af-primary-hover); }
-.af-btn--secondary { background: var(--af-surface); color: var(--af-ink); border-color: var(--af-line); }
-.af-btn--secondary:hover:not(:disabled) { background: var(--af-surface-2); }
-.af-btn--ghost { background: transparent; color: var(--af-primary); }
+/* Primary: liquid mint gradient with a light sweep on hover */
+.af-btn--primary {
+  --g1: #9bf6ec;
+  --g2: #4fe0d2;
+  --g3: #22b8c8;
+  overflow: hidden;
+  isolation: isolate;
+  background: linear-gradient(135deg, var(--g1) 0%, var(--g2) 45%, var(--g3) 100%);
+  color: var(--af-on-primary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -2px 0 rgba(0, 0, 0, 0.12), var(--af-glow);
+}
+:root:not([data-theme='dark']) .af-btn--primary { --g1: #00796f; --g2: #007067; --g3: #005a62; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -2px 0 rgba(0, 0, 0, 0.18), var(--af-glow); }
+.af-btn--primary::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -60%;
+  width: 45%;
+  z-index: -1;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: skewX(-20deg) translateX(0);
+  transition: transform 700ms var(--af-ease-out);
+}
+.af-btn--primary:hover:not(:disabled)::after { transform: skewX(-20deg) translateX(420%); }
+.af-btn--primary:hover:not(:disabled) { filter: brightness(1.05); }
+.af-btn--primary .af-btn__spin, .af-btn--primary :slotted(*) { position: relative; }
+/* Small buttons repeat in lists: keep them calm, no glow */
+.af-btn--sm.af-btn--primary { box-shadow: var(--af-shadow-1); }
+
+/* Secondary: frosted glass */
+.af-btn--secondary {
+  background: var(--af-surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 0 var(--af-glass-edge);
+  color: var(--af-ink);
+  border-color: var(--af-line-strong);
+}
+.af-btn--secondary:hover:not(:disabled) { background: var(--af-surface-2); border-color: var(--af-primary); }
+
+/* Ghost: text button with a soft hover */
+.af-btn--ghost { background: transparent; color: var(--af-primary); padding: 0 14px; }
 .af-btn--ghost:hover:not(:disabled) { background: var(--af-primary-tint); }
-.af-btn--danger { background: var(--af-danger-tint); color: var(--af-danger); }
 
-.af-btn--sm { min-height: 44px; padding: 0 14px; font-size: 14px; border-radius: 10px; }
-.af-btn--lg { min-height: 56px; padding: 0 28px; font-size: 16px; border-radius: var(--af-r-md); }
+/* Danger: tinted, never loud */
+.af-btn--danger { background: var(--af-danger-tint); color: var(--af-danger); border-color: color-mix(in srgb, var(--af-danger) 30%, transparent); }
+.af-btn--danger:hover:not(:disabled) { border-color: var(--af-danger); }
+
+.af-btn--sm { min-height: 44px; padding: 0 16px; font-size: 14px; }
+.af-btn--lg { min-height: 56px; padding: 0 30px; font-size: 16px; }
 .af-btn--block { width: 100%; }
 
 .af-btn__spin {

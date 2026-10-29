@@ -1,10 +1,16 @@
 <script setup>
 import { IonApp, IonRouterOutlet } from '@ionic/vue'
+import OceanBackdrop from '@/components/ui/OceanBackdrop.vue'
 </script>
 
 <template>
   <ion-app>
+    <!-- The living ocean behind every screen (pages are see-through glass) -->
+    <OceanBackdrop class="af-app-ocean" />
     <ion-router-outlet />
-    <div class="m-4 rounded-xl bg-brand-600 p-4 text-white">Tailwind works</div>
   </ion-app>
 </template>
+
+<style>
+.af-app-ocean { position: fixed !important; } /* overrides the component's absolute default */
+</style>

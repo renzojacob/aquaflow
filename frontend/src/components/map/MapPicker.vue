@@ -33,7 +33,7 @@ const CALAPAN = { lat: 13.4108, lng: 121.1792 }
 // Pins drawn with HTML instead of image files (avoids Leaflet's broken-icon problem with Vite)
 const pinIcon = L.divIcon({
   className: 'af-map-pin',
-  html: '<svg width="34" height="44" viewBox="0 0 34 44" aria-hidden="true"><path d="M17 1C8.2 1 1 8 1 16.7 1 28.5 17 43 17 43s16-14.5 16-26.3C33 8 25.8 1 17 1Z" fill="#0A7684" stroke="#fff" stroke-width="2"/><path d="M17 8.5c3.2 4 5.6 7.1 5.6 10a5.6 5.6 0 1 1-11.2 0c0-2.9 2.4-6 5.6-10Z" fill="#fff"/></svg>',
+  html: '<svg width="34" height="44" viewBox="0 0 34 44" aria-hidden="true"><path d="M17 1C8.2 1 1 8 1 16.7 1 28.5 17 43 17 43s16-14.5 16-26.3C33 8 25.8 1 17 1Z" fill="#02121A" stroke="#4FE0D2" stroke-width="2"/><path d="M17 8.5c3.2 4 5.6 7.1 5.6 10a5.6 5.6 0 1 1-11.2 0c0-2.9 2.4-6 5.6-10Z" fill="#4FE0D2"/></svg>',
   iconSize: [34, 44],
   iconAnchor: [17, 43],
 })
@@ -85,10 +85,10 @@ onMounted(() => {
     if (props.radiusKm > 0) {
       L.circle([props.station.lat, props.station.lng], {
         radius: props.radiusKm * 1000,
-        color: '#22B8C8',
+        color: '#1AA6B5',
         weight: 1.5,
         dashArray: '6 6',
-        fillColor: '#22B8C8',
+        fillColor: '#4FE0D2',
         fillOpacity: 0.06,
         interactive: false,
       }).addTo(map)
@@ -139,7 +139,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.af-map-wrap { position: relative; border-radius: var(--af-r-md); overflow: hidden; border: 1px solid var(--af-line); }
+.af-map-wrap { position: relative; border-radius: var(--af-r-md); overflow: hidden; border: 1px solid var(--af-line); box-shadow: var(--af-shadow-1); isolation: isolate; }
 .af-map { position: absolute; inset: 0; background: var(--af-surface-2); }
 .af-map__hint {
   position: absolute;
@@ -148,25 +148,28 @@ onBeforeUnmount(() => {
   transform: translateX(-50%);
   z-index: 500;
   margin: 0;
-  padding: 8px 14px;
+  padding: 10px 16px;
   border-radius: var(--af-r-pill);
-  background: var(--af-navy);
-  color: #fff;
+  background: rgba(2, 18, 26, 0.88);
+  color: #e6f4f6;
+  border: 1px solid rgba(79, 224, 210, 0.3);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 750;
   pointer-events: none;
   white-space: nowrap;
+  backdrop-filter: blur(8px);
 }
-:deep(.af-map-pin) { background: none; border: 0; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.3)); }
+:deep(.af-map-pin) { background: none; border: 0; filter: drop-shadow(0 4px 8px rgba(2, 18, 26, 0.45)) drop-shadow(0 0 6px rgba(79, 224, 210, 0.45)); }
 :deep(.af-map-station) {
   display: grid;
   place-items: center;
-  border-radius: 9px;
-  background: #0f2a4a;
-  color: #fff;
-  font: 800 11px var(--af-font);
-  border: 2px solid #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  background: #02121a;
+  color: #4fe0d2;
+  font: 700 10px var(--af-display);
+  border: 2px solid #4fe0d2;
+  box-shadow: 0 0 0 4px rgba(79, 224, 210, 0.2), 0 4px 10px rgba(0, 0, 0, 0.35);
 }
 :deep(.leaflet-container) { font-family: var(--af-font); }
+:deep(.leaflet-control-zoom a) { color: #02121a; }
 </style>

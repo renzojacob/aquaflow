@@ -78,40 +78,47 @@ const inputType = computed(() => (props.type === 'password' && showPassword.valu
 </template>
 
 <style scoped>
-.af-field { display: grid; gap: 6px; min-width: 0; }
-.af-field__label { font-size: 14px; font-weight: 700; color: var(--af-ink); }
+.af-field { display: grid; gap: 8px; min-width: 0; }
+.af-field__label { font-size: 14px; font-weight: 750; color: var(--af-ink); }
 .af-field__opt { font-weight: 500; color: var(--af-ink-2); }
 .af-field__box { position: relative; display: flex; }
 .af-field__input {
   width: 100%;
-  min-height: 48px;
-  padding: 12px 14px;
-  font: 500 16px/1.4 var(--af-font); /* 16px stops iPhone/Android from zooming in */
+  min-height: 52px;
+  padding: 13px 16px;
+  font: 550 16px/1.4 var(--af-font); /* 16px stops iPhone/Android from zooming in */
   color: var(--af-ink);
   background: var(--af-surface);
-  border: 1.5px solid var(--af-line);
+  border: 1.5px solid var(--af-line-strong);
   border-radius: var(--af-r-sm);
-  transition: border-color var(--af-dur) var(--af-ease), box-shadow var(--af-dur) var(--af-ease);
+  transition: border-color var(--af-dur) var(--af-ease), box-shadow var(--af-dur) var(--af-ease), background var(--af-dur) var(--af-ease);
 }
-.af-field__input--area { resize: vertical; min-height: 88px; }
-.af-field__input::placeholder { color: color-mix(in srgb, var(--af-ink-2) 70%, transparent); }
-.af-field__input:focus { outline: none; border-color: var(--af-primary); box-shadow: 0 0 0 3px var(--af-primary-tint); }
+.af-field__input--area { resize: vertical; min-height: 96px; }
+.af-field__input::placeholder { color: color-mix(in srgb, var(--af-ink-2) 75%, transparent); }
+.af-field__input:hover { border-color: color-mix(in srgb, var(--af-primary) 45%, var(--af-line-strong)); }
+.af-field__input:focus {
+  outline: none;
+  border-color: var(--af-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--af-primary) 18%, transparent);
+}
 .af-field--error .af-field__input { border-color: var(--af-danger); }
+.af-field--error .af-field__input:focus { box-shadow: 0 0 0 4px color-mix(in srgb, var(--af-danger) 18%, transparent); }
+.af-field__input:has(+ .af-field__toggle) { padding-right: 76px; }
 .af-field__toggle {
   position: absolute;
   right: 6px;
   top: 50%;
   transform: translateY(-50%);
-  min-height: 36px;
-  padding: 0 12px;
+  min-height: 40px;
+  padding: 0 14px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--af-r-pill);
   background: transparent;
   color: var(--af-primary);
-  font: 700 13px var(--af-font);
+  font: 750 13px var(--af-font);
   cursor: pointer;
 }
 .af-field__toggle:hover { background: var(--af-primary-tint); }
-.af-field__help { margin: 0; font-size: 13px; color: var(--af-ink-2); }
-.af-field__help--error { color: var(--af-danger); font-weight: 600; }
+.af-field__help { margin: 0; font-size: 13px; line-height: 1.45; color: var(--af-ink-2); }
+.af-field__help--error { color: var(--af-danger); font-weight: 650; }
 </style>

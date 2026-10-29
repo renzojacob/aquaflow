@@ -39,28 +39,32 @@ const toneIcon = computed(
 </template>
 
 <style scoped>
-.af-stat { display: grid; gap: var(--af-s2); align-content: start; }
+.af-stat { display: grid; gap: var(--af-s3); align-content: start; overflow: hidden; }
 .af-stat__big {
+  font-family: var(--af-display);
   font-size: 40px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
+  font-weight: 700;
+  letter-spacing: -0.04em;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 .af-stat__big small {
-  font-size: 16px;
-  font-weight: 600;
+  font-family: var(--af-font);
+  font-size: 14px;
+  font-weight: 700;
   color: var(--af-ink-2);
   letter-spacing: 0;
-  margin-left: 6px;
+  margin-left: 8px;
 }
-.af-stat__delta { font-size: 13px; font-weight: 600; color: var(--af-ink-2); display: flex; align-items: center; gap: 6px; }
-.af-stat__delta ion-icon { font-size: 16px; }
+.af-stat__delta { font-size: 13px; font-weight: 650; color: var(--af-ink-2); display: flex; align-items: center; gap: 6px; }
+.af-stat__delta ion-icon { font-size: 16px; flex: none; }
 .af-stat__delta--up { color: var(--af-success); }
 .af-stat__delta--down { color: var(--af-danger); }
 .af-stat__delta--warn { color: var(--af-amber-fg); }
+.af-stat:has(.af-stat__delta--warn) { border-color: color-mix(in srgb, var(--af-amber) 45%, var(--af-line)); }
 
 @media (max-width: 560px) {
   .af-stat__big { font-size: 34px; }
+  .af-stat__big small { display: block; margin: 6px 0 0; }
 }
 </style>

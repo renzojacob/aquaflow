@@ -29,8 +29,17 @@ defineProps({
 <style scoped>
 .af-ph { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--af-s4); flex-wrap: wrap; }
 .af-ph__text { min-width: 0; }
-.af-ph__crumb { font-size: 13px; color: var(--af-ink-2); font-weight: 600; }
-.af-ph__title { margin: 4px 0 0; font-size: 28px; line-height: 36px; font-weight: 800; letter-spacing: -0.02em; text-wrap: balance; }
-.af-ph__sub { margin: 4px 0 0; color: var(--af-ink-2); font-size: 14px; font-variant-numeric: tabular-nums; }
+.af-ph__crumb { font-family: var(--af-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--af-ink-2); }
+.af-ph__title {
+  margin: 8px 0 0;
+  font-family: var(--af-display);
+  font-size: 30px;
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+.af-ph__sub { margin: 8px 0 0; color: var(--af-ink-2); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .af-ph__actions { display: flex; gap: var(--af-s2); flex-wrap: wrap; }
+@media (max-width: 560px) { .af-ph__title { font-size: 25px; } }
 </style>

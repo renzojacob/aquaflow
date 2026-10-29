@@ -5,17 +5,12 @@
 
 /* AquaFlow brand colors, usable as bg-brand-600, text-brand-700, etc. */
 @theme {
-  --color-brand-50: #eff8ff;
-  --color-brand-100: #dbeefe;
-  --color-brand-500: #0ea5e9;
-  --color-brand-600: #0284c7;
-  --color-brand-700: #0369a1;
+  /* matched to the Deep Ocean design */
+  --color-brand-50: #e6faf8;
+  --color-brand-100: #c4f3ee;
+  --color-brand-500: #4fe0d2;
+  --color-brand-600: #007067;
+  --color-brand-700: #005a62;
 }
 
-/* Make Ionic's primary color match the brand */
-:root {
-  --ion-color-primary: #0284c7;
-  --ion-color-primary-rgb: 2, 132, 199;
-  --ion-color-primary-shade: #0369a1;
-  --ion-color-primary-tint: #0ea5e9;
-}
+/* Ionic's colors come from theme/variables.css (the AquaFlow design tokens). */

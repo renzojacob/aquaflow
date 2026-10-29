@@ -77,8 +77,20 @@ async function submit() {
 
 <style scoped>
 .af-form { display: grid; gap: var(--af-s4); }
-.af-form__alert { margin: 0; padding: 12px 14px; border-radius: var(--af-r-sm); background: var(--af-danger-tint); color: var(--af-danger); font-weight: 600; font-size: 14px; }
-.af-link { color: var(--af-primary); font-weight: 700; text-decoration: none; }
+.af-form__alert {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: var(--af-r-sm);
+  background: var(--af-danger-tint);
+  color: var(--af-danger);
+  border: 1px solid color-mix(in srgb, var(--af-danger) 30%, transparent);
+  font-weight: 650;
+  font-size: 14px;
+  line-height: 1.45;
+  animation: af-shake 360ms var(--af-ease);
+}
+@keyframes af-shake { 20%, 60% { transform: translateX(-4px); } 40%, 80% { transform: translateX(4px); } }
+.af-link { color: var(--af-primary); font-weight: 750; font-size: 14px; text-decoration: none; background: none; border: 0; padding: 4px 0; cursor: pointer; font-family: var(--af-font); text-underline-offset: 3px; }
 .af-link:hover { text-decoration: underline; }
 .af-switch { margin: 0; text-align: center; color: var(--af-ink-2); font-size: 14px; }
 </style>
