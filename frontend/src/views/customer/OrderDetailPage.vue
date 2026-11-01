@@ -18,6 +18,8 @@ import AppButton from '@/components/ui/AppButton.vue'
 import CausticLayer from '@/components/ui/CausticLayer.vue'
 import MapPicker from '@/components/map/MapPicker.vue'
 import OrderTimeline from '@/components/order/OrderTimeline.vue'
+import RiderCard from '@/components/order/RiderCard.vue'
+import StatusTracker from '@/components/order/StatusTracker.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
 import StatusPill from '@/components/ui/StatusPill.vue'
 import { CUSTOMER_CANCELLABLE, isActive } from '@/constants/orderStatus'
@@ -98,6 +100,15 @@ async function doCancel(reason) {
         </div>
 
         <template v-else-if="order">
+          <!-- Tracking hero: map + horizontal status tracker, the Foodpanda-style "where's my order" view -->
+          <section v-if="active" class="af-card track" aria-labelledby="track-title">
+            <h2 id="track-title" class="af-sr-only">Order tracking</h2>
+            <MapPicker :model-value="order.address" readonly height="190px" :zoom="15" />
+            <StatusTracker :order="order" />
+          </section>
+
+          <RiderCard v-if="order.status === 'out_for_delivery' && order.trip" :trip="order.trip" class="rider" />
+
           <!-- Summary -->
           <header class="head">
             <div>
@@ -117,17 +128,13 @@ async function doCancel(reason) {
             <p class="codecard__code af-code" :aria-label="`Delivery code ${order.delivery_code.split('').join(' ')}`">{{ order.delivery_code }}</p>
           </section>
 
-          <p v-if="order.status === 'out_for_delivery' && order.trip" class="notice">
-            {{ order.trip.rider_name }} (trip {{ order.trip.code }}) is
-            {{ order.trip.stops_before === 0 ? 'heading to you now.' : `${order.trip.stops_before} stop${order.trip.stops_before > 1 ? 's' : ''} away.` }}
-          </p>
           <p v-if="order.status === 'failed_delivery' && active" class="notice notice--warn">
             We couldn't deliver on this try. The station will send it on the next trip. Need help? Call the station.
           </p>
 
-          <!-- Timeline -->
+          <!-- History -->
           <section class="af-card" aria-labelledby="tl-title">
-            <h2 id="tl-title" class="af-h3 sec">Progress</h2>
+            <h2 id="tl-title" class="af-h3 sec">History</h2>
             <OrderTimeline :order="order" />
           </section>
 
@@ -154,7 +161,7 @@ async function doCancel(reason) {
               <dt>Total</dt>
               <dd><b>{{ peso(order.total) }}</b> · cash on delivery</dd>
             </dl>
-            <MapPicker :model-value="order.address" readonly height="200px" :zoom="16" />
+            <MapPicker v-if="!active" :model-value="order.address" readonly height="200px" :zoom="16" />
           </section>
 
           <div v-if="canCancel" class="cancel">
@@ -169,6 +176,9 @@ async function doCancel(reason) {
 
 <style scoped>
 .narrow { max-width: 720px; gap: var(--af-s4); }
+.track { display: grid; gap: var(--af-s5); padding: var(--af-s4); }
+.track :deep(.af-map-wrap) { border-radius: var(--af-r-md); }
+.rider { animation: af-rise var(--af-dur-3) var(--af-ease-out) 40ms both; }
 .head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--af-s3); flex-wrap: wrap; }
 .head p, .head h1 { margin: 0; }
 .head h1 { margin-top: 6px; }

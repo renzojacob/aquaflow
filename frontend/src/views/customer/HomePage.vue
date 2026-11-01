@@ -17,6 +17,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import CausticLayer from '@/components/ui/CausticLayer.vue'
 import LiquidFill from '@/components/ui/LiquidFill.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
+import PromoBanner from '@/components/ui/PromoBanner.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
 import StatusPill from '@/components/ui/StatusPill.vue'
 import { ORDER_FLOW, ORDER_STATUS } from '@/constants/orderStatus'
@@ -80,6 +81,8 @@ function reorder() {
           <p class="af-caption">{{ today }}</p>
           <h1 class="af-h1">{{ greeting() }}, <span class="hello__name">{{ firstName }}</span></h1>
         </header>
+
+        <PromoBanner />
 
         <!-- Loading -->
         <div v-if="loading" class="af-card"><SkeletonList :rows="3" /></div>
