@@ -8,6 +8,7 @@ import { env } from '@/config/env'
 import { DISPATCHER_NEXT, MAX_ATTEMPTS, RESERVING_STATUSES } from '@/constants/orderStatus'
 import { clone, currentUser, db, mockDelay, mockError, saveDb } from '@/mocks/db'
 import { dateISO, toISODate } from '@/utils/format'
+import { refillsOf } from '@/constants/cart'
 import { toStaffOrder } from './adapters'
 import { http } from './http'
 
@@ -33,8 +34,8 @@ function stockNumbers() {
   const data = db()
   const reserved = data.orders
     .filter((o) => RESERVING_STATUSES.includes(o.status))
-    .reduce((sum, o) => sum + o.quantity, 0)
-  const onRoad = data.orders.filter((o) => o.status === 'out_for_delivery').reduce((s, o) => s + o.quantity, 0)
+    .reduce((sum, o) => sum + refillsOf(o), 0)
+  const onRoad = data.orders.filter((o) => o.status === 'out_for_delivery').reduce((s, o) => s + refillsOf(o), 0)
   const withCustomers = data.users.filter((u) => u.role === 'customer').reduce((s, u) => s + (u.containers_held ?? 0), 0)
   const ready = data.inventory.filled_ready
   return {
@@ -45,8 +46,23 @@ function stockNumbers() {
     on_road: onRoad,
     with_customers: withCustomers,
     owned_total: ready + data.inventory.empty_at_station + onRoad + withCustomers,
+    product: { id: 'p_refill', name: '5-gallon refill' },
+    others: otherStock(),
   }
 }
+
+/** Stock of everything except the main refill: on hand minus what confirmed orders hold. */
+function otherStock() {
+  const data = db()
+  const onHand = data.inventory.others ?? {}
+  return (data.settings.products ?? []).filter((p) => p.id !== 'p_refill').map((p) => {
+    const reserved = data.orders
+      .filter((o) => RESERVING_STATUSES.includes(o.status))
+      .reduce((s, o) => s + (o.items ?? []).filter((l) => l.product_id === p.id).reduce((n, l) => n + l.quantity, 0), 0)
+    return { id: p.id, name: p.name, kind: p.kind, is_active: p.is_active, available: (onHand[p.id] ?? 0) - reserved, reserved }
+  })
+}
+const otherLines = (o) => (o.items ?? []).filter((l) => l.product_id !== 'p_refill')
 
 // ---------- orders ----------
 
@@ -115,13 +131,17 @@ export async function runOrderAction(id, action, reason = '', extra = {}) {
       throw mockError('validation', 422, action === 'fail' ? 'Say why it could not be delivered.' : 'Give a reason. The customer will see it.')
     }
     if (action === 'confirm' || action === 'replan') {
-      const { available } = stockNumbers()
-      if (available < order.quantity) {
+      const { available, others } = stockNumbers()
+      if (available < refillsOf(order)) {
         throw mockError(
           'conflict',
           409,
-          `Not enough ready stock: ${available} available, this order needs ${order.quantity}. Fill more containers on the Stock screen first.`,
+          `Not enough ready stock: ${available} available, this order needs ${refillsOf(order)}. Fill more containers on the Stock screen first.`,
         )
+      }
+      for (const l of otherLines(order)) {
+        const o = others.find((x) => x.id === l.product_id)
+        if (!o || o.available < l.quantity) throw mockError('conflict', 409, `Not enough ${l.name} in stock for this order.`)
       }
     }
 
@@ -130,18 +150,22 @@ export async function runOrderAction(id, action, reason = '', extra = {}) {
       const rider = extra.rider_id ? data.users.find((u) => u.id === extra.rider_id && u.role === 'rider') : null
       order.rider = rider ? { id: rider.id, name: rider.full_name, phone: rider.phone } : null
       order.trip = null
-      data.inventory.filled_ready -= order.quantity // loaded onto the tricycle
+      data.inventory.filled_ready -= refillsOf(order) // loaded onto the tricycle
+      for (const l of otherLines(order)) data.inventory.others[l.product_id] -= l.quantity
       order.attempts = (order.attempts ?? 0) + 1
       note = rider ? `Sent out with ${rider.full_name}` : 'Sent out'
     }
     if (action === 'deliver') {
       const empties = Number.isInteger(extra.empties_collected) ? extra.empties_collected : order.empties_to_return
       const customer = data.users.find((u) => u.id === order.customer_id)
-      if (customer) customer.containers_held = (customer.containers_held ?? 0) + order.quantity - empties
+      if (customer) customer.containers_held = (customer.containers_held ?? 0) + refillsOf(order) - empties
       data.inventory.empty_at_station += empties
       note = 'Delivered'
     }
-    if (action === 'fail') data.inventory.filled_ready += order.quantity // came back unsold
+    if (action === 'fail') {
+      data.inventory.filled_ready += refillsOf(order) // came back unsold
+      for (const l of otherLines(order)) data.inventory.others[l.product_id] += l.quantity
+    }
     if (action === 'replan') note = 'Re-planned for the next trip'
 
     const next = NEXT_STATUS[action]
@@ -193,6 +217,26 @@ export async function getStock() {
  * @param {{ type: 'refill' | 'correction' | 'receive', quantity: number, reason: string }} payload
  */
 export async function adjustStock(payload) {
+  if (env.useMock && payload.product_id && payload.product_id !== 'p_refill') {
+    await mockDelay(400)
+    const me = requireStaff()
+    const inv = db().inventory
+    const p = db().settings.products.find((x) => x.id === payload.product_id)
+    const qty = Number(payload.quantity)
+    if (!Number.isInteger(qty) || qty < 0) throw mockError('validation', 422, 'Enter a whole number.')
+    const row = otherStock().find((x) => x.id === payload.product_id)
+    if (payload.type === 'add') {
+      if (qty < 1) throw mockError('validation', 422, `Enter how many ${p.name} arrived.`)
+      inv.others[p.id] = (inv.others[p.id] ?? 0) + qty
+    } else {
+      if (payload.reason.trim().length < 3) throw mockError('validation', 422, 'Say why the count changed.')
+      if (qty < row.reserved) throw mockError('validation', 422, `${row.reserved} are already promised to orders.`)
+      inv.others[p.id] = qty
+    }
+    db().stock_log.push({ at: new Date().toISOString(), type: payload.type === 'add' ? 'receive' : 'correction', delta: payload.type === 'add' ? qty : qty - (row.available + row.reserved), reason: payload.reason.trim() || `${p.name} added`, by: me.full_name })
+    saveDb()
+    return getStock()
+  }
   if (env.useMock) {
     await mockDelay(450)
     const me = requireStaff()
@@ -275,7 +319,7 @@ function mockSummary(days) {
     d.orders += 1
     if (o.status === 'delivered') {
       d.delivered += 1
-      d.containers += o.quantity
+      d.containers += refillsOf(o)
       d.revenue += o.total
     }
   }
@@ -286,7 +330,7 @@ function mockSummary(days) {
   for (const o of window.filter((x) => !['rejected', 'cancelled'].includes(x.status))) {
     const b = (brgy[o.address.barangay] ??= { name: o.address.barangay, orders: 0, containers: 0 })
     b.orders += 1
-    b.containers += o.quantity
+    b.containers += refillsOf(o)
   }
   const delivered = window.filter((o) => o.status === 'delivered')
   const start = list[0].date
@@ -305,7 +349,7 @@ function mockSummary(days) {
       failed: window.filter((o) => o.status === 'failed_delivery').length,
       cancelled: window.filter((o) => ['cancelled', 'rejected'].includes(o.status)).length,
       revenue: delivered.reduce((s, o) => s + o.total, 0),
-      containers: delivered.reduce((s, o) => s + o.quantity, 0),
+      containers: delivered.reduce((s, o) => s + refillsOf(o), 0),
     },
     customers: customers.length,
     new_customers: customers.filter((u) => (u.joined ?? '0000') >= start).length,

@@ -68,8 +68,10 @@ def stop_row(order, sequence=None, leg_m=None, eta=None):
         "sequence": sequence,
         "customer": {"name": c.get_full_name() or c.username, "phone": c.phone},
         "quantity": order.quantity,
+        "containers": order.containers,
+        "items": [{"name": i.product.name, "kind": i.product.kind, "quantity": i.quantity} for i in order.items.all()],
         "expected_empties": order.expected_empties,
-        "total": float(order.unit_price * order.quantity),
+        "total": float(order.total),
         "notes": order.notes,
         "period": order.period,
         "delivery_date": order.delivery_date.isoformat(),
@@ -107,7 +109,7 @@ class TodayView(APIView):
         today = timezone.localdate()
         attempts = (
             DeliveryAttempt.objects.filter(rider=request.user, server_time__date=today)
-            .select_related("order__customer", "order__address")
+            .select_related("order__customer", "order__address").prefetch_related("order__items__product")
             .order_by("-server_time")
         )
         done = []
@@ -132,7 +134,7 @@ class TodayView(APIView):
                 "on_board": sum(s["quantity"] for s in stops),
                 "collected": sum(d["total"] for d in delivered),
                 "delivered": len(delivered),
-                "containers": sum(d["quantity"] for d in delivered),
+                "containers": sum(d["containers"] for d in delivered),
                 "empties": sum(d["empties_collected"] for d in delivered),
                 "failed": len(done) - len(delivered),
                 "minutes_left": minutes,

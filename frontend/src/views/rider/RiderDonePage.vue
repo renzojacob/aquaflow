@@ -81,7 +81,7 @@ const done = computed(() => data.value?.done ?? [])
                   <b>{{ d.customer.name }} <span class="row__code">{{ d.code }}</span></b>
                   <span>{{ d.address.street }}, {{ d.address.barangay }}</span>
                   <span v-if="d.outcome === 'delivered'" class="row__meta">
-                    {{ containers(d.quantity) }}, {{ d.empties_collected }} empties back
+                    {{ d.items.map((l) => `${l.quantity} ${l.name}`).join(', ') }}, {{ d.empties_collected }} empties back
                     <template v-if="d.code_ok"> · <ion-icon :icon="shieldCheckmarkOutline" aria-hidden="true" /> code checked</template>
                   </span>
                   <span v-else class="row__meta">{{ d.failure }}</span>

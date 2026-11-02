@@ -21,6 +21,7 @@ import EmptyState from '@/components/ui/EmptyState.vue'
 import OrderListItem from '@/components/order/OrderListItem.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
 import { isActive } from '@/constants/orderStatus'
+import { refillsOf, reorderQuery } from '@/constants/cart'
 import { listAllOrders } from '@/services/customerService'
 import { containers, peso } from '@/utils/format'
 import { orderStats } from '@/utils/orderStats'
@@ -84,12 +85,12 @@ const groups = computed(() => {
   }
   return [...map.values()].map((g) => {
     const done = g.orders.filter((o) => o.status === 'delivered')
-    return { ...g, spent: done.reduce((s, o) => s + o.total, 0), qty: done.reduce((s, o) => s + o.quantity, 0) }
+    return { ...g, spent: done.reduce((s, o) => s + o.total, 0), qty: done.reduce((s, o) => s + refillsOf(o), 0) }
   })
 })
 
 const go = (path) => ionRouter.push(path)
-const again = (o) => go(`/customer/order?qty=${o.quantity}&address=${o.address.id}`)
+const again = (o) => go(`/customer/order?${reorderQuery(o)}`)
 </script>
 
 <template>

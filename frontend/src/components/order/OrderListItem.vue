@@ -9,7 +9,8 @@ import { chevronForward, refreshOutline } from 'ionicons/icons'
 import LiquidFill from '@/components/ui/LiquidFill.vue'
 import StatusPill from '@/components/ui/StatusPill.vue'
 import { ORDER_FLOW } from '@/constants/orderStatus'
-import { PERIODS, containers, friendlyDay, peso } from '@/utils/format'
+import { cartShort, refillsOf } from '@/constants/cart'
+import { PERIODS, friendlyDay, peso } from '@/utils/format'
 
 const props = defineProps({
   order: { type: Object, required: true },
@@ -30,21 +31,21 @@ const tone = computed(() => (['cancelled', 'rejected'].includes(props.order.stat
 <template>
   <div class="oi" :class="{ 'oi--muted': ['cancelled', 'rejected'].includes(order.status) }">
     <button type="button" class="oi__main" @click="$emit('open', order)">
-      <LiquidFill class="oi__orb" shape="orb" :size="52" :level="level" :tone="tone" :text="order.quantity" :still="!['out_for_delivery'].includes(order.status)" />
+      <LiquidFill class="oi__orb" shape="orb" :size="52" :level="level" :tone="tone" :text="refillsOf(order) || order.quantity" :still="!['out_for_delivery'].includes(order.status)" />
       <span class="oi__text">
         <span class="oi__top">
           <b>{{ order.code }}</b>
           <StatusPill :status="order.status" />
         </span>
         <span class="oi__meta">{{ friendlyDay(order.delivery_date) }}, {{ PERIODS[order.period].label.toLowerCase() }} to {{ order.address.label }}</span>
-        <span class="oi__meta">{{ containers(order.quantity) }}<template v-if="order.address.barangay">, {{ order.address.barangay }}</template></span>
+        <span class="oi__meta">{{ cartShort(order) }}<template v-if="order.address.barangay">, {{ order.address.barangay }}</template></span>
       </span>
       <span class="oi__end">
         <span class="oi__total" :class="{ 'af-money': order.status === 'delivered' }">{{ peso(order.total) }}</span>
         <ion-icon :icon="chevronForward" aria-hidden="true" />
       </span>
     </button>
-    <button v-if="canReorder" type="button" class="oi__again" :aria-label="`Order ${containers(order.quantity)} again, like ${order.code}`" @click="$emit('again', order)">
+    <button v-if="canReorder" type="button" class="oi__again" :aria-label="`Order ${cartShort(order)} again, like ${order.code}`" @click="$emit('again', order)">
       <ion-icon :icon="refreshOutline" aria-hidden="true" /> Order again
     </button>
   </div>

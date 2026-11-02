@@ -62,6 +62,23 @@ async function save(form, payload, done) {
   }
 }
 const saveRefill = () => save(refill, { type: 'refill', quantity: refill.quantity, reason: refill.reason }, `${containers(refill.quantity)} added to ready stock`)
+// Other products: type how many arrived, press Add
+const otherAdd = reactive({})
+const otherBusy = ref('')
+async function addOther(o) {
+  const qty = Number(otherAdd[o.id])
+  if (!(qty > 0)) return showToast(`Type how many ${o.name} arrived.`, 'danger')
+  otherBusy.value = o.id
+  try {
+    stock.value = await adjustStock({ product_id: o.id, type: 'add', quantity: qty, reason: '' })
+    showToast(`${qty} ${o.name} added`, 'success')
+    otherAdd[o.id] = null
+  } catch (e) {
+    showToast(e.message, 'danger')
+  } finally {
+    otherBusy.value = ''
+  }
+}
 const saveReceive = () => save(receive, { type: 'receive', quantity: receive.quantity, reason: receive.reason }, `${containers(receive.quantity)} received`)
 function saveCount() {
   count.error = ''
@@ -187,6 +204,25 @@ const LOG = {
             <p class="af-small loop"><ion-icon :icon="businessOutline" aria-hidden="true" /> Containers go around: filled at the station, delivered, kept by customers, then handed back as empties to be filled again.</p>
           </section>
 
+          <!-- Everything else the station sells -->
+          <section v-if="stock.others?.length" class="af-panel" aria-labelledby="oth-title">
+            <SectionHead title="Other products" sub="New containers, bottles, ice and other extras" />
+            <ul class="oth">
+              <li v-for="o in stock.others" :key="o.id" class="oth__row" :class="{ 'is-off': !o.is_active, 'is-low': o.is_active && o.available <= 3 }">
+                <span class="oth__text">
+                  <b>{{ o.name }}</b>
+                  <span>{{ o.available }} free<template v-if="o.reserved">, {{ o.reserved }} promised</template><template v-if="!o.is_active"> · hidden from customers</template></span>
+                </span>
+                <span class="oth__n">{{ o.available }}</span>
+                <form class="oth__form" novalidate @submit.prevent="addOther(o)">
+                  <label class="af-sr-only" :for="`add-${o.id}`">How many {{ o.name }} arrived</label>
+                  <input :id="`add-${o.id}`" v-model.number="otherAdd[o.id]" type="number" min="1" inputmode="numeric" placeholder="+ qty" />
+                  <AppButton type="submit" size="sm" variant="secondary" :loading="otherBusy === o.id">Add</AppButton>
+                </form>
+              </li>
+            </ul>
+          </section>
+
           <!-- History -->
           <section class="af-panel" aria-labelledby="hist-title">
             <SectionHead title="Stock history" :sub="stock.log.length ? `Last ${stock.log.length} changes` : ''" />
@@ -240,6 +276,23 @@ const LOG = {
 .loop ion-icon { flex: none; font-size: 18px; margin-top: 1px; }
 
 /* ---------- history ---------- */
+.oth { list-style: none; margin: 0; padding: 0; display: grid; }
+.oth__row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 14px; align-items: center; padding: 12px 2px; border-bottom: 1px solid var(--af-line); }
+.oth__row:last-child { border-bottom: 0; }
+.oth__row.is-off { opacity: 0.55; }
+.oth__text { display: grid; gap: 2px; min-width: 0; }
+.oth__text b { font-size: 15px; font-weight: 800; }
+.oth__text span { font-size: 13px; color: var(--af-ink-2); font-weight: 550; }
+.oth__row.is-low .oth__text span { color: var(--af-amber-fg); font-weight: 700; }
+.oth__n { font-family: var(--af-display); font-size: 24px; font-weight: 650; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.oth__form { display: flex; gap: 6px; align-items: center; }
+.oth__form input { width: 84px; min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--af-line-strong); background: var(--af-surface-2); color: var(--af-ink); font: 650 14px var(--af-font); }
+.oth__form input:focus { outline: none; border-color: var(--af-primary); }
+@media (max-width: 520px) {
+  .oth__row { grid-template-columns: minmax(0, 1fr) auto; }
+  .oth__form { grid-column: 1 / -1; }
+  .oth__form input { flex: 1; }
+}
 .log { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .log li { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 6px; border-bottom: 1px solid var(--af-line); }
 .log li:last-child { border-bottom: 0; }

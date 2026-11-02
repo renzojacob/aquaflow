@@ -209,10 +209,13 @@ async function confirmFail() {
               <h2 id="next-title" class="next__name">{{ next.customer.name }}</h2>
               <p class="next__addr">{{ next.address.street }}, {{ next.address.barangay }}<i v-if="next.address.landmark"> · {{ next.address.landmark }}</i></p>
               <dl class="next__facts">
-                <div><dt><ion-icon :icon="cubeOutline" aria-hidden="true" /> Bring</dt><dd>{{ next.quantity }}</dd></div>
+                <div><dt><ion-icon :icon="cubeOutline" aria-hidden="true" /> Refills</dt><dd>{{ next.containers }}</dd></div>
                 <div><dt>Empties back</dt><dd>{{ next.expected_empties }}</dd></div>
                 <div class="money"><dt><ion-icon :icon="cashOutline" aria-hidden="true" /> Collect</dt><dd>{{ peso(next.total) }}</dd></div>
               </dl>
+              <ul class="next__load" aria-label="What to bring">
+                <li v-for="l in next.items" :key="l.name"><b>{{ l.quantity }} ×</b> {{ l.name }}</li>
+              </ul>
               <p v-if="next.notes" class="next__note"><ion-icon :icon="chatboxEllipsesOutline" aria-hidden="true" /> “{{ next.notes }}”</p>
               <div class="next__btns">
                 <a class="nbtn" :href="mapsUrl(next)" target="_blank" rel="noopener"><ion-icon :icon="navigateOutline" aria-hidden="true" /> Navigate</a>
@@ -240,7 +243,7 @@ async function confirmFail() {
                 <span class="stop__text">
                   <b>{{ s.customer.name }}</b>
                   <span>{{ s.address.street }}, {{ s.address.barangay }}</span>
-                  <span class="stop__meta">{{ containers(s.quantity) }}, collect {{ peso(s.total) }}, {{ PERIODS[s.period].label.toLowerCase() }}</span>
+                  <span class="stop__meta">{{ s.items.map((l) => `${l.quantity} ${l.name}`).join(', ') }}, collect {{ peso(s.total) }}, {{ PERIODS[s.period].label.toLowerCase() }}</span>
                 </span>
                 <span class="stop__eta">~{{ duration(s.eta_minutes) }}</span>
                 <span class="stop__btns">
@@ -259,7 +262,7 @@ async function confirmFail() {
           <form v-if="dsheet.order" class="sheet" novalidate @submit.prevent="confirmDeliver">
             <header>
               <h2 class="af-h2">Deliver {{ dsheet.order.code }}</h2>
-              <p class="af-small">{{ dsheet.order.customer.name }}: {{ containers(dsheet.order.quantity) }}. Collect <b class="af-money">{{ peso(dsheet.order.total) }}</b> in cash.</p>
+              <p class="af-small">{{ dsheet.order.customer.name }}: {{ dsheet.order.items.map((l) => `${l.quantity} × ${l.name}`).join(', ') }}. Collect <b class="af-money">{{ peso(dsheet.order.total) }}</b> in cash.</p>
             </header>
             <template v-if="!dsheet.noCode">
               <TextField v-model="dsheet.code" label="Customer's delivery code" inputmode="numeric" autocomplete="one-time-code" placeholder="The digits in their app" required :error="dsheet.error" />
@@ -330,6 +333,9 @@ async function confirmFail() {
 .next__facts dd { margin: 0; font-family: var(--af-display); font-size: 22px; font-weight: 650; letter-spacing: -0.03em; }
 .next__facts .money { background: var(--af-sun-tint); }
 .next__facts .money dd { color: var(--af-sun); }
+.next__load { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.next__load li { padding: 6px 12px; border-radius: 999px; background: var(--af-surface-2); font-size: 13.5px; font-weight: 650; }
+.next__load b { font-weight: 800; }
 .next__note { margin: 0; display: flex; gap: 8px; padding: 10px 12px; border-radius: 14px; background: var(--af-amber-tint); font-size: 14px; line-height: 1.45; }
 .next__note ion-icon { flex: none; color: var(--af-amber-fg); margin-top: 2px; }
 .next__btns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }

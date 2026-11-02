@@ -3,9 +3,21 @@ from django.db import models
 
 
 class Product(models.Model):
+    class Kind(models.TextChoices):
+        REFILL = "refill"        # we bring a filled station container and take an empty back
+        CONTAINER = "container"  # the customer buys a new container and keeps it
+        ITEM = "item"            # anything else sold: small bottles, ice, caps and seals
+
     name = models.CharField(max_length=100)          # e.g. "5-gallon refill"
     price = models.DecimalField(max_digits=8, decimal_places=2)
     is_active = models.BooleanField(default=True)
+    kind = models.CharField(max_length=10, choices=Kind.choices, default=Kind.REFILL)
+    description = models.CharField(max_length=160, blank=True)
+    max_per_order = models.PositiveSmallIntegerField(default=20)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
 
     def __str__(self):
         return self.name

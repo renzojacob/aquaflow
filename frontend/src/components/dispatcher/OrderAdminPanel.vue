@@ -15,6 +15,7 @@ import RiderCard from '@/components/order/RiderCard.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
 import StatusPill from '@/components/ui/StatusPill.vue'
 import { DISPATCHER_NEXT, MAX_ATTEMPTS, riderOf } from '@/constants/orderStatus'
+import { linesOf, refillsOf } from '@/constants/cart'
 import { showToast } from '@/composables/useToast'
 import { getOrderForStaff, runOrderAction } from '@/services/dispatcherService'
 import { PERIODS, containers, dateTimeOf, friendlyDay, peso } from '@/utils/format'
@@ -141,11 +142,18 @@ function onAction(a) {
 
       <!-- Key facts -->
       <dl class="facts">
-        <div><dt>Containers</dt><dd class="big">{{ order.quantity }}</dd></div>
+        <div><dt>Refills</dt><dd class="big">{{ refillsOf(order) }}</dd></div>
         <div><dt>Empties back</dt><dd class="big">{{ order.empties_to_return }}</dd></div>
         <div><dt>When</dt><dd>{{ friendlyDay(order.delivery_date) }}<br />{{ PERIODS[order.period].label }}</dd></div>
         <div class="money"><dt>Collect</dt><dd class="big af-money">{{ peso(order.total) }}</dd></div>
       </dl>
+
+      <section class="block">
+        <h3 class="sub">What to load</h3>
+        <ul class="load">
+          <li v-for="l in linesOf(order)" :key="l.product_id ?? l.name"><b>{{ l.quantity }} ×</b> {{ l.name }}<span>{{ peso(l.line_total) }}</span></li>
+        </ul>
+      </section>
 
       <section class="block">
         <h3 class="sub">Deliver to</h3>
@@ -162,7 +170,7 @@ function onAction(a) {
         <OrderTimeline :order="order" staff />
       </section>
 
-      <p class="af-small foot">{{ containers(order.quantity) }} · attempt {{ Math.max(order.attempts, 1) }} of {{ MAX_ATTEMPTS }}</p>
+      <p class="af-small foot">{{ containers(refillsOf(order)) }} to swap · attempt {{ Math.max(order.attempts, 1) }} of {{ MAX_ATTEMPTS }}</p>
     </template>
 
     <ReasonSheet
@@ -226,6 +234,10 @@ function onAction(a) {
 .facts dd.big { font-family: var(--af-display); font-size: 30px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
 
 .block { display: grid; gap: var(--af-s3); }
+.load { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.load li { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: baseline; padding: 10px 12px; border-radius: 12px; background: var(--af-surface-2); font-size: 14.5px; }
+.load b { font-weight: 800; font-variant-numeric: tabular-nums; }
+.load span { color: var(--af-ink-2); font-weight: 650; font-variant-numeric: tabular-nums; }
 .block h3 { margin: 0; }
 .addr { margin: 0; line-height: 1.55; }
 .note { margin: 0; padding: 12px 16px; border: 1px solid color-mix(in srgb, var(--af-amber) 40%, transparent); background: var(--af-amber-tint); color: var(--af-ink); border-radius: var(--af-r-sm); font-size: 14px; line-height: 1.5; }

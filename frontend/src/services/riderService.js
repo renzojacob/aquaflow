@@ -4,6 +4,7 @@
 import { env } from '@/config/env'
 import { clone, currentUser, db, mockDelay, mockError, saveDb } from '@/mocks/db'
 import { distanceKm } from '@/utils/geo'
+import { linesOf, refillsOf } from '@/constants/cart'
 import { http } from './http'
 
 const API = '/api/v1/rider'
@@ -60,6 +61,8 @@ function row(o, extra = {}) {
     status: o.status,
     customer: { name: c?.full_name ?? 'Customer', phone: c?.phone ?? '' },
     quantity: o.quantity,
+    containers: refillsOf(o),
+    items: linesOf(o).map((l) => ({ name: l.name, kind: l.kind, quantity: l.quantity })),
     expected_empties: o.empties_to_return,
     total: o.total,
     notes: o.notes,
@@ -99,7 +102,7 @@ export async function getToday() {
         on_board: stops.reduce((s, x) => s + x.quantity, 0),
         collected: delivered.reduce((s, x) => s + x.total, 0),
         delivered: delivered.length,
-        containers: delivered.reduce((s, x) => s + x.quantity, 0),
+        containers: delivered.reduce((s, x) => s + x.containers, 0),
         empties: delivered.reduce((s, x) => s + x.empties_collected, 0),
         failed: done.length - delivered.length,
         minutes_left: minutes,
@@ -148,7 +151,7 @@ export async function deliver(id, payload) {
     o.status = 'delivered'
     o.history.push({ status: 'delivered', at: new Date().toISOString(), by: me.full_name, note: payload.no_code ? 'Delivered (customer had no code)' : 'Delivered, code checked' })
     const c = db().users.find((u) => u.id === o.customer_id)
-    if (c) c.containers_held = (c.containers_held ?? 0) + o.quantity - payload.empties_collected
+    if (c) c.containers_held = (c.containers_held ?? 0) + refillsOf(o) - payload.empties_collected
     db().inventory.empty_at_station += payload.empties_collected
     ;(db().rider_attempts ??= []).push({ rider_id: me.id, order_id: o.id, outcome: 'delivered', at: new Date().toISOString(), empties: payload.empties_collected, code_ok: !payload.no_code, flagged })
     saveDb()
@@ -169,7 +172,8 @@ export async function fail(id, payload) {
     const note = `${FAIL_TEXT[payload.failure_reason]}${payload.note ? `: ${payload.note}` : ''}`
     o.status = 'failed_delivery'
     o.history.push({ status: 'failed_delivery', at: new Date().toISOString(), by: me.full_name, note })
-    db().inventory.filled_ready += o.quantity
+    db().inventory.filled_ready += refillsOf(o)
+    for (const l of linesOf(o).filter((x) => x.product_id && x.product_id !== 'p_refill')) db().inventory.others[l.product_id] += l.quantity
     ;(db().rider_attempts ??= []).push({ rider_id: me.id, order_id: o.id, outcome: 'failed', at: new Date().toISOString(), empties: 0, failure: FAIL_TEXT[payload.failure_reason] })
     saveDb()
     return { status: 'failed' }

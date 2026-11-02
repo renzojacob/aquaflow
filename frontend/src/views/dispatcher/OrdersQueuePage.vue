@@ -32,6 +32,7 @@ import QueueRow from '@/components/dispatcher/QueueRow.vue'
 import SegmentedControl from '@/components/form/SegmentedControl.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
 import { MAX_ATTEMPTS } from '@/constants/orderStatus'
+import { refillsOf } from '@/constants/cart'
 import { useMediaQuery } from '@/composables/useMediaQuery'
 import { showToast } from '@/composables/useToast'
 import { getStock, getSummary, listQueue, listRiders, runOrderAction } from '@/services/dispatcherService'
@@ -88,7 +89,7 @@ const visible = computed(() => {
 })
 
 const toPrepare = computed(() =>
-  orders.value.filter((o) => ['confirmed', 'preparing'].includes(o.status)).reduce((s, o) => s + o.quantity, 0),
+  orders.value.filter((o) => ['confirmed', 'preparing'].includes(o.status)).reduce((s, o) => s + refillsOf(o), 0),
 )
 
 async function load() {
@@ -146,7 +147,7 @@ async function quickConfirm(order) {
 const live = computed(() => orders.value.filter((o) => !['rejected', 'cancelled'].includes(o.status)))
 const finished = computed(() => live.value.filter((o) => o.status === 'delivered' || (o.status === 'failed_delivery' && o.attempts >= MAX_ATTEMPTS)))
 const doneShare = computed(() => (live.value.length ? finished.value.length / live.value.length : 0))
-const qtyOf = (list) => list.reduce((s, o) => s + o.quantity, 0)
+const qtyOf = (list) => list.reduce((s, o) => s + refillsOf(o), 0)
 const onRoad = computed(() => orders.value.filter((o) => o.status === 'out_for_delivery'))
 const collected = computed(() => orders.value.filter((o) => o.status === 'delivered').reduce((s, o) => s + o.total, 0))
 const toCollect = computed(() => onRoad.value.reduce((s, o) => s + o.total, 0))

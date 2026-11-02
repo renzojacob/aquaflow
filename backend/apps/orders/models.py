@@ -35,8 +35,11 @@ class Order(models.Model):
     landmark = models.CharField(max_length=255, blank=True, editable=False)
     unit_price = models.DecimalField(max_digits=8, decimal_places=2, editable=False)
 
+    # The main product (the first refill in the cart). Every product is listed in .items
     product = models.ForeignKey("inventory.Product", on_delete=models.PROTECT)
-    quantity = models.PositiveSmallIntegerField()
+    quantity = models.PositiveSmallIntegerField()                      # all units in the cart
+    containers = models.PositiveSmallIntegerField(default=0)           # refills only: station containers swapped
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=0)  # sum of the lines
     expected_empties = models.PositiveSmallIntegerField(default=0)
     delivery_date = models.DateField()
     period = models.CharField(max_length=10, choices=Period.choices)
@@ -74,12 +77,33 @@ class Order(models.Model):
             self.lat, self.lng = a.lat, a.lng
             self.address_text, self.landmark = a.address_text, a.landmark
             self.unit_price = self.product.price
+            if not self.total:
+                self.total = self.unit_price * self.quantity
             self.confirmation_code = f"{secrets.randbelow(10**6):06d}"
             self.code_salt = secrets.token_hex(8)
         super().save(*args, **kwargs)
 
     def __str__(self):
         return f"#{self.pk} {self.customer.username} {self.delivery_date} {self.period} ({self.status})"
+
+
+class OrderItem(models.Model):
+    """One line of the cart: a product, how many, and the price when the order was placed."""
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
+    product = models.ForeignKey("inventory.Product", on_delete=models.PROTECT, related_name="order_items")
+    quantity = models.PositiveSmallIntegerField()
+    unit_price = models.DecimalField(max_digits=8, decimal_places=2)
+
+    class Meta:
+        ordering = ["id"]
+        constraints = [models.CheckConstraint(condition=Q(quantity__gte=1), name="order_item_quantity_at_least_1")]
+
+    @property
+    def line_total(self):
+        return self.unit_price * self.quantity
+
+    def __str__(self):
+        return f"{self.quantity} x {self.product.name}"
 
 
 class OrderStatusHistory(models.Model):

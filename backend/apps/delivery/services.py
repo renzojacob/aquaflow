@@ -7,7 +7,7 @@ from apps.customers.services import record_containers
 from apps.dispatch.models import Trip, TripStop
 from apps.inventory.services import apply_movement
 from apps.orders.models import Order
-from apps.orders.services import transition
+from apps.orders.services import refill_product, transition
 from apps.predictions.models import AddressPeriodStats
 from apps.station.geo import haversine_m
 from apps.station.models import SystemSetting
@@ -38,10 +38,10 @@ def record_attempt(order, rider, outcome, *, device_time, stop=None,
     # Order lifecycle, container balance, stock
     if outcome == O.DELIVERED:
         order = transition(order, Order.Status.DELIVERED, by=rider, device_time=device_time, note=note)
-        record_containers(order.customer, delivered=order.quantity,
+        record_containers(order.customer, delivered=order.containers,
                           returned=empties_collected, order=order)
         if empties_collected:
-            apply_movement(order.product, "empties_in", rider, empty=empties_collected,
+            apply_movement(refill_product(order), "empties_in", rider, empty=empties_collected,
                            order=order, trip=stop.trip if stop else None)
     else:
         order = transition(order, Order.Status.FAILED, by=rider,

@@ -2,7 +2,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from apps.orders.models import Order
-from apps.orders.services import transition
+from apps.orders.services import refill_product, transition
 from .models import Trip, TripStop
 
 S = Order.Status
@@ -73,10 +73,11 @@ def mark_delivered(order, by, empties_collected=None):
         raise ValidationError({"empties_collected": ["Enter how many empties were collected."]})
     ensure_stock_row(order.product)
     order = transition(order, S.DELIVERED, by=by, note="Delivered")
-    record_containers(order.customer, delivered=order.quantity, returned=empties,
+    record_containers(order.customer, delivered=order.containers, returned=empties,
                       note=f"Order #{order.pk}", order=order)
     if empties:
-        apply_movement(order.product, "empties_in", by, empty=empties, order=order)
+        ensure_stock_row(refill_product(order))
+        apply_movement(refill_product(order), "empties_in", by, empty=empties, order=order)
     DeliveryAttempt.objects.create(
         order=order, rider=order.assigned_rider or by, outcome=DeliveryAttempt.Outcome.DELIVERED,
         empties_collected=empties, device_time=timezone.now(),

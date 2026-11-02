@@ -17,7 +17,8 @@ import {
   onIonViewWillEnter,
   useIonRouter,
 } from '@ionic/vue'
-import { addOutline, bagHandleOutline, cashOutline, checkmarkCircle, partlySunnyOutline, sunnyOutline, timeOutline } from 'ionicons/icons'
+import { addOutline, bagHandleOutline, cashOutline, checkmarkCircle, partlySunnyOutline, removeOutline, sunnyOutline, timeOutline } from 'ionicons/icons'
+import { KIND } from '@/constants/cart'
 
 import AddressFormModal from '@/components/address/AddressFormModal.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -38,6 +39,8 @@ import {
 import { PERIODS, clockLabel, containers, dateISO, duration, friendlyDay, peso } from '@/utils/format'
 
 const route = useRoute()
+/** Owner-typed descriptions may lack a full stop; add one so the next sentence reads right. */
+const sentence = (t) => (t ? (/[.!?]$/.test(t.trim()) ? t.trim() : `${t.trim()}.`) : '')
 const ionRouter = useIonRouter()
 
 const loading = ref(true)
@@ -47,12 +50,30 @@ const addresses = ref([])
 const held = ref(0)
 
 const form = reactive({ quantity: 3, address_id: '', day: 'today', period: 'morning', empties: 0, notes: '' })
+const extras = reactive({}) // product id -> how many (everything except the main refill)
 const submitting = ref(false)
 const submitError = ref('')
 const addrOpen = ref(false)
 
 const deliveryDate = computed(() => dateISO(form.day === 'today' ? 0 : 1))
-const total = computed(() => (settings.value ? form.quantity * settings.value.price_per_container : 0))
+// ---------- the catalog and the cart ----------
+// main = the first refill (its quantity is form.quantity, in the tank). Everything else is an "extra".
+const products = computed(() => settings.value?.products ?? [])
+const main = computed(
+  () =>
+    products.value.find((p) => p.kind === 'refill') ??
+    (settings.value ? { id: null, name: '5-gallon refill', kind: 'refill', price: settings.value.price_per_container, max_per_order: settings.value.max_containers_per_order, description: '' } : null),
+)
+const others = computed(() => products.value.filter((p) => p.id !== main.value?.id))
+const cart = computed(() => {
+  const lines = []
+  if (main.value && form.quantity > 0) lines.push({ ...main.value, quantity: form.quantity })
+  for (const p of others.value) if (extras[p.id] > 0) lines.push({ ...p, quantity: extras[p.id] })
+  return lines.map((l) => ({ product_id: l.id, name: l.name, kind: l.kind, quantity: l.quantity, unit_price: l.price, line_total: l.price * l.quantity }))
+})
+const total = computed(() => cart.value.reduce((s, l) => s + l.line_total, 0))
+const units = computed(() => cart.value.reduce((s, l) => s + l.quantity, 0))
+const refills = computed(() => cart.value.filter((l) => l.kind === 'refill').reduce((s, l) => s + l.quantity, 0))
 
 const periodOptions = computed(() =>
   Object.entries(PERIODS).map(([value, p]) => ({
@@ -81,7 +102,7 @@ watch([deliveryDate, settings], () => {
 })
 
 // Can't return more empties than you have, or more than you're ordering
-const maxEmpties = computed(() => Math.min(held.value, form.quantity))
+const maxEmpties = computed(() => Math.min(held.value, refills.value))
 watch(maxEmpties, (m) => {
   if (form.empties > m) form.empties = m
 })
@@ -95,12 +116,24 @@ async function load() {
     addresses.value = a
     held.value = summary.containers_held
 
-    // Pre-fill from "Order again" (?qty=3&address=a_x)
+    // Pre-fill from "Order again": ?items=<id>:<qty>,<id>:<qty>&address=..  (or the older ?qty=3)
     const qty = Number(route.query.qty)
     if (qty >= 1 && qty <= s.max_containers_per_order) form.quantity = qty
+    if (route.query.items) {
+      const mainId = String((s.products ?? []).find((p) => p.kind === 'refill')?.id)
+      form.quantity = 0
+      for (const part of String(route.query.items).split(',')) {
+        const [id, q] = part.split(':')
+        const p = (s.products ?? []).find((x) => String(x.id) === id && x.is_active !== false)
+        if (!p || !(Number(q) > 0)) continue
+        const n = Math.min(Number(q), p.max_per_order)
+        if (String(p.id) === mainId) form.quantity = n
+        else extras[p.id] = n
+      }
+    }
     const wanted = a.find((x) => x.id === route.query.address)
     form.address_id = wanted?.id ?? a.find((x) => x.is_default)?.id ?? a[0]?.id ?? ''
-    form.empties = Math.min(held.value, form.quantity)
+    form.empties = Math.min(held.value, refills.value)
   } catch (e) {
     loadError.value = e
   } finally {
@@ -121,10 +154,15 @@ async function submit() {
     submitError.value = 'Add a delivery address first.'
     return
   }
+  if (!cart.value.length) {
+    submitError.value = 'Add at least one item to your order.'
+    return
+  }
   submitting.value = true
   try {
     const order = await createOrder({
       quantity: form.quantity,
+      items: main.value?.id != null ? cart.value.map((l) => ({ product_id: l.product_id, quantity: l.quantity })) : undefined,
       address_id: form.address_id,
       delivery_date: deliveryDate.value,
       period: form.period,
@@ -184,19 +222,50 @@ function addNote(text) {
             <p v-if="submitError" class="alert" role="alert">{{ submitError }}</p>
 
             <!-- 1. How many: the water rises as you add containers -->
-            <TankHero compact :level="form.quantity / settings.max_containers_per_order" :label="`${containers(form.quantity)} selected`" :marks="false">
+            <TankHero compact :level="form.quantity / main.max_per_order" :label="`${form.quantity} × ${main.name} selected`" :marks="false">
               <div class="prod">
                 <div class="prod__text">
-                  <h1 id="q-title" class="prod__name">5-gallon refill</h1>
-                  <p class="tank__soft">Purified drinking water in a sealed AquaFlow container.</p>
-                  <p class="prod__price"><b>{{ peso(settings.price_per_container) }}</b> <span class="tank__soft">each</span></p>
+                  <h1 id="q-title" class="prod__name">{{ main.name }}</h1>
+                  <p class="tank__soft">{{ sentence(main.description) || 'Purified drinking water in a sealed AquaFlow container.' }} We swap it for your empty.</p>
+                  <p class="prod__price"><b>{{ peso(main.price) }}</b> <span class="tank__soft">each</span></p>
                 </div>
                 <div class="prod__qty">
-                  <QuantityStepper v-model="form.quantity" :min="1" :max="settings.max_containers_per_order" label="Number of containers" unit="containers" />
-                  <span class="tank__soft prod__max">Up to {{ settings.max_containers_per_order }} per order</span>
+                  <QuantityStepper v-model="form.quantity" :min="others.length ? 0 : 1" :max="main.max_per_order" :label="`Number of ${main.name}`" unit="containers" />
+                  <span class="tank__soft prod__max">Up to {{ main.max_per_order }} per order</span>
                 </div>
               </div>
             </TankHero>
+
+            <!-- 1b. Everything else the station sells -->
+            <section v-if="others.length" class="af-panel" aria-labelledby="x-title">
+              <div class="head">
+                <h2 id="x-title" class="h">Add to your order</h2>
+                <span class="af-small">Same trip, no extra delivery fee</span>
+              </div>
+              <ul class="shop">
+                <li v-for="p in others" :key="p.id" class="shop__item" :class="{ 'is-in': extras[p.id] > 0 }">
+                  <span class="shop__icon" :class="`k-${p.kind}`" aria-hidden="true"><ion-icon :icon="KIND[p.kind]?.icon" /></span>
+                  <span class="shop__text">
+                    <b>{{ p.name }}</b>
+                    <span>{{ p.description || KIND[p.kind]?.note }}</span>
+                    <span class="shop__price af-money">{{ peso(p.price) }}</span>
+                  </span>
+                  <span class="shop__qty">
+                    <button v-if="extras[p.id] > 0" type="button" class="mini" :aria-label="`One less ${p.name}`" @click="extras[p.id]--"><ion-icon :icon="removeOutline" /></button>
+                    <output v-if="extras[p.id] > 0" class="mini__n" aria-live="polite">{{ extras[p.id] }}</output>
+                    <button
+                      type="button"
+                      class="mini mini--add"
+                      :disabled="(extras[p.id] ?? 0) >= p.max_per_order"
+                      :aria-label="`Add one ${p.name}`"
+                      @click="extras[p.id] = (extras[p.id] ?? 0) + 1"
+                    >
+                      <ion-icon :icon="addOutline" />
+                    </button>
+                  </span>
+                </li>
+              </ul>
+            </section>
 
             <!-- 2. Where -->
             <section class="af-panel" aria-labelledby="a-title">
@@ -279,7 +348,8 @@ function addNote(text) {
           <aside class="receipt af-panel" aria-labelledby="r-title">
             <h2 id="r-title" class="h">Your order</h2>
             <dl class="lines">
-              <div><dt>{{ form.quantity }} × 5-gallon refill</dt><dd>{{ peso(total) }}</dd></div>
+              <div v-for="l in cart" :key="l.product_id ?? 'main'"><dt>{{ l.quantity }} × {{ l.name }}</dt><dd>{{ peso(l.line_total) }}</dd></div>
+              <div v-if="!cart.length"><dt>Your cart is empty</dt><dd></dd></div>
               <div><dt>Delivery</dt><dd>Free</dd></div>
               <div><dt>Empties you'll hand back</dt><dd>{{ form.empties }}</dd></div>
             </dl>
@@ -315,7 +385,7 @@ function addNote(text) {
       <div class="bar">
         <span class="bar__bag" aria-hidden="true">
           <ion-icon :icon="bagHandleOutline" />
-          <span class="bar__badge">{{ form.quantity }}</span>
+          <span class="bar__badge">{{ units }}</span>
         </span>
         <div class="bar__sum">
           <b class="af-money">{{ peso(total) }}</b>
@@ -402,6 +472,23 @@ function addNote(text) {
 
 /* ---------- receipt ---------- */
 .receipt { display: none; }
+
+/* ---------- add-ons ---------- */
+.shop { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.shop__item { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 12px 12px 14px; border-radius: 18px; border: 1.5px solid var(--af-line); background: var(--af-surface-2); transition: border-color var(--af-dur) var(--af-ease), background var(--af-dur) var(--af-ease); }
+.shop__item.is-in { border-color: var(--af-primary); background: var(--af-primary-tint); }
+.shop__icon { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 14px; font-size: 21px; background: var(--af-primary-tint); color: var(--af-primary); }
+.shop__icon.k-container { background: var(--af-pearl-tint); color: var(--af-pearl); }
+.shop__icon.k-item { background: var(--af-sun-tint); color: var(--af-sun); }
+.shop__text { display: grid; gap: 1px; min-width: 0; }
+.shop__text b { font-size: 14.5px; font-weight: 800; }
+.shop__text span { font-size: 12.5px; font-weight: 600; color: var(--af-ink-2); line-height: 1.35; }
+.shop__text .shop__price { font-family: var(--af-display); font-size: 15px; font-weight: 650; color: var(--af-sun); margin-top: 2px; }
+.shop__qty { display: flex; align-items: center; gap: 6px; }
+.mini { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; border: 1.5px solid var(--af-line-strong); background: var(--af-surface); color: var(--af-primary); font-size: 19px; cursor: pointer; }
+.mini--add { background: var(--af-primary); border-color: var(--af-primary); color: var(--af-on-primary); }
+.mini:disabled { opacity: 0.35; cursor: not-allowed; }
+.mini__n { min-width: 20px; text-align: center; font-family: var(--af-display); font-size: 18px; font-weight: 650; font-variant-numeric: tabular-nums; }
 .lines { margin: 0; display: grid; gap: 10px; }
 .lines div { display: flex; justify-content: space-between; gap: 12px; font-size: 14.5px; }
 .lines dt { color: var(--af-ink-2); font-weight: 600; }

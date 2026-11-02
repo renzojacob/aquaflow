@@ -2,6 +2,7 @@
 // Everything here is computed from real orders: nothing is estimated or invented.
 import { ORDER_STATUS } from '@/constants/orderStatus'
 import { monthShort } from './format'
+import { cartShort, refillsOf } from '@/constants/cart'
 
 const sameMonth = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth()
 
@@ -26,7 +27,7 @@ export function orderStats(orders, months = 6, now = new Date()) {
       label: monthShort(d),
       sub: d.toLocaleDateString('en-PH', { month: 'long', year: 'numeric' }),
       spent: inMonth.reduce((s, o) => s + o.total, 0),
-      containers: inMonth.reduce((s, o) => s + o.quantity, 0),
+      containers: inMonth.reduce((s, o) => s + refillsOf(o), 0),
       count: inMonth.length,
     })
   }
@@ -50,19 +51,19 @@ export function orderStats(orders, months = 6, now = new Date()) {
       count: thisMonth.length,
       delivered: thisMonthDelivered.length,
       spent: thisMonthDelivered.reduce((s, o) => s + o.total, 0),
-      containers: thisMonthDelivered.reduce((s, o) => s + o.quantity, 0),
+      containers: thisMonthDelivered.reduce((s, o) => s + refillsOf(o), 0),
     },
     allTime: {
       orders: orders.length,
       delivered: delivered.length,
-      containers: delivered.reduce((s, o) => s + o.quantity, 0),
+      containers: delivered.reduce((s, o) => s + refillsOf(o), 0),
       returned: delivered.reduce((s, o) => s + (o.empties_to_return ?? 0), 0),
       spent: delivered.reduce((s, o) => s + o.total, 0),
       cancelled: orders.filter((o) => ['cancelled', 'rejected'].includes(o.status)).length,
     },
     everyDays,
     favorite,
-    usualQty: mostCommon(delivered.map((o) => o.quantity)),
+    usualQty: mostCommon(delivered.map((o) => refillsOf(o))),
   }
 }
 
@@ -100,6 +101,7 @@ export function activityFeed(orders, limit = 6) {
         text: FEED_TEXT[h.status] ?? ORDER_STATUS[h.status]?.label ?? h.status,
         note: h.note ?? '',
         quantity: o.quantity,
+        short: cartShort(o),
       })
     }
   }

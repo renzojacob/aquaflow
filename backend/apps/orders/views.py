@@ -31,7 +31,7 @@ class CustomerOrderViewSet(
         qs = (
             Order.objects.filter(customer=self.request.user)
             .select_related("product", "address", "assigned_rider")
-            .prefetch_related("history")
+            .prefetch_related("history", "items__product")
         )
         statuses = self.request.query_params.get("status")
         if statuses:

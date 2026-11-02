@@ -86,7 +86,7 @@ const routes = [
       { path: 'reports', component: () => import('@/views/owner/ReportsPage.vue') },
       { path: 'users', component: () => import('@/views/owner/UsersPage.vue') },
       placeholder('vehicles', 'Vehicles', 6, ['Tricycles and multicabs', 'Capacity in containers']),
-      placeholder('products', 'Products & prices', 6, ['Price per refill', 'Max containers per order']),
+      { path: 'products', component: () => import('@/views/owner/ProductsPage.vue') },
       placeholder('service-area', 'Service area', 6, ['Station location and delivery radius', 'Barangays served']),
       { path: 'more', component: more },
     ],

@@ -110,3 +110,78 @@ class UserDetailView(APIView):
             user.is_active = bool(request.data["is_active"])
             user.save(update_fields=["is_active"])
         return Response(user_row(user))
+
+
+# ---------------------------------------------------------------------------
+# Products & prices (what customers can put in their cart)
+# ---------------------------------------------------------------------------
+from django.db.models import Sum as _Sum
+
+from apps.inventory.models import Product, StockLevel
+from apps.orders.models import OrderItem
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ["id", "name", "kind", "price", "description", "max_per_order", "sort_order", "is_active"]
+
+    def validate_name(self, value):
+        value = " ".join(value.split())
+        if len(value) < 3:
+            raise serializers.ValidationError("Give the product a name customers understand.")
+        return value
+
+    def validate_price(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("The price must be more than zero.")
+        return value
+
+    def validate_max_per_order(self, value):
+        if not 1 <= value <= 20:
+            raise serializers.ValidationError("Between 1 and 20 per order.")
+        return value
+
+
+def product_row(p, sold=None):
+    st = StockLevel.objects.filter(product=p).first()
+    data = ProductSerializer(p).data
+    data["price"] = float(p.price)
+    data["available"] = st.filled_available if st else 0
+    data["reserved"] = st.filled_reserved if st else 0
+    data["sold"] = sold if sold is not None else (
+        OrderItem.objects.filter(product=p, order__status="delivered").aggregate(n=_Sum("quantity"))["n"] or 0
+    )
+    return data
+
+
+class ProductListView(APIView):
+    permission_classes = [IsOwner]
+
+    @extend_schema(responses=OpenApiTypes.OBJECT)
+    def get(self, request):
+        return Response([product_row(p) for p in Product.objects.order_by("sort_order", "id")])
+
+    @extend_schema(request=ProductSerializer, responses=OpenApiTypes.OBJECT)
+    def post(self, request):
+        ser = ProductSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        p = ser.save()
+        StockLevel.objects.get_or_create(product=p)
+        return Response(product_row(p, sold=0), status=201)
+
+
+class ProductDetailView(APIView):
+    permission_classes = [IsOwner]
+
+    @extend_schema(request=ProductSerializer, responses=OpenApiTypes.OBJECT)
+    def patch(self, request, pk):
+        p = get_object_or_404(Product, pk=pk)
+        ser = ProductSerializer(p, data=request.data, partial=True)
+        ser.is_valid(raise_exception=True)
+        if ser.validated_data.get("is_active") is False and p.kind == Product.Kind.REFILL:
+            others = Product.objects.filter(kind=Product.Kind.REFILL, is_active=True).exclude(pk=p.pk)
+            if not others.exists():
+                raise serializers.ValidationError({"is_active": ["Keep at least one refill on sale, or customers can't order water."]})
+        ser.save()
+        return Response(product_row(p))

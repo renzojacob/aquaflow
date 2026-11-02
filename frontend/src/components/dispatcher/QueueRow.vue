@@ -1,5 +1,6 @@
 <!-- One order in the dispatcher's queue. Pending orders get a quick Confirm button. -->
 <script setup>
+import { cartShort, refillsOf } from '@/constants/cart'
 import AppButton from '@/components/ui/AppButton.vue'
 import LiquidFill from '@/components/ui/LiquidFill.vue'
 import StatusPill from '@/components/ui/StatusPill.vue'
@@ -16,14 +17,14 @@ defineEmits(['open', 'quick-confirm'])
 <template>
   <div class="row af-spot" :class="{ 'row--sel': selected }">
     <button type="button" class="row__main" :aria-current="selected ? 'true' : undefined" @click="$emit('open', order)">
-      <LiquidFill class="row__qty" shape="orb" :size="48" :level="Math.min(order.quantity / 10, 1)" :text="order.quantity" />
+      <LiquidFill class="row__qty" shape="orb" :size="48" :level="Math.min(refillsOf(order) / 10, 1)" :text="refillsOf(order) || order.quantity" />
       <span class="row__text">
         <span class="row__top">
           <b>{{ order.customer.name }}</b>
           <span class="row__code">{{ order.code }}</span>
         </span>
         <span class="row__meta">
-          {{ order.quantity }} × 5 gal · {{ order.address.barangay }} · {{ PERIODS[order.period].label }}
+          {{ cartShort(order) }} · {{ order.address.barangay }} · {{ PERIODS[order.period].label }}
         </span>
         <span class="row__meta">Placed {{ timeOf(order.created_at) }}<template v-if="order.notes"> · has note</template></span>
       </span>

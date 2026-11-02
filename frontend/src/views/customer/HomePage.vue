@@ -46,6 +46,7 @@ import StatusPill from '@/components/ui/StatusPill.vue'
 import StatusTracker from '@/components/order/StatusTracker.vue'
 import TankHero from '@/components/dash/TankHero.vue'
 import { ORDER_FLOW, isActive, riderOf } from '@/constants/orderStatus'
+import { cartShort, refillsOf, reorderQuery } from '@/constants/cart'
 import { useCountUp } from '@/composables/useCountUp'
 import { getCustomerSummary, getOrderSettings, listAddresses, listAllOrders, periodOpen, trackOrder } from '@/services/customerService'
 import { useAuthStore } from '@/stores/auth'
@@ -144,7 +145,7 @@ const showCode = computed(() => hero.value && hero.value.status !== 'pending')
 // ---------- numbers ----------
 const stats = computed(() => orderStats(orders.value))
 const feed = computed(() =>
-  activityFeed(orders.value, 6).map((e) => ({ ...e, lead: e.text, strong: e.code, tail: `· ${containers(e.quantity)}`, to: true })),
+  activityFeed(orders.value, 6).map((e) => ({ ...e, lead: e.text, strong: e.code, tail: `· ${e.short}`, to: true })),
 )
 const spentShown = useCountUp(() => stats.value.thisMonth.spent)
 const lastDelivered = computed(() => summary.value?.last_delivered ?? null)
@@ -177,7 +178,7 @@ const nextWindow = computed(() => {
 const go = (path) => ionRouter.push(path)
 function reorder() {
   const o = lastDelivered.value
-  go(`/customer/order?qty=${o.quantity}&address=${o.address.id}`)
+  go(`/customer/order?${reorderQuery(o)}`)
 }
 </script>
 
@@ -222,7 +223,7 @@ function reorder() {
                   <template v-else>{{ eta.stops_before ? `${eta.stops_before} stop${eta.stops_before > 1 ? 's' : ''} before you. ` : '' }}About {{ duration(eta.eta_minutes) }} away</template>
                 </p>
                 <p v-if="hero" class="t-sub tank__soft">
-                  {{ containers(hero.quantity) }} for {{ friendlyDay(hero.delivery_date).toLowerCase() }}, {{ PERIODS[hero.period].label.toLowerCase() }}
+                  {{ cartShort(hero) }} for {{ friendlyDay(hero.delivery_date).toLowerCase() }}, {{ PERIODS[hero.period].label.toLowerCase() }}
                   ({{ PERIODS[hero.period].hours }}) to {{ hero.address.label }}
                 </p>
                 <p v-else class="t-sub tank__soft">
@@ -258,7 +259,7 @@ function reorder() {
                 v-if="lastDelivered"
                 :icon="refreshOutline"
                 title="Order the same"
-                :detail="`${containers(lastDelivered.quantity)} to ${lastDelivered.address.label}, ${peso(lastDelivered.total)}`"
+                :detail="`${cartShort(lastDelivered)} to ${lastDelivered.address.label}, ${peso(lastDelivered.total)}`"
                 tone="sun"
                 @click="reorder"
               />
@@ -276,7 +277,7 @@ function reorder() {
           <!-- Other orders in progress -->
           <section v-if="others.length" class="others" aria-label="Other orders in progress">
             <button v-for="o in others" :key="o.id" type="button" class="other" @click="go(`/customer/orders/${o.id}`)">
-              <LiquidFill shape="orb" :size="40" :level="(step(o) + 1) / ORDER_FLOW.length" :text="o.quantity" />
+              <LiquidFill shape="orb" :size="40" :level="(step(o) + 1) / ORDER_FLOW.length" :text="refillsOf(o) || o.quantity" />
               <span><b>{{ o.code }}</b> {{ friendlyDay(o.delivery_date) }}, {{ PERIODS[o.period].label }}</span>
               <StatusPill :status="o.status" />
             </button>

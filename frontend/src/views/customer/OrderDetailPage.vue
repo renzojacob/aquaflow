@@ -33,6 +33,7 @@ import StatusPill from '@/components/ui/StatusPill.vue'
 import StatusTracker from '@/components/order/StatusTracker.vue'
 import TankHero from '@/components/dash/TankHero.vue'
 import { CUSTOMER_CANCELLABLE, ORDER_FLOW, isActive, riderOf } from '@/constants/orderStatus'
+import { cartShort, linesOf, reorderQuery } from '@/constants/cart'
 import { showToast } from '@/composables/useToast'
 import { cancelOrder, getOrder, getOrderSettings, trackOrder } from '@/services/customerService'
 import { PERIODS, ago, containers, dateTimeOf, duration, friendlyDay, peso } from '@/utils/format'
@@ -156,7 +157,7 @@ async function doCancel(reason) {
   }
 }
 
-const again = () => ionRouter.push(`/customer/order?qty=${order.value.quantity}&address=${order.value.address.id}`)
+const again = () => ionRouter.push(`/customer/order?${reorderQuery(order.value)}`)
 </script>
 
 <template>
@@ -215,7 +216,7 @@ const again = () => ionRouter.push(`/customer/order?qty=${order.value.quantity}&
               </div>
               <h1 class="done__title">{{ words[0] }}</h1>
               <p v-if="order.status === 'delivered'" class="done__sub">
-                {{ containers(order.quantity) }} delivered to {{ order.address.label }}<template v-if="deliveredAt"> on {{ dateTimeOf(deliveredAt) }}</template>.
+                {{ cartShort(order) }} delivered to {{ order.address.label }}<template v-if="deliveredAt"> on {{ dateTimeOf(deliveredAt) }}</template>.
               </p>
               <p v-else-if="endReason" class="done__sub">Reason: {{ endReason }}</p>
               <div class="done__actions">
@@ -254,7 +255,7 @@ const again = () => ionRouter.push(`/customer/order?qty=${order.value.quantity}&
             <section class="af-panel b-4" aria-labelledby="r-title">
               <SectionHead title="Receipt" :sub="`Placed ${dateTimeOf(order.created_at)}`" />
               <dl class="lines">
-                <div><dt>{{ order.quantity }} × 5-gallon refill</dt><dd>{{ peso(order.unit_price * order.quantity) }}</dd></div>
+                <div v-for="l in linesOf(order)" :key="l.product_id ?? l.name"><dt>{{ l.quantity }} × {{ l.name }}</dt><dd>{{ peso(l.line_total) }}</dd></div>
                 <div><dt>Delivery</dt><dd>Free</dd></div>
                 <div><dt>Empties to hand back</dt><dd>{{ order.empties_to_return }}</dd></div>
               </dl>

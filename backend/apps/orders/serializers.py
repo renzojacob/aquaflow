@@ -5,7 +5,7 @@ from rest_framework import serializers
 from apps.customers.models import Address
 from apps.inventory.models import Product
 
-from .models import Order, OrderStatusHistory
+from .models import Order, OrderItem, OrderStatusHistory
 from .services import MAX_QUANTITY
 
 
@@ -15,20 +15,30 @@ class OrderStatusHistorySerializer(serializers.ModelSerializer):
         fields = ["from_status", "to_status", "server_time", "note"]
 
 
+class OrderItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source="product.name", read_only=True)
+    kind = serializers.CharField(source="product.kind", read_only=True)
+    line_total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+
+    class Meta:
+        model = OrderItem
+        fields = ["product", "product_name", "kind", "quantity", "unit_price", "line_total"]
+
+
 class CustomerOrderSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="product.name", read_only=True)
     address_label = serializers.CharField(source="address.label", read_only=True)
     address_street = serializers.CharField(source="address.street", read_only=True)
     address_barangay = serializers.CharField(source="address.barangay", read_only=True)
-    total = serializers.SerializerMethodField()
     history = OrderStatusHistorySerializer(many=True, read_only=True)
+    items = OrderItemSerializer(many=True, read_only=True)
     rider = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
         fields = [
             "id", "status",
-            "product", "product_name", "quantity", "unit_price", "total",
+            "product", "product_name", "quantity", "containers", "unit_price", "total", "items",
             "expected_empties", "notes",
             "delivery_date", "period",
             "address", "address_label", "address_street", "address_barangay",
@@ -39,10 +49,6 @@ class CustomerOrderSerializer(serializers.ModelSerializer):
             "history", "rider",
         ]
         read_only_fields = fields
-
-    @extend_schema_field(OpenApiTypes.DECIMAL)
-    def get_total(self, order):
-        return str(order.unit_price * order.quantity)
 
     @extend_schema_field(OpenApiTypes.OBJECT)
     def get_rider(self, order):
@@ -72,14 +78,26 @@ class StaffOrderSerializer(CustomerOrderSerializer):
         return None if r is None else {"id": r.id, "name": r.get_full_name() or r.username, "phone": r.phone}
 
 
-class OrderCreateSerializer(serializers.Serializer):
-    address = serializers.PrimaryKeyRelatedField(queryset=Address.objects.none())
-    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), required=False)
+class CartLineSerializer(serializers.Serializer):
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
     quantity = serializers.IntegerField(min_value=1, max_value=MAX_QUANTITY)
+
+
+class OrderCreateSerializer(serializers.Serializer):
+    """Send a cart in `items`. (Older apps may send `quantity` (+ `product`) instead.)"""
+    address = serializers.PrimaryKeyRelatedField(queryset=Address.objects.none())
+    items = CartLineSerializer(many=True, required=False)
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), required=False)
+    quantity = serializers.IntegerField(min_value=1, max_value=MAX_QUANTITY, required=False)
     delivery_date = serializers.DateField()
     period = serializers.ChoiceField(choices=Order.Period.choices)
     expected_empties = serializers.IntegerField(min_value=0, max_value=MAX_QUANTITY, required=False)
     notes = serializers.CharField(max_length=255, required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        if not attrs.get("items") and not attrs.get("quantity"):
+            raise serializers.ValidationError({"items": ["Add at least one item."]})
+        return attrs
 
     def get_fields(self):
         fields = super().get_fields()

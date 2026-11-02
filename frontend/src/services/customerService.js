@@ -40,7 +40,9 @@ async function fetchMyOrders() {
 export async function getOrderSettings() {
   if (env.useMock) {
     await mockDelay(150)
-    return clone(db().settings)
+    const st = db().settings
+    // customers only see what's on sale (like the real /api/settings/public/)
+    return clone({ ...st, products: (st.products ?? []).filter((p) => p.is_active !== false) })
   }
   const { data } = await http.get('/api/settings/public/')
   return data
@@ -146,9 +148,20 @@ export async function createOrder(payload) {
     const s = data.settings
     const address = data.addresses.find((a) => a.id === payload.address_id && a.user_id === me.id)
 
-    if (!Number.isInteger(payload.quantity) || payload.quantity < 1 || payload.quantity > s.max_containers_per_order) {
-      throw mockError('validation', 422, `Order between 1 and ${s.max_containers_per_order} containers.`)
-    }
+    // The cart: same rules as the backend (merge repeats, active products, per-product limit)
+    const catalog = Object.fromEntries((s.products ?? []).map((p) => [p.id, p]))
+    const wanted = payload.items?.length ? payload.items : [{ product_id: 'p_refill', quantity: payload.quantity }]
+    const merged = {}
+    for (const l of wanted) if (l.quantity > 0) merged[l.product_id] = (merged[l.product_id] ?? 0) + l.quantity
+    const lines = Object.entries(merged).map(([pid, q]) => {
+      const p = catalog[pid]
+      if (!p || !p.is_active) throw mockError('validation', 422, `${p?.name ?? 'That product'} is not available right now.`)
+      if (q > p.max_per_order) throw mockError('validation', 422, `Order up to ${p.max_per_order} of ${p.name}.`)
+      return { product_id: p.id, name: p.name, kind: p.kind, quantity: q, unit_price: p.price, line_total: p.price * q, sort: p.sort_order }
+    }).sort((a, b) => (a.kind !== 'refill') - (b.kind !== 'refill') || a.sort - b.sort)
+    if (!lines.length) throw mockError('validation', 422, 'Add at least one item.')
+    const refills = lines.filter((l) => l.kind === 'refill').reduce((n, l) => n + l.quantity, 0)
+    if (payload.empties_to_return > refills) throw mockError('validation', 422, `You can hand back up to ${refills} empties with this order.`)
     if (!address) throw mockError('validation', 422, 'Choose a delivery address.')
     if (!insideArea(address, serviceArea(s))) {
       throw mockError('validation', 422, 'This address is outside our delivery area.')
@@ -169,10 +182,12 @@ export async function createOrder(payload) {
       id: `o_${data.counters.order}`,
       code: `AF-${data.counters.order}`,
       customer_id: me.id,
-      quantity: payload.quantity,
+      quantity: lines.reduce((n, l) => n + l.quantity, 0),
+      containers: refills,
+      items: lines.map(({ sort, ...l }) => l), // eslint-disable-line no-unused-vars
       empties_to_return: payload.empties_to_return,
-      unit_price: s.price_per_container,
-      total: payload.quantity * s.price_per_container,
+      unit_price: lines[0].unit_price,
+      total: lines.reduce((n, l) => n + l.line_total, 0),
       address: {
         id: address.id,
         label: address.label,

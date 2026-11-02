@@ -1,6 +1,6 @@
 from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
-from .models import Order, OrderStatusHistory
+from .models import Order, OrderItem, OrderStatusHistory
 from .services import transition
 
 
@@ -9,6 +9,14 @@ class HistoryInline(admin.TabularInline):
     extra = 0
     can_delete = False
     readonly_fields = ("from_status", "to_status", "changed_by", "server_time", "device_time", "note")
+    def has_add_permission(self, request, obj=None): return False
+
+
+class ItemInline(admin.TabularInline):
+    model = OrderItem
+    extra = 0
+    can_delete = False
+    readonly_fields = ("product", "quantity", "unit_price")
     def has_add_permission(self, request, obj=None): return False
 
 
@@ -22,12 +30,12 @@ def _bulk(modeladmin, request, queryset, to):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ("id", "customer", "delivery_date", "period", "quantity", "status", "needs_review")
+    list_display = ("id", "customer", "delivery_date", "period", "quantity", "containers", "total", "status", "needs_review")
     list_filter = ("status", "period", "delivery_date")
     search_fields = ("customer__username", "address_text", "confirmation_code")
-    readonly_fields = ("status", "lat", "lng", "address_text", "landmark", "unit_price",
+    readonly_fields = ("status", "lat", "lng", "address_text", "landmark", "unit_price", "total", "containers",
                        "confirmation_code", "replan_count", "created_at", "updated_at")
-    inlines = [HistoryInline]
+    inlines = [ItemInline, HistoryInline]
     actions = ["confirm", "cancel", "reject"]
 
     @admin.action(description="Confirm selected orders")

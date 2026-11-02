@@ -6,6 +6,8 @@ from rest_framework.views import APIView
 
 from apps.orders.services import MAX_QUANTITY, PERIOD_START, default_product
 
+from apps.inventory.models import Product
+
 from .models import ServiceArea, Station
 
 # Used only if no Station / ServiceArea has been entered in admin yet
@@ -52,4 +54,9 @@ class PublicSettingsView(APIView):
                 "lng": float(lng),
             },
             "service_radius_km": float(radius_m) / 1000,
+            "products": [
+                {"id": p.id, "name": p.name, "kind": p.kind, "price": float(p.price),
+                 "description": p.description, "max_per_order": min(p.max_per_order, MAX_QUANTITY)}
+                for p in Product.objects.filter(is_active=True).order_by("sort_order", "id")
+            ],
         })

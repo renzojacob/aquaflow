@@ -49,6 +49,15 @@ export function toOrder(o) {
     id: o.id,
     code: `AF-${o.id}`,
     quantity: o.quantity,
+    containers: o.containers ?? o.quantity,
+    items: (o.items || []).map((i) => ({
+      product_id: i.product,
+      name: i.product_name,
+      kind: i.kind,
+      quantity: i.quantity,
+      unit_price: num(i.unit_price),
+      line_total: num(i.line_total),
+    })),
     empties_to_return: o.expected_empties,
     unit_price: num(o.unit_price),
     total: num(o.total),
@@ -85,7 +94,7 @@ export function toStaffOrder(o) {
 export function toOrderPayload(p) {
   return {
     address: p.address_id,
-    quantity: p.quantity,
+    ...(p.items?.length ? { items: p.items.map((i) => ({ product: i.product_id, quantity: i.quantity })) } : { quantity: p.quantity }),
     delivery_date: p.delivery_date,
     period: p.period,
     expected_empties: p.empties_to_return,

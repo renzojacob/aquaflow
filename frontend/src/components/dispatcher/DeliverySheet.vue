@@ -11,6 +11,7 @@ import { bicycleOutline, checkmarkCircle } from 'ionicons/icons'
 
 import AppButton from '@/components/ui/AppButton.vue'
 import QuantityStepper from '@/components/form/QuantityStepper.vue'
+import { linesText } from '@/constants/cart'
 import { listRiders } from '@/services/dispatcherService'
 import { containers, initials, peso } from '@/utils/format'
 
@@ -60,7 +61,7 @@ function submit() {
         <header>
           <h2 class="af-h2">{{ mode === 'dispatch' ? `Send ${order.code} out` : `Deliver ${order.code}` }}</h2>
           <p class="af-small">
-            {{ order.customer?.name }}: {{ containers(order.quantity) }} to {{ order.address.barangay }}. Collect {{ peso(order.total) }} in cash.
+            {{ order.customer?.name }}: {{ linesText(order) }} to {{ order.address.barangay }}. Collect {{ peso(order.total) }} in cash.
           </p>
         </header>
 

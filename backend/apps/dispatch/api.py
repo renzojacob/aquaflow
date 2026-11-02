@@ -33,7 +33,7 @@ User = get_user_model()
 
 
 def _orders():
-    return Order.objects.select_related("customer", "product", "address", "assigned_rider").prefetch_related("history")
+    return Order.objects.select_related("customer", "product", "address", "assigned_rider").prefetch_related("history", "items__product")
 
 
 # ---------------------------------------------------------------------------
@@ -140,7 +140,7 @@ def stock_payload():
         return {"filled_ready": 0, "reserved": 0, "available": 0, "empty_at_station": 0,
                 "owned_total": 0, "on_road": 0, "with_customers": 0, "log": []}
     stock, _ = StockLevel.objects.get_or_create(product=product)
-    on_road = Order.objects.filter(status=S.OUT_FOR_DELIVERY).aggregate(n=Sum("quantity"))["n"] or 0
+    on_road = Order.objects.filter(status=S.OUT_FOR_DELIVERY).aggregate(n=Sum("containers"))["n"] or 0
     with_customers = CustomerProfile.objects.aggregate(n=Sum("containers_held"))["n"] or 0
     filled_ready = stock.filled_available + stock.filled_reserved
     log = []
@@ -167,7 +167,20 @@ def stock_payload():
         "with_customers": with_customers,
         "owned_total": filled_ready + stock.empty_count + on_road + with_customers,
         "log": log,
+        "product": {"id": product.id, "name": product.name},
+        "others": other_products(product),
     }
+
+
+def other_products(main):
+    """Stock of everything else the station sells (new containers, small bottles, ice...)."""
+    from apps.inventory.models import Product
+    rows = []
+    for p in Product.objects.exclude(pk=main.pk).order_by("sort_order", "id"):
+        st, _ = StockLevel.objects.get_or_create(product=p)
+        rows.append({"id": p.id, "name": p.name, "kind": p.kind, "is_active": p.is_active,
+                     "available": st.filled_available, "reserved": st.filled_reserved})
+    return rows
 
 
 class StockView(APIView):
@@ -189,9 +202,14 @@ class StockAdjustView(APIView):
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request):
+        from apps.inventory.models import Product
         product = default_product()
         if product is None:
-            raise ValidationError("No product is set up yet. Add one in Django admin first.")
+            raise ValidationError("No product is set up yet. Add one on the Products screen first.")
+        # Other products (send product_id): "add" new stock, or "correction" after a count
+        pid = request.data.get("product_id")
+        if pid and str(pid) != str(product.pk):
+            return self._other(request, get_object_or_404(Product, pk=pid))
         stock, _ = StockLevel.objects.get_or_create(product=product)
         kind = request.data.get("type")
         reason = (request.data.get("reason") or "").strip()
@@ -225,6 +243,29 @@ class StockAdjustView(APIView):
             raise ValidationError({"type": ["Use refill, correction or receive."]})
         return Response(stock_payload())
 
+    def _other(self, request, product):
+        stock, _ = StockLevel.objects.get_or_create(product=product)
+        kind = request.data.get("type")
+        reason = (request.data.get("reason") or "").strip()
+        try:
+            qty = int(request.data.get("quantity"))
+        except (TypeError, ValueError):
+            raise ValidationError({"quantity": ["Enter a whole number."]})
+        if kind == "add":
+            if qty < 1:
+                raise ValidationError({"quantity": [f"Enter how many {product.name} arrived."]})
+            apply_movement(product, "adjust", request.user, available=qty, note=reason or "Stock added")
+        elif kind == "correction":
+            if qty < stock.filled_reserved:
+                raise ValidationError({"quantity": [f"{stock.filled_reserved} are already promised to orders."]})
+            if len(reason) < 3:
+                raise ValidationError({"reason": ["Say why the count changed."]})
+            apply_movement(product, "adjust", request.user,
+                           available=qty - (stock.filled_available + stock.filled_reserved), note=reason)
+        else:
+            raise ValidationError({"type": ["Use add or correction."]})
+        return Response(stock_payload())
+
 
 # ---------------------------------------------------------------------------
 # Owner / dashboard numbers
@@ -250,20 +291,20 @@ class SummaryView(APIView):
 
         per_day = {start + timedelta(days=i): {"orders": 0, "delivered": 0, "containers": 0, "revenue": 0.0}
                    for i in range(days)}
-        for o in window.only("delivery_date", "status", "quantity", "unit_price"):
+        for o in window.only("delivery_date", "status", "containers", "total"):
             d = per_day[o.delivery_date]
             d["orders"] += 1
             if o.status == S.DELIVERED:
                 d["delivered"] += 1
-                d["containers"] += o.quantity
-                d["revenue"] += float(o.unit_price * o.quantity)
+                d["containers"] += o.containers
+                d["revenue"] += float(o.total)
 
         today_qs = Order.objects.filter(delivery_date=today)
         status_today = {row["status"]: row["n"] for row in today_qs.values("status").annotate(n=Count("id"))}
 
         barangays = (
             window.exclude(status__in=[S.REJECTED, S.CANCELLED])
-            .values("address__barangay").annotate(n=Count("id"), containers=Sum("quantity"))
+            .values("address__barangay").annotate(n=Count("id"), containers=Sum("containers"))
             .order_by("-n")[:6]
         )
         periods = {row["period"]: row["n"] for row in window.values("period").annotate(n=Count("id"))}
@@ -285,8 +326,8 @@ class SummaryView(APIView):
                 "delivered": delivered_all.count(),
                 "failed": failed_all,
                 "cancelled": window.filter(status__in=[S.CANCELLED, S.REJECTED]).count(),
-                "revenue": float(sum(o.unit_price * o.quantity for o in delivered_all.only("unit_price", "quantity"))),
-                "containers": delivered_all.aggregate(n=Sum("quantity"))["n"] or 0,
+                "revenue": float(delivered_all.aggregate(n=Sum("total"))["n"] or 0),
+                "containers": delivered_all.aggregate(n=Sum("containers"))["n"] or 0,
             },
             "customers": User.objects.filter(role="customer", is_active=True).count(),
             "new_customers": User.objects.filter(role="customer", date_joined__date__gte=start).count(),

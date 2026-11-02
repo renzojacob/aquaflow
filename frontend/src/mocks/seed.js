@@ -52,6 +52,14 @@ export function createSeed() {
         lng: 121.1792,
       },
       service_radius_km: 8,
+      // What customers can put in the cart (Owner > Products & prices edits these)
+      products: [
+        { id: 'p_refill', name: '5-gallon refill', kind: 'refill', price: 30, description: 'Round container, purified water', max_per_order: 10, sort_order: 1, is_active: true },
+        { id: 'p_slim', name: '5-gallon slim refill', kind: 'refill', price: 35, description: 'Slim container with a faucet', max_per_order: 10, sort_order: 2, is_active: true },
+        { id: 'p_jug', name: 'New 5-gallon container', kind: 'container', price: 250, description: 'Filled, sealed, yours to keep', max_per_order: 3, sort_order: 3, is_active: true },
+        { id: 'p_gallon', name: '1-gallon bottle', kind: 'item', price: 15, description: 'Sealed bottle, good for travel', max_per_order: 10, sort_order: 4, is_active: true },
+        { id: 'p_ice', name: 'Tube ice, 1 kg', kind: 'item', price: 25, description: 'Made with purified water', max_per_order: 6, sort_order: 5, is_active: true },
+      ],
     },
 
     // MOCK ONLY: real passwords are hashed in the backend and never sent to the app.
@@ -235,12 +243,21 @@ export function createSeed() {
 
   // Add the other Calapan customers and the station's orders for today
   const station = createStationSeed()
+  const byId = Object.fromEntries(base.settings.products.map((p) => [p.id, p]))
+  // A few demo orders with mixed carts, so lines show up everywhere
+  const extras = { o_1048: [['p_ice', 2]], o_1061: [['p_jug', 1]], o_1062: [['p_gallon', 6], ['p_ice', 3]], o_1050: [['p_ice', 1]] }
+  const withLines = (o) => {
+    const items = [{ product_id: 'p_refill', name: byId.p_refill.name, kind: 'refill', quantity: o.quantity, unit_price: o.unit_price, line_total: o.unit_price * o.quantity }]
+    for (const [pid, q] of extras[o.id] ?? []) items.push({ product_id: pid, name: byId[pid].name, kind: byId[pid].kind, quantity: q, unit_price: byId[pid].price, line_total: byId[pid].price * q })
+    const total = items.reduce((s, l) => s + l.line_total, 0)
+    return { ...o, items, containers: o.quantity, quantity: items.reduce((s, l) => s + l.quantity, 0), total }
+  }
   return {
     ...base,
     users: [...base.users, ...station.users],
     addresses: [...base.addresses, ...station.addresses],
-    orders: [...base.orders, ...station.orders],
-    inventory: station.inventory,
+    orders: [...base.orders, ...station.orders].map(withLines),
+    inventory: { ...station.inventory, others: { p_slim: 12, p_jug: 8, p_gallon: 40, p_ice: 15 } },
     stock_log: station.stock_log,
   }
 }

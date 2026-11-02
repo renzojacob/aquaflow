@@ -63,7 +63,7 @@ def route_for(rider):
     """
     remaining = list(
         Order.objects.filter(assigned_rider=rider, status=Order.Status.OUT_FOR_DELIVERY)
-        .select_related("customer", "address")
+        .select_related("customer", "address").prefetch_related("items__product")
     )
     loc = last_location(rider)
     here = (loc["lat"], loc["lng"]) if loc and loc["fresh"] else station_point()
