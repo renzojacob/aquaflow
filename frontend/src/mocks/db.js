@@ -5,7 +5,7 @@ import { tokenStorage } from '@/services/tokenStorage'
 import { createSeed } from './seed'
 
 const KEY = 'aquaflow.mockdb'
-const SEED_VERSION = 2 // bump when seed.js or seedStation.js changes
+const SEED_VERSION = 3 // bump when seed.js or seedStation.js changes
 
 let cache = null
 

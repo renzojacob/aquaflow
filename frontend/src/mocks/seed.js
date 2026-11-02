@@ -81,6 +81,7 @@ export function createSeed() {
         attempts: 1,
         delivery_code: '4827',
         trip: { code: 'T-02', rider_name: 'Jomar Reyes', stops_before: 1 },
+        rider: { id: 'u_jomar', name: 'Jomar Reyes', phone: '09195550123' },
         created_at: minutesAgo(70),
         history: [
           { status: 'pending', at: minutesAgo(70) },
@@ -197,6 +198,40 @@ export function createSeed() {
 
     counters: { order: 1071, address: 10 },
   }
+
+  // Older deliveries for Maria (2-3 months back) so her spending chart has a trend
+  const olderDays = [24, 31, 39, 46, 53, 61, 68, 77, 85]
+  olderDays.forEach((d, i) => {
+    const qty = [3, 2, 3, 4, 3, 2, 3, 3, 2][i]
+    const id = 990 - i
+    base.orders.push({
+      id: `o_${id}`,
+      code: `AF-${id}`,
+      customer_id: 'u_maria',
+      quantity: qty,
+      empties_to_return: qty - 1,
+      unit_price: 30,
+      total: qty * 30,
+      address: snap(i % 4 === 3 ? mother : home),
+      delivery_date: dateISO(-d),
+      period: i % 3 === 0 ? 'afternoon' : 'morning',
+      notes: '',
+      status: 'delivered',
+      attempts: 1,
+      delivery_code: String(1100 + id),
+      trip: null,
+      rider: { id: 'u_jomar', name: 'Jomar Reyes', phone: '09195550123' },
+      created_at: daysAgo(d, 7, 30),
+      history: [
+        { status: 'pending', at: daysAgo(d, 7, 30) },
+        { status: 'confirmed', at: daysAgo(d, 7, 45) },
+        { status: 'preparing', at: daysAgo(d, 8, 5) },
+        { status: 'ready_for_pickup', at: daysAgo(d, 8, 25) },
+        { status: 'out_for_delivery', at: daysAgo(d, 8, 40) },
+        { status: 'delivered', at: daysAgo(d, 9, 10) },
+      ],
+    })
+  })
 
   // Add the other Calapan customers and the station's orders for today
   const station = createStationSeed()

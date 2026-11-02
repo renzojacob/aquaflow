@@ -22,6 +22,7 @@ class CustomerOrderSerializer(serializers.ModelSerializer):
     address_barangay = serializers.CharField(source="address.barangay", read_only=True)
     total = serializers.SerializerMethodField()
     history = OrderStatusHistorySerializer(many=True, read_only=True)
+    rider = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -35,13 +36,40 @@ class CustomerOrderSerializer(serializers.ModelSerializer):
             "confirmation_code",
             "rejection_reason", "cancel_reason",
             "source", "created_at", "updated_at",
-            "history",
+            "history", "rider",
         ]
         read_only_fields = fields
 
     @extend_schema_field(OpenApiTypes.DECIMAL)
     def get_total(self, order):
         return str(order.unit_price * order.quantity)
+
+    @extend_schema_field(OpenApiTypes.OBJECT)
+    def get_rider(self, order):
+        """The customer only sees the rider while the order is on the road (or after)."""
+        r = order.assigned_rider
+        if r is None or order.status not in ("out_for_delivery", "delivered", "failed"):
+            return None
+        return {"id": r.id, "name": r.get_full_name() or r.username, "phone": r.phone}
+
+
+class StaffOrderSerializer(CustomerOrderSerializer):
+    """Same order, plus who ordered it. For dispatcher and owner screens."""
+
+    customer_name = serializers.SerializerMethodField()
+    customer_phone = serializers.CharField(source="customer.phone", read_only=True)
+
+    class Meta(CustomerOrderSerializer.Meta):
+        fields = CustomerOrderSerializer.Meta.fields + ["customer_name", "customer_phone"]
+        read_only_fields = fields
+
+    def get_customer_name(self, order) -> str:
+        return order.customer.get_full_name() or order.customer.username
+
+    @extend_schema_field(OpenApiTypes.OBJECT)
+    def get_rider(self, order):
+        r = order.assigned_rider
+        return None if r is None else {"id": r.id, "name": r.get_full_name() or r.username, "phone": r.phone}
 
 
 class OrderCreateSerializer(serializers.Serializer):

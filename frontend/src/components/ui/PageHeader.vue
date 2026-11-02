@@ -29,7 +29,7 @@ defineProps({
 <style scoped>
 .af-ph { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--af-s4); flex-wrap: wrap; }
 .af-ph__text { min-width: 0; }
-.af-ph__crumb { font-family: var(--af-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--af-ink-2); }
+.af-ph__crumb { font-size: 13.5px; font-weight: 700; color: var(--af-ink-2); }
 .af-ph__title {
   margin: 8px 0 0;
   font-family: var(--af-display);

@@ -19,7 +19,7 @@ O = DeliveryAttempt.Outcome
 @transaction.atomic
 def record_attempt(order, rider, outcome, *, device_time, stop=None,
                    empties_collected=0, failure_reason="", code=None,
-                   gps_lat=None, gps_lng=None, gps_accuracy_m=None, sync_action=None):
+                   gps_lat=None, gps_lng=None, gps_accuracy_m=None, sync_action=None, note=""):
     if outcome == O.FAILED and failure_reason not in DeliveryAttempt.FailureReason.values:
         raise ValidationError("A failed attempt needs a valid failure reason.")
     order = Order.objects.select_for_update().get(pk=order.pk)
@@ -37,7 +37,7 @@ def record_attempt(order, rider, outcome, *, device_time, stop=None,
 
     # Order lifecycle, container balance, stock
     if outcome == O.DELIVERED:
-        order = transition(order, Order.Status.DELIVERED, by=rider, device_time=device_time)
+        order = transition(order, Order.Status.DELIVERED, by=rider, device_time=device_time, note=note)
         record_containers(order.customer, delivered=order.quantity,
                           returned=empties_collected, order=order)
         if empties_collected:
@@ -45,7 +45,7 @@ def record_attempt(order, rider, outcome, *, device_time, stop=None,
                            order=order, trip=stop.trip if stop else None)
     else:
         order = transition(order, Order.Status.FAILED, by=rider,
-                           device_time=device_time, note=failure_reason)
+                           device_time=device_time, note=note or failure_reason)
 
     if flagged or code_ok is False:
         Order.objects.filter(pk=order.pk).update(needs_review=True)

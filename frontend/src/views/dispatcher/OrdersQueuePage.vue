@@ -1,10 +1,12 @@
 <!--
-  Dispatcher order queue.
-  Desktop (>= 1100px): list on the left, selected order on the right.
-  Phone/tablet: list only; tapping an order opens its own page.
+  Dispatcher command center.
+  Top: a tank whose water = share of today's orders that are finished, with the day's pipeline;
+  stock + riders beside it; four numbers that need attention.
+  Below: the queue. Desktop (>= 1100px): list left, selected order right. Phone: tap to open.
 -->
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import {
   IonContent,
   IonHeader,
@@ -17,21 +19,28 @@ import {
   useIonRouter,
 } from '@ionic/vue'
 
+import { IonIcon } from '@ionic/vue'
+import { alertCircleOutline, bicycleOutline, cashOutline, cubeOutline, waterOutline } from 'ionicons/icons'
 import AppButton from '@/components/ui/AppButton.vue'
+import KpiTile from '@/components/dash/KpiTile.vue'
+import RingGauge from '@/components/viz/RingGauge.vue'
+import SectionHead from '@/components/dash/SectionHead.vue'
+import TankHero from '@/components/dash/TankHero.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import OrderAdminPanel from '@/components/dispatcher/OrderAdminPanel.vue'
-import PageHeader from '@/components/ui/PageHeader.vue'
 import QueueRow from '@/components/dispatcher/QueueRow.vue'
 import SegmentedControl from '@/components/form/SegmentedControl.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
-import WaterLevelBar from '@/components/ui/WaterLevelBar.vue'
 import { MAX_ATTEMPTS } from '@/constants/orderStatus'
 import { useMediaQuery } from '@/composables/useMediaQuery'
 import { showToast } from '@/composables/useToast'
-import { getStock, listQueue, runOrderAction } from '@/services/dispatcherService'
-import { dateISO, friendlyDay } from '@/utils/format'
+import { getStock, getSummary, listQueue, listRiders, runOrderAction } from '@/services/dispatcherService'
+import { ago, containers, dateISO, friendlyDay, initials, peso } from '@/utils/format'
 
 const ionRouter = useIonRouter()
+const route = useRoute()
+// The owner sees this same screen at /owner/queue
+const base = computed(() => (route.path.startsWith('/owner') ? '/owner' : '/dispatcher'))
 const wide = useMediaQuery('(min-width: 1100px)')
 
 const day = ref('today')
@@ -43,6 +52,8 @@ const loading = ref(true)
 const error = ref(null)
 const selectedId = ref('')
 const quickBusy = ref('')
+const riders = ref([])
+const summary = ref(null)
 
 const date = computed(() => dateISO(day.value === 'today' ? 0 : 1))
 
@@ -83,9 +94,11 @@ const toPrepare = computed(() =>
 async function load() {
   error.value = null
   try {
-    const [q, s] = await Promise.all([listQueue(date.value), getStock()])
+    const [q, s, r, sum] = await Promise.all([listQueue(date.value), getStock(), listRiders(), getSummary(7)])
     orders.value = q
     stock.value = s
+    riders.value = r
+    summary.value = sum
     // Keep the selection valid on desktop
     if (wide.value && !visible.value.some((o) => o.id === selectedId.value)) {
       selectedId.value = visible.value[0]?.id ?? ''
@@ -113,7 +126,7 @@ async function refresh(ev) {
 
 function open(order) {
   if (wide.value) selectedId.value = order.id
-  else ionRouter.push(`/dispatcher/orders/${order.id}`)
+  else ionRouter.push(base.value === '/owner' ? `/owner/queue/${order.id}` : `/dispatcher/orders/${order.id}`)
 }
 
 async function quickConfirm(order) {
@@ -128,6 +141,31 @@ async function quickConfirm(order) {
     await load()
   }
 }
+
+// ---------- the day at a glance ----------
+const live = computed(() => orders.value.filter((o) => !['rejected', 'cancelled'].includes(o.status)))
+const finished = computed(() => live.value.filter((o) => o.status === 'delivered' || (o.status === 'failed_delivery' && o.attempts >= MAX_ATTEMPTS)))
+const doneShare = computed(() => (live.value.length ? finished.value.length / live.value.length : 0))
+const qtyOf = (list) => list.reduce((s, o) => s + o.quantity, 0)
+const onRoad = computed(() => orders.value.filter((o) => o.status === 'out_for_delivery'))
+const collected = computed(() => orders.value.filter((o) => o.status === 'delivered').reduce((s, o) => s + o.total, 0))
+const toCollect = computed(() => onRoad.value.reduce((s, o) => s + o.total, 0))
+const pipeline = computed(() => [
+  { key: 'pending', label: 'To confirm', n: counts.value.pending ?? 0 },
+  { key: 'confirmed', label: 'To fill', n: (counts.value.confirmed ?? 0) + (counts.value.preparing ?? 0) },
+  { key: 'ready', label: 'Ready to go', n: counts.value.ready ?? 0 },
+  { key: 'out', label: 'On the road', n: counts.value.out ?? 0 },
+  { key: 'closed', label: 'Done', n: finished.value.length },
+])
+const headline = computed(() => {
+  const p = counts.value.pending ?? 0
+  if (!live.value.length) return `No orders for ${friendlyDay(date.value).toLowerCase()} yet`
+  if (p) return `${p} order${p > 1 ? 's' : ''} waiting for you`
+  if (finished.value.length === live.value.length) return 'Every order is done'
+  return `${live.value.length - finished.value.length} order${live.value.length - finished.value.length > 1 ? 's' : ''} still moving`
+})
+const spark = computed(() => (summary.value?.days ?? []).map((d) => d.orders))
+const sparkMoney = computed(() => (summary.value?.days ?? []).map((d) => d.revenue))
 
 const dayOptions = [
   { value: 'today', label: 'Today' },
@@ -148,41 +186,89 @@ const dayOptions = [
         <ion-refresher-content />
       </ion-refresher>
 
-      <div class="af-container wide">
-        <PageHeader
-          crumb="Dispatcher"
-          title="Order queue"
-          :subtitle="`${friendlyDay(date)} · ${counts.pending ?? 0} pending · ${toPrepare} containers to prepare`"
-        >
-          <template #actions>
-            <SegmentedControl v-model="day" :options="dayOptions" label="Delivery day" />
-          </template>
-        </PageHeader>
+      <div class="af-container af-dash cc">
+        <!-- ===== The day ===== -->
+        <div class="af-bento af-bento--stretch">
+          <TankHero class="b-8" :level="doneShare" :label="`${finished.length} of ${live.length} orders finished for ${friendlyDay(date).toLowerCase()}`">
+            <div class="t-top">
+              <span class="t-day">{{ friendlyDay(date) }}'s orders</span>
+              <SegmentedControl v-model="day" :options="dayOptions" label="Delivery day" />
+            </div>
+            <h1 class="t-title">{{ headline }}</h1>
+            <p class="tank__soft t-sub">
+              {{ finished.length }} of {{ live.length }} finished. {{ containers(qtyOf(live)) }} in total for {{ friendlyDay(date).toLowerCase() }}.
+            </p>
+            <ol class="pipe" aria-label="Orders by step">
+              <li v-for="p in pipeline" :key="p.key">
+                <button type="button" class="pipe__step" :class="{ 'is-on': tab === p.key, 'is-hot': p.key === 'pending' && p.n }" @click="tab = p.key">
+                  <b>{{ p.n }}</b>
+                  <span>{{ p.label }}</span>
+                </button>
+              </li>
+            </ol>
+          </TankHero>
 
-        <!-- Stock strip -->
-        <section v-if="stock" class="af-card stock">
-          <WaterLevelBar
-            label="Ready stock promised to orders"
-            :value="stock.reserved"
-            :max="Math.max(stock.filled_ready, 1)"
-            :note="stock.available > 0 ? `${stock.available} filled containers free to confirm new orders` : 'No free stock. Fill more containers before confirming.'"
-          />
-          <AppButton variant="secondary" size="sm" @click="ionRouter.navigate('/dispatcher/stock', 'root', 'replace')">Manage stock</AppButton>
-        </section>
+          <aside class="b-4 side">
+            <!-- Stock -->
+            <section v-if="stock" class="af-panel stockp" aria-labelledby="st-title">
+              <SectionHead title="Ready stock" action="Manage" @action="ionRouter.navigate(`${base}/stock`, 'root', 'replace')" />
+              <div class="stockp__row">
+                <RingGauge
+                  :value="stock.filled_ready ? stock.available / stock.filled_ready : 0"
+                  :size="104"
+                  :tone="stock.available <= 5 ? 'warn' : 'water'"
+                  :label="`${stock.available} of ${stock.filled_ready} filled containers are free to promise`"
+                >
+                  <b class="stockp__n">{{ stock.available }}</b>
+                  <span class="stockp__u">free</span>
+                </RingGauge>
+                <dl class="stockp__facts">
+                  <div><dt>Filled</dt><dd>{{ stock.filled_ready }}</dd></div>
+                  <div><dt>Promised</dt><dd>{{ stock.reserved }}</dd></div>
+                  <div><dt>Empties</dt><dd>{{ stock.empty_at_station }}</dd></div>
+                </dl>
+              </div>
+              <p v-if="stock.available <= 5" class="warn"><ion-icon :icon="alertCircleOutline" aria-hidden="true" /> Running low. Fill more before confirming big orders.</p>
+            </section>
 
-        <!-- Tabs + search -->
+            <!-- Riders -->
+            <section class="af-panel" aria-labelledby="rd-title">
+              <SectionHead title="Riders" :sub="riders.length ? `${riders.filter((r) => !r.on_road).length} free now` : 'None yet'" />
+              <ul v-if="riders.length" class="riders">
+                <li v-for="r in riders" :key="r.id">
+                  <span class="riders__av" aria-hidden="true">{{ initials(r.name) }}</span>
+                  <span class="riders__name">{{ r.name }}<small v-if="r.location?.fresh">{{ r.location.is_simulated ? 'Demo drive' : 'Sharing location' }}, {{ ago(r.location.at) }}</small><small v-else-if="r.location">Last seen {{ ago(r.location.at) }}</small></span>
+                  <span class="riders__state" :class="{ 'is-out': r.on_road }">
+                    <ion-icon :icon="bicycleOutline" aria-hidden="true" /> {{ r.on_road ? `${r.on_road} out` : 'Free' }}
+                  </span>
+                </li>
+              </ul>
+              <p v-else class="af-small">The owner adds riders on the Users screen.</p>
+            </section>
+          </aside>
+        </div>
+
+        <!-- ===== Numbers that need attention ===== -->
+        <div class="kpis">
+          <KpiTile label="Waiting to confirm" :value="counts.pending ?? 0" :tone="counts.pending ? 'warn' : 'water'" :icon="alertCircleOutline" :hint="counts.pending ? 'Oldest first below' : 'All caught up'" />
+          <KpiTile label="Containers to fill" :value="toPrepare" :icon="waterOutline" :hint="`${(counts.confirmed ?? 0) + (counts.preparing ?? 0)} orders confirmed or filling`" />
+          <KpiTile label="On the road" :value="qtyOf(onRoad)" unit="containers" :icon="cubeOutline" tone="pearl" :hint="toCollect ? `${peso(toCollect)} to collect` : 'Nothing out now'" :spark="spark" />
+          <KpiTile label="Collected" :value="peso(collected)" tone="sun" :icon="cashOutline" :hint="`From ${finished.length} delivered orders`" :spark="sparkMoney" />
+        </div>
+
+        <!-- ===== Queue ===== -->
         <div class="tools">
-          <div class="tabs" role="tablist" aria-label="Order status">
+          <div class="af-chips" role="tablist" aria-label="Order status">
             <button
               v-for="t in TABS"
               :key="t.key"
               type="button"
               role="tab"
-              class="tab"
+              class="af-chip"
               :aria-selected="tab === t.key"
               @click="tab = t.key"
             >
-              {{ t.label }} <span class="tab__n">{{ counts[t.key] ?? 0 }}</span>
+              {{ t.label }} <span class="af-chip__n">{{ counts[t.key] ?? 0 }}</span>
             </button>
           </div>
           <label class="search">
@@ -191,9 +277,9 @@ const dayOptions = [
           </label>
         </div>
 
-        <div v-if="loading" class="af-card"><SkeletonList :rows="5" /></div>
+        <div v-if="loading" class="af-panel"><SkeletonList :rows="5" /></div>
 
-        <div v-else-if="error" class="af-card err" role="alert">
+        <div v-else-if="error" class="af-panel err" role="alert">
           <b>Couldn't load the queue</b>
           <p>{{ error.message }}</p>
           <AppButton variant="secondary" size="sm" @click="load">Try again</AppButton>
@@ -205,14 +291,14 @@ const dayOptions = [
               <QueueRow :order="o" :selected="wide && o.id === selectedId" :busy="quickBusy === o.id" @open="open" @quick-confirm="quickConfirm" />
             </li>
           </ul>
-          <div v-else class="af-card">
+          <div v-else class="af-panel">
             <EmptyState
               :title="search ? 'No matching orders' : `No ${TABS.find((t) => t.key === tab).label.toLowerCase()} orders`"
               :message="search ? 'Try another name, code or barangay.' : `Nothing here for ${friendlyDay(date).toLowerCase()}.`"
             />
           </div>
 
-          <aside v-if="wide" class="af-card detail" aria-label="Selected order">
+          <aside v-if="wide" class="af-panel detail" aria-label="Selected order">
             <OrderAdminPanel v-if="selectedId" :order-id="selectedId" @changed="load" />
             <p v-else class="af-small">Select an order to see its details.</p>
           </aside>
@@ -223,63 +309,83 @@ const dayOptions = [
 </template>
 
 <style scoped>
-.wide { max-width: 1320px; gap: var(--af-s4); }
-.stock { display: flex; align-items: center; gap: var(--af-s5); padding: var(--af-s4) var(--af-s5); flex-wrap: wrap; }
-.stock > :first-child { flex: 1; min-width: 240px; }
+.cc { max-width: 1320px; }
 
-.tools { display: flex; gap: var(--af-s3); align-items: center; flex-wrap: wrap; justify-content: space-between; }
-.tabs { display: flex; gap: 6px; overflow-x: auto; padding: 2px; max-width: 100%; min-width: 0; scrollbar-width: none; }
-.tabs::-webkit-scrollbar { display: none; }
-.tab {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 0 10px 0 16px;
-  border-radius: var(--af-r-pill);
-  border: 1px solid var(--af-line);
-  background: var(--af-surface);
-  color: var(--af-ink-2);
-  font: 750 14px var(--af-font);
+/* ---------- tank ---------- */
+.t-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.t-day { font-size: 14px; font-weight: 750; color: #cfe6ea; }
+.t-top :deep(.af-seg) { background: rgba(2, 18, 26, 0.45); }
+.t-title { margin: 0; font-family: var(--af-display); font-size: clamp(28px, 4vw, 46px); font-weight: 650; letter-spacing: -0.045em; line-height: 1.02; max-width: 18ch; }
+.t-sub { margin: 0; font-size: 15px; font-weight: 550; }
+.pipe { list-style: none; margin: 6px 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.pipe__step {
+  width: 100%;
+  display: grid;
+  gap: 2px;
+  padding: 12px 10px;
+  border-radius: 18px;
+  border: 1px solid rgba(230, 244, 246, 0.14);
+  background: rgba(2, 18, 26, 0.42);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #e6f4f6;
+  font-family: var(--af-font);
+  text-align: left;
   cursor: pointer;
-  transition: background var(--af-dur) var(--af-ease), color var(--af-dur) var(--af-ease), border-color var(--af-dur) var(--af-ease);
 }
-.tab:hover { color: var(--af-ink); border-color: var(--af-line-strong); }
-.tab[aria-selected='true'] { border-color: var(--af-primary); background: var(--af-primary); color: var(--af-on-primary); }
-.tab__n { min-width: 24px; padding: 3px 8px; border-radius: var(--af-r-pill); background: var(--af-surface-2); color: var(--af-ink); font-family: var(--af-mono); font-size: 12px; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; }
-.tab[aria-selected='true'] .tab__n { background: color-mix(in srgb, var(--af-on-primary) 16%, transparent); color: var(--af-on-primary); }
+.pipe__step b { font-family: var(--af-display); font-size: 26px; font-weight: 650; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.pipe__step span { font-size: 12.5px; font-weight: 700; color: #cfe6ea; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pipe__step.is-on { border-color: #7ff0e4; box-shadow: inset 0 0 0 1px #7ff0e4; }
+.pipe__step.is-hot b { color: #ffd58a; }
 
+/* ---------- side ---------- */
+.side { display: grid; gap: 16px; align-content: start; }
+.stockp__row { display: flex; align-items: center; gap: 18px; }
+.stockp__n { font-family: var(--af-display); font-size: 28px; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }
+.stockp__u { font-size: 12px; font-weight: 700; color: var(--af-ink-2); }
+.stockp__facts { flex: 1; display: grid; gap: 8px; margin: 0; }
+.stockp__facts div { display: flex; justify-content: space-between; gap: 8px; padding: 8px 12px; border-radius: 12px; background: var(--af-surface-2); }
+.stockp__facts dt { font-size: 13px; font-weight: 650; color: var(--af-ink-2); }
+.stockp__facts dd { margin: 0; font-weight: 800; font-variant-numeric: tabular-nums; }
+.warn { margin: 0; display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px; background: var(--af-amber-tint); color: var(--af-amber-fg); font-size: 13.5px; font-weight: 700; }
+.riders { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.riders li { display: grid; grid-template-columns: 36px 1fr auto; gap: 10px; align-items: center; }
+.riders__av { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(140deg, #b9b4ff, #4fe0d2); color: #04161d; font-size: 13px; font-weight: 800; }
+.riders__name { display: grid; font-size: 14.5px; font-weight: 750; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.riders__name small { font-size: 12px; font-weight: 600; color: var(--af-ink-2); overflow: hidden; text-overflow: ellipsis; }
+.riders__state { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px; background: color-mix(in srgb, var(--af-success) 14%, transparent); color: var(--af-success); font-size: 12.5px; font-weight: 750; }
+.riders__state.is-out { background: var(--af-pearl-tint); color: var(--af-pearl); }
+
+.kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (min-width: 1000px) { .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; } }
+
+/* ---------- queue ---------- */
+.tools { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: space-between; }
 .search { position: relative; flex: 1 1 220px; display: flex; justify-content: flex-end; }
 .search input {
   width: min(340px, 100%);
-  min-height: 46px;
+  min-height: 44px;
   padding: 0 16px 0 42px;
   border-radius: var(--af-r-pill);
   border: 1px solid var(--af-line-strong);
   background: var(--af-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%238fb3ba' stroke-width='2' stroke-linecap='round' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 16px center;
   color: var(--af-ink);
   font: 550 15px var(--af-font);
-  transition: border-color var(--af-dur) var(--af-ease), box-shadow var(--af-dur) var(--af-ease);
 }
-.search input::placeholder { color: color-mix(in srgb, var(--af-ink-2) 80%, transparent); }
 .search input:focus { outline: none; border-color: var(--af-primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--af-primary) 18%, transparent); }
 
-.split { display: grid; gap: var(--af-s4); }
+.split { display: grid; gap: 16px; }
 .split--wide { grid-template-columns: minmax(360px, 440px) minmax(0, 1fr); align-items: start; }
-.list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--af-s2); }
-.list li { animation: af-rise var(--af-dur-3) var(--af-ease-out) both; }
-.list li:nth-child(2) { animation-delay: 30ms; }
-.list li:nth-child(3) { animation-delay: 60ms; }
-.list li:nth-child(4) { animation-delay: 90ms; }
-.list li:nth-child(n + 5) { animation-delay: 120ms; }
-.detail { position: sticky; top: var(--af-s4); border-radius: var(--af-r-lg); box-shadow: var(--af-shadow-2); }
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.detail { position: sticky; top: 16px; border-radius: 28px; }
 
-.err { display: grid; gap: var(--af-s2); justify-items: start; border-color: color-mix(in srgb, var(--af-danger) 40%, var(--af-line)); }
-.err b { color: var(--af-danger); font-weight: 800; }
+.err { justify-items: start; }
+.err b { color: var(--af-danger); }
 .err p { margin: 0; color: var(--af-ink-2); }
 
 @media (max-width: 640px) {
+  .pipe { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pipe li:nth-child(n + 4) { grid-column: span 1; }
   .search { justify-content: stretch; }
   .search input { width: 100%; }
 }

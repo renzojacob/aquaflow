@@ -1,4 +1,8 @@
-<!-- Order water: quantity, address, day + time, empties, notes. -->
+<!--
+  Order water. The quantity sits in a tank whose water rises as containers are added;
+  a receipt beside the form (desktop) or a bar under it (phone) keeps the total in view.
+  Ordering rules are unchanged: one product, a quantity, an address, a day + time window.
+-->
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -13,11 +17,12 @@ import {
   onIonViewWillEnter,
   useIonRouter,
 } from '@ionic/vue'
-import { addOutline, partlySunnyOutline, sunnyOutline } from 'ionicons/icons'
+import { addOutline, bagHandleOutline, cashOutline, checkmarkCircle, partlySunnyOutline, sunnyOutline, timeOutline } from 'ionicons/icons'
 
 import AddressFormModal from '@/components/address/AddressFormModal.vue'
 import AppButton from '@/components/ui/AppButton.vue'
-import LiquidFill from '@/components/ui/LiquidFill.vue'
+import MapPicker from '@/components/map/MapPicker.vue'
+import TankHero from '@/components/dash/TankHero.vue'
 import QuantityStepper from '@/components/form/QuantityStepper.vue'
 import SegmentedControl from '@/components/form/SegmentedControl.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
@@ -30,7 +35,7 @@ import {
   listAddresses,
   periodOpen,
 } from '@/services/customerService'
-import { PERIODS, clockLabel, containers, dateISO, peso } from '@/utils/format'
+import { PERIODS, clockLabel, containers, dateISO, duration, friendlyDay, peso } from '@/utils/format'
 
 const route = useRoute()
 const ionRouter = useIonRouter()
@@ -135,6 +140,25 @@ async function submit() {
     submitting.value = false
   }
 }
+
+// ---------- what the receipt and the tank show ----------
+const selectedAddress = computed(() => addresses.value.find((a) => a.id === form.address_id) ?? null)
+const period = computed(() => PERIODS[form.period])
+
+/** "closes in 40 min" for today's windows (real cutoff times from the station) */
+function closesIn(p) {
+  if (!settings.value || form.day !== 'today') return ''
+  const [h, m] = settings.value.cutoff[p].split(':').map(Number)
+  const left = h * 60 + m - (new Date().getHours() * 60 + new Date().getMinutes())
+  return left > 0 && left <= 120 ? `Closes in ${duration(left)}` : ''
+}
+
+// One tap adds a common note for the rider
+const NOTE_CHIPS = ['Please knock loudly', 'Leave at the gate', 'Call when you are near', 'Carry it inside, please']
+function addNote(text) {
+  if (form.notes.includes(text)) return
+  form.notes = [form.notes.trim(), text].filter(Boolean).join('. ').slice(0, 200)
+}
 </script>
 
 <template>
@@ -146,107 +170,156 @@ async function submit() {
     </ion-header>
 
     <ion-content>
-      <div class="af-container narrow">
-        <div v-if="loading" class="af-card"><SkeletonList :rows="4" :avatar="false" /></div>
+      <div class="af-container af-dash">
+        <div v-if="loading" class="af-panel"><SkeletonList :rows="4" :avatar="false" /></div>
 
-        <div v-else-if="loadError" class="af-card err" role="alert">
+        <div v-else-if="loadError" class="af-panel err" role="alert">
           <b>Couldn't open the order form</b>
           <p>{{ loadError.message }}</p>
           <AppButton variant="secondary" size="sm" @click="load">Try again</AppButton>
         </div>
 
-        <form v-else class="stack" novalidate @submit.prevent="submit">
-          <p v-if="submitError" class="alert" role="alert">{{ submitError }}</p>
+        <div v-else class="layout">
+          <form class="form" novalidate @submit.prevent="submit">
+            <p v-if="submitError" class="alert" role="alert">{{ submitError }}</p>
 
-          <!-- 1. Quantity -->
-          <section class="af-card block" aria-labelledby="q-title">
-            <div class="block__head">
-              <h2 id="q-title" class="af-h3">How many containers?</h2>
-              <span class="af-small">5 gallons · {{ peso(settings.price_per_container) }} each</span>
-            </div>
-            <div class="qty">
-              <LiquidFill :level="form.quantity / settings.max_containers_per_order" shape="jug" :size="96" class="qty__jug" />
-              <QuantityStepper v-model="form.quantity" :min="1" :max="settings.max_containers_per_order" label="Number of containers" unit="containers" />
-            </div>
-          </section>
+            <!-- 1. How many: the water rises as you add containers -->
+            <TankHero compact :level="form.quantity / settings.max_containers_per_order" :label="`${containers(form.quantity)} selected`" :marks="false">
+              <div class="prod">
+                <div class="prod__text">
+                  <h1 id="q-title" class="prod__name">5-gallon refill</h1>
+                  <p class="tank__soft">Purified drinking water in a sealed AquaFlow container.</p>
+                  <p class="prod__price"><b>{{ peso(settings.price_per_container) }}</b> <span class="tank__soft">each</span></p>
+                </div>
+                <div class="prod__qty">
+                  <QuantityStepper v-model="form.quantity" :min="1" :max="settings.max_containers_per_order" label="Number of containers" unit="containers" />
+                  <span class="tank__soft prod__max">Up to {{ settings.max_containers_per_order }} per order</span>
+                </div>
+              </div>
+            </TankHero>
 
-          <!-- 2. Address -->
-          <section class="af-card block" aria-labelledby="a-title">
-            <h2 id="a-title" class="af-h3">Deliver to</h2>
-            <div class="choices" role="radiogroup" aria-labelledby="a-title">
-              <button
-                v-for="a in addresses"
-                :key="a.id"
-                type="button"
-                role="radio"
-                class="choice"
-                :aria-checked="form.address_id === a.id"
-                @click="form.address_id = a.id"
-              >
-                <span class="choice__radio" aria-hidden="true"></span>
-                <span class="choice__text">
-                  <b>{{ a.label }}</b>
+            <!-- 2. Where -->
+            <section class="af-panel" aria-labelledby="a-title">
+              <div class="head">
+                <h2 id="a-title" class="h">Deliver to</h2>
+                <AppButton variant="ghost" size="sm" @click="addrOpen = true"><ion-icon :icon="addOutline" aria-hidden="true" /> New address</AppButton>
+              </div>
+              <div v-if="addresses.length" class="addrs" role="radiogroup" aria-labelledby="a-title">
+                <button
+                  v-for="a in addresses"
+                  :key="a.id"
+                  type="button"
+                  role="radio"
+                  class="addr"
+                  :aria-checked="form.address_id === a.id"
+                  @click="form.address_id = a.id"
+                >
+                  <span class="addr__top">
+                    <b>{{ a.label }}</b>
+                    <ion-icon v-if="form.address_id === a.id" :icon="checkmarkCircle" class="addr__tick" aria-hidden="true" />
+                  </span>
                   <span>{{ a.street }}, {{ a.barangay }}</span>
-                  <span class="choice__mark">{{ a.landmark }}</span>
-                </span>
-              </button>
-            </div>
-            <AppButton variant="ghost" @click="addrOpen = true">
-              <ion-icon :icon="addOutline" aria-hidden="true" /> Add a new address
-            </AppButton>
-          </section>
+                  <i v-if="a.landmark">{{ a.landmark }}</i>
+                </button>
+              </div>
+              <p v-else class="af-small">Add the address where we should deliver. You'll drop a pin on the map.</p>
+              <MapPicker v-if="selectedAddress" :key="selectedAddress.id" :model-value="selectedAddress" :station="settings.station" readonly height="170px" :zoom="14" />
+            </section>
 
-          <!-- 3. When -->
-          <section class="af-card block" aria-labelledby="w-title">
-            <h2 id="w-title" class="af-h3">When</h2>
-            <SegmentedControl v-model="form.day" :options="dayOptions" label="Delivery day" block />
-            <div class="periods" role="radiogroup" aria-label="Delivery time">
-              <button
-                v-for="p in periodOptions"
-                :key="p.value"
-                type="button"
-                role="radio"
-                class="period"
-                :aria-checked="form.period === p.value"
-                :disabled="!p.open"
-                @click="form.period = p.value"
-              >
-                <ion-icon :icon="p.icon" aria-hidden="true" />
-                <b>{{ p.label }}</b>
-                <span>{{ p.hours }}</span>
-                <span v-if="!p.open" class="period__closed">Closed for today</span>
-              </button>
-            </div>
-            <p class="af-small">
-              Same-day orders: morning before {{ clockLabel(settings.cutoff.morning) }}, afternoon before {{ clockLabel(settings.cutoff.afternoon) }}.
-            </p>
-          </section>
+            <!-- 3. When -->
+            <section class="af-panel" aria-labelledby="w-title">
+              <div class="head">
+                <h2 id="w-title" class="h">When</h2>
+                <SegmentedControl v-model="form.day" :options="dayOptions" label="Delivery day" />
+              </div>
+              <div class="periods" role="radiogroup" aria-label="Delivery time">
+                <button
+                  v-for="p in periodOptions"
+                  :key="p.value"
+                  type="button"
+                  role="radio"
+                  class="period"
+                  :aria-checked="form.period === p.value"
+                  :disabled="!p.open"
+                  @click="form.period = p.value"
+                >
+                  <span class="period__icon" aria-hidden="true"><ion-icon :icon="p.icon" /></span>
+                  <span class="period__text">
+                    <b>{{ p.label }}</b>
+                    <span>{{ p.hours }}</span>
+                  </span>
+                  <span v-if="!p.open" class="period__note period__note--closed">Closed for today</span>
+                  <span v-else-if="closesIn(p.value)" class="period__note period__note--soon"><ion-icon :icon="timeOutline" aria-hidden="true" /> {{ closesIn(p.value) }}</span>
+                </button>
+              </div>
+              <p class="af-small">
+                Same-day orders: morning before {{ clockLabel(settings.cutoff.morning) }}, afternoon before {{ clockLabel(settings.cutoff.afternoon) }}.
+              </p>
+            </section>
 
-          <!-- 4. Empties -->
-          <section class="af-card block" aria-labelledby="e-title">
-            <div class="block__head">
-              <h2 id="e-title" class="af-h3">Empty containers to return</h2>
-              <span class="af-small">You have {{ containers(held) }} at home</span>
-            </div>
-            <QuantityStepper v-model="form.empties" :min="0" :max="maxEmpties" label="Empty containers to return" unit="empties" />
-            <p class="af-small">This helps us save space on the tricycle for your empties.</p>
-          </section>
+            <!-- 4. Empties + 5. Note -->
+            <div class="duo">
+              <section class="af-panel" aria-labelledby="e-title">
+                <h2 id="e-title" class="h">Empties to hand back</h2>
+                <QuantityStepper v-model="form.empties" :min="0" :max="maxEmpties" label="Empty containers to return" unit="empties" />
+                <p class="af-small">You have {{ containers(held) }} at home. Telling us lets the rider save room on the tricycle.</p>
+              </section>
 
-          <!-- 5. Notes -->
-          <section class="af-card block">
-            <TextField v-model="form.notes" label="Note for the rider" multiline :maxlength="200" placeholder="Example: Please knock loudly, the doorbell is broken." />
-          </section>
-        </form>
+              <section class="af-panel" aria-labelledby="n-title">
+                <h2 id="n-title" class="h">Note for the rider</h2>
+                <div class="chips" role="group" aria-label="Quick notes">
+                  <button v-for="c in NOTE_CHIPS" :key="c" type="button" class="af-chip" :aria-pressed="form.notes.includes(c)" @click="addNote(c)">{{ c }}</button>
+                </div>
+                <TextField v-model="form.notes" label="Note" multiline :maxlength="200" placeholder="Example: blue gate, the dog is friendly." />
+              </section>
+            </div>
+          </form>
+
+          <!-- Receipt (desktop: sticky beside the form) -->
+          <aside class="receipt af-panel" aria-labelledby="r-title">
+            <h2 id="r-title" class="h">Your order</h2>
+            <dl class="lines">
+              <div><dt>{{ form.quantity }} × 5-gallon refill</dt><dd>{{ peso(total) }}</dd></div>
+              <div><dt>Delivery</dt><dd>Free</dd></div>
+              <div><dt>Empties you'll hand back</dt><dd>{{ form.empties }}</dd></div>
+            </dl>
+            <hr class="af-hairline" />
+            <div class="total">
+              <span>Total</span>
+              <b class="af-money">{{ peso(total) }}</b>
+            </div>
+            <div class="facts">
+              <div class="af-inset">
+                <span class="fact__k">When</span>
+                <span class="fact__v">{{ friendlyDay(deliveryDate) }}, {{ period.label.toLowerCase() }} ({{ period.hours }})</span>
+              </div>
+              <div class="af-inset">
+                <span class="fact__k">Where</span>
+                <span class="fact__v">{{ selectedAddress ? `${selectedAddress.label}, ${selectedAddress.barangay}` : 'Choose an address' }}</span>
+              </div>
+              <div class="af-inset pay">
+                <ion-icon :icon="cashOutline" aria-hidden="true" />
+                <span class="fact__v">Pay cash to the rider when it arrives</span>
+              </div>
+            </div>
+            <AppButton size="lg" block :loading="submitting" @click="submit">Place order</AppButton>
+          </aside>
+        </div>
       </div>
 
       <AddressFormModal v-if="settings" :is-open="addrOpen" :settings="settings" @close="addrOpen = false" @saved="onAddressSaved" />
     </ion-content>
 
-    <ion-footer v-if="!loading && !loadError" class="ion-no-border">
+    <!-- Phone/tablet: the total stays in view -->
+    <ion-footer v-if="!loading && !loadError" class="ion-no-border foot">
       <div class="bar">
+        <span class="bar__bag" aria-hidden="true">
+          <ion-icon :icon="bagHandleOutline" />
+          <span class="bar__badge">{{ form.quantity }}</span>
+        </span>
         <div class="bar__sum">
-          <b>{{ peso(total) }}</b>
-          <span>{{ containers(form.quantity) }} · cash on delivery</span>
+          <b class="af-money">{{ peso(total) }}</b>
+          <span>{{ friendlyDay(deliveryDate) }}, {{ period.label.toLowerCase() }}</span>
         </div>
         <AppButton size="lg" :loading="submitting" @click="submit">Place order</AppButton>
       </div>
@@ -255,88 +328,127 @@ async function submit() {
 </template>
 
 <style scoped>
-.narrow { max-width: 720px; }
-.stack { display: grid; gap: var(--af-s4); }
-.alert { margin: 0; padding: 12px 16px; border-radius: var(--af-r-sm); background: var(--af-danger-tint); color: var(--af-danger); border: 1px solid color-mix(in srgb, var(--af-danger) 30%, transparent); font-weight: 650; font-size: 14px; }
-.block { display: grid; gap: var(--af-s4); }
-.block h2 { margin: 0; }
-.block p { margin: 0; }
-.block__head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--af-s2); flex-wrap: wrap; }
-.qty { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: var(--af-s4) var(--af-s6); padding: var(--af-s2) 0; }
-.qty__jug { filter: drop-shadow(0 14px 20px rgba(0, 0, 0, 0.25)) drop-shadow(0 0 16px color-mix(in srgb, var(--af-water) 40%, transparent)); }
-@media (max-width: 400px) { .qty { gap: var(--af-s3); } .qty__jug { width: 64px; height: auto; } }
+.layout { display: grid; gap: 20px; align-items: start; }
+.form { display: grid; gap: 16px; min-width: 0; }
+.h { margin: 0; font-family: var(--af-display); font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+.head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.alert { margin: 0; padding: 12px 16px; border-radius: 14px; background: var(--af-danger-tint); color: var(--af-danger); border: 1px solid color-mix(in srgb, var(--af-danger) 30%, transparent); font-weight: 650; font-size: 14px; }
 
-.choices { display: grid; gap: var(--af-s2); }
-.choice {
+/* ---------- product in the tank ---------- */
+.prod { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px 32px; flex-wrap: wrap; }
+.prod__text { display: grid; gap: 8px; max-width: 30ch; }
+.prod__text p { margin: 0; font-size: 14.5px; line-height: 1.5; }
+.prod__name { margin: 0; font-family: var(--af-display); font-size: clamp(28px, 4vw, 40px); font-weight: 650; letter-spacing: -0.045em; line-height: 1; }
+.prod__price b { font-family: var(--af-display); font-size: 26px; font-weight: 650; color: #ffd58a; letter-spacing: -0.02em; }
+.prod__qty { display: grid; justify-items: center; gap: 8px; padding: 12px 16px; border-radius: 22px; background: rgba(2, 18, 26, 0.42); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.prod__qty :deep(.af-step__btn) { background: rgba(255, 255, 255, 0.08); border-color: rgba(230, 244, 246, 0.3); color: #7ff0e4; }
+.prod__qty :deep(.af-step__value small) { color: #cfe6ea; }
+.prod__max { font-size: 12.5px; font-weight: 650; }
+
+/* ---------- addresses ---------- */
+.addrs { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+.addr {
   display: grid;
-  grid-template-columns: 22px 1fr;
-  gap: var(--af-s3);
-  align-items: start;
-  text-align: left;
-  padding: var(--af-s4);
-  border-radius: var(--af-r-md);
+  gap: 3px;
+  align-content: start;
+  padding: 14px 16px;
+  border-radius: 18px;
   border: 1.5px solid var(--af-line);
-  background: var(--af-surface);
+  background: var(--af-surface-2);
   color: var(--af-ink);
-  font-family: var(--af-font);
+  font: 550 14px/1.4 var(--af-font);
+  text-align: left;
   cursor: pointer;
-  transition: border-color var(--af-dur) var(--af-ease), background var(--af-dur) var(--af-ease), box-shadow var(--af-dur) var(--af-ease);
+  transition: border-color var(--af-dur) var(--af-ease), background var(--af-dur) var(--af-ease);
 }
-.choice:hover { border-color: color-mix(in srgb, var(--af-primary) 45%, var(--af-line)); }
-.choice[aria-checked='true'] { border-color: var(--af-primary); background: var(--af-primary-tint); box-shadow: 0 0 0 4px color-mix(in srgb, var(--af-primary) 12%, transparent); }
-.choice__radio { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--af-line-strong); margin-top: 1px; display: grid; place-items: center; transition: border-color var(--af-dur) var(--af-ease); }
-.choice[aria-checked='true'] .choice__radio { border-color: var(--af-primary); }
-.choice[aria-checked='true'] .choice__radio::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--af-primary); box-shadow: 0 0 8px var(--af-primary); }
-.choice__text { display: grid; gap: 2px; min-width: 0; }
-.choice__text b { font-size: 15px; font-weight: 800; }
-.choice__text span { font-size: 14px; color: var(--af-ink-2); }
-.choice__mark { font-style: italic; }
+.addr:hover { border-color: color-mix(in srgb, var(--af-primary) 45%, var(--af-line)); }
+.addr[aria-checked='true'] { border-color: var(--af-primary); background: var(--af-primary-tint); }
+.addr__top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.addr__top b { font-size: 15.5px; font-weight: 800; }
+.addr__tick { color: var(--af-primary); font-size: 20px; }
+.addr > span:not(.addr__top), .addr i { color: var(--af-ink-2); font-size: 13.5px; }
 
-.periods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--af-s3); }
+/* ---------- time windows ---------- */
+.periods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .period {
   display: grid;
-  gap: 2px;
-  justify-items: start;
-  text-align: left;
-  padding: var(--af-s4);
-  border-radius: var(--af-r-md);
+  grid-template-columns: 42px 1fr;
+  gap: 4px 12px;
+  align-items: center;
+  padding: 14px;
+  border-radius: 18px;
   border: 1.5px solid var(--af-line);
-  background: var(--af-surface);
+  background: var(--af-surface-2);
   color: var(--af-ink);
   font-family: var(--af-font);
+  text-align: left;
   cursor: pointer;
-  transition: border-color var(--af-dur) var(--af-ease), background var(--af-dur) var(--af-ease), box-shadow var(--af-dur) var(--af-ease);
+  transition: border-color var(--af-dur) var(--af-ease), background var(--af-dur) var(--af-ease);
 }
-.period ion-icon { font-size: 26px; color: var(--af-primary); margin-bottom: 6px; }
-.period b { font-size: 16px; font-weight: 800; }
-.period span { font-size: 13px; color: var(--af-ink-2); font-variant-numeric: tabular-nums; }
+.period__icon { grid-row: span 2; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 14px; background: var(--af-sun-tint); color: var(--af-sun); font-size: 22px; }
+.period__text { display: grid; line-height: 1.3; }
+.period__text b { font-size: 16px; font-weight: 800; }
+.period__text span { font-size: 13px; font-weight: 600; color: var(--af-ink-2); font-variant-numeric: tabular-nums; }
+.period__note { grid-column: 2; display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 750; }
+.period__note--soon { color: var(--af-amber-fg); }
+.period__note--closed { color: var(--af-danger); }
 .period:hover:not(:disabled) { border-color: color-mix(in srgb, var(--af-primary) 45%, var(--af-line)); }
-.period[aria-checked='true'] { border-color: var(--af-primary); background: var(--af-primary-tint); box-shadow: 0 0 0 4px color-mix(in srgb, var(--af-primary) 12%, transparent); }
-.period:disabled { opacity: 0.5; cursor: not-allowed; }
-.period__closed { color: var(--af-danger) !important; font-weight: 750; } /* beats .period span */
+.period[aria-checked='true'] { border-color: var(--af-primary); background: var(--af-primary-tint); }
+.period:disabled { opacity: 0.55; cursor: not-allowed; }
+.af-panel > p { margin: 0; }
 
-/* Sticky summary bar: floats above the content like the tab bar */
+.duo { display: grid; gap: 16px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ---------- receipt ---------- */
+.receipt { display: none; }
+.lines { margin: 0; display: grid; gap: 10px; }
+.lines div { display: flex; justify-content: space-between; gap: 12px; font-size: 14.5px; }
+.lines dt { color: var(--af-ink-2); font-weight: 600; }
+.lines dd { margin: 0; font-weight: 750; font-variant-numeric: tabular-nums; }
+.total { display: flex; justify-content: space-between; align-items: baseline; }
+.total span { font-size: 15px; font-weight: 800; }
+.total b { font-family: var(--af-display); font-size: 34px; font-weight: 650; letter-spacing: -0.04em; }
+.facts { display: grid; gap: 8px; }
+.fact__k { font-size: 12.5px; font-weight: 700; color: var(--af-ink-2); }
+.fact__v { font-size: 14px; font-weight: 650; line-height: 1.4; }
+.pay { grid-template-columns: auto 1fr; align-items: center; gap: 10px; }
+.pay ion-icon { font-size: 20px; color: var(--af-sun); }
+
+/* ---------- bottom bar (phone/tablet) ---------- */
 .bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--af-s4);
-  max-width: 720px;
+  gap: 14px;
+  max-width: 860px;
   margin: 0 auto;
-  padding: var(--af-s3) var(--af-s4) calc(var(--af-s3) + env(safe-area-inset-bottom, 0px));
-  background: color-mix(in srgb, var(--af-surface) 92%, transparent);
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: color-mix(in srgb, var(--af-surface-solid) 90%, transparent);
   border-top: 1px solid var(--af-line);
   backdrop-filter: saturate(160%) blur(16px);
   -webkit-backdrop-filter: saturate(160%) blur(16px);
 }
-.bar__sum { display: grid; gap: 2px; }
-.bar__sum b { font-family: var(--af-display); font-size: 26px; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
-.bar__sum span { font-size: 13px; color: var(--af-ink-2); }
-@media (min-width: 760px) {
-  .bar { margin-bottom: var(--af-s4); border: 1px solid var(--af-line); border-radius: var(--af-r-lg); box-shadow: var(--af-shadow-3); padding: var(--af-s3) var(--af-s3) var(--af-s3) var(--af-s5); }
-}
+.bar__bag { position: relative; flex: none; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; background: var(--af-primary-tint); color: var(--af-primary); font-size: 19px; }
+.bar__badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 4px; display: grid; place-items: center; border-radius: 999px; background: var(--af-primary); color: var(--af-on-primary); font-size: 10px; font-weight: 800; box-shadow: 0 0 0 2px var(--af-surface-solid); }
+.bar__sum { display: grid; gap: 2px; margin-right: auto; min-width: 0; }
+.bar__sum b { font-family: var(--af-display); font-size: 24px; font-weight: 650; letter-spacing: -0.03em; }
+.bar__sum span { font-size: 13px; font-weight: 600; color: var(--af-ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.err { display: grid; gap: var(--af-s2); justify-items: start; border-color: color-mix(in srgb, var(--af-danger) 40%, var(--af-line)); }
-.err b { color: var(--af-danger); font-weight: 800; }
+.err { justify-items: start; }
+.err b { color: var(--af-danger); }
 .err p { margin: 0; color: var(--af-ink-2); }
+
+@media (min-width: 760px) {
+  .duo { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
+  .bar { margin-bottom: 16px; border: 1px solid var(--af-line); border-radius: 24px; box-shadow: var(--af-shadow-3); }
+}
+@media (min-width: 1100px) {
+  .layout { grid-template-columns: minmax(0, 1fr) 360px; }
+  .receipt { display: grid; position: sticky; top: 16px; }
+  .foot { display: none; }
+}
+@media (max-width: 420px) {
+  .periods { grid-template-columns: 1fr; }
+  .bar__sum span { display: none; }
+}
 </style>

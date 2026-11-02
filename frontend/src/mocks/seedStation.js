@@ -18,6 +18,76 @@ const CUSTOMERS = [
 const FLOW = ['pending', 'confirmed', 'preparing', 'ready_for_pickup', 'out_for_delivery', 'delivered']
 
 const minutesAgo = (m) => new Date(Date.now() - m * 60_000).toISOString()
+const JOMAR = { id: 'u_jomar', name: 'Jomar Reyes', phone: '09195550123' }
+const RIDERS = [JOMAR, { id: 'u_leo', name: 'Leo Manalo', phone: '09195550188' }]
+
+/** A small repeatable random generator, so the demo history is the same on every reset. */
+function rng(seed) {
+  let x = seed
+  return () => {
+    x = (x * 1103515245 + 12345) % 2147483648
+    return x / 2147483648
+  }
+}
+
+/** Timestamp `daysBack` days ago at hh:mm. */
+function at(daysBack, hh, mm = 0) {
+  const t = new Date()
+  t.setDate(t.getDate() - daysBack)
+  t.setHours(hh, mm, 0, 0)
+  return t.toISOString()
+}
+
+/**
+ * Two weeks of past deliveries for the dashboards (charts need history).
+ * Mostly delivered, a few cancelled or failed — like a real station.
+ */
+function pastOrders(customers) {
+  const rand = rng(2026)
+  const list = []
+  let n = 900
+  for (let d = 13; d >= 1; d--) {
+    const weekday = (new Date(Date.now() - d * 86_400_000).getDay() + 6) % 7 // Mon=0
+    const count = 5 + Math.floor(rand() * 5) + (weekday >= 4 ? 3 : 0)       // busier Fri-Sun
+    for (let k = 0; k < count; k++) {
+      const c = customers[Math.floor(rand() * customers.length)]
+      const qty = 1 + Math.floor(rand() * 5)
+      const period = rand() < 0.58 ? 'morning' : 'afternoon'
+      const roll = rand()
+      const end = roll < 0.06 ? 'cancelled' : roll < 0.1 ? 'failed_delivery' : 'delivered'
+      const h0 = period === 'morning' ? 7 : 11
+      const placed = at(d, h0, Math.floor(rand() * 50))
+      const steps = end === 'cancelled' ? ['pending', 'cancelled'] : ['pending', 'confirmed', 'preparing', 'ready_for_pickup', 'out_for_delivery', end]
+      const rider = RIDERS[Math.floor(rand() * RIDERS.length)]
+      n += 1
+      list.push({
+        id: `o_${n}`,
+        code: `AF-${n}`,
+        customer_id: c.id,
+        quantity: qty,
+        empties_to_return: Math.max(0, qty - 1),
+        unit_price: 30,
+        total: qty * 30,
+        address: { id: `a_${c.id}`, label: 'Home', barangay: c.barangay, street: c.street, landmark: c.landmark, lat: c.lat, lng: c.lng },
+        delivery_date: dateISO(-d),
+        period,
+        notes: '',
+        status: end,
+        attempts: end === 'cancelled' ? 0 : 1,
+        delivery_code: String(1000 + ((n * 53) % 9000)),
+        trip: null,
+        rider: end === 'cancelled' ? null : rider,
+        created_at: placed,
+        history: steps.map((s, i) => ({
+          status: s,
+          at: at(d, h0 + Math.floor(i / 2), 10 + i * 8),
+          ...(s === 'cancelled' ? { note: 'Customer changed their mind' } : s === 'failed_delivery' ? { note: 'No one was home' } : {}),
+        })),
+      })
+    }
+  }
+  return list
+}
 
 /**
  * One order. `status` is where it is now; history is filled up to it.
@@ -44,6 +114,7 @@ function makeOrder(n, c, { qty, empties, day, period, status, startedMinutesAgo,
     attempts: ['out_for_delivery', 'delivered'].includes(status) ? 1 : 0,
     delivery_code: String(2000 + ((n * 37) % 7000)),
     trip: status === 'out_for_delivery' ? { code: 'T-02', rider_name: 'Jomar Reyes', stops_before: 0 } : null,
+    rider: ['out_for_delivery', 'delivered'].includes(status) && !final ? JOMAR : null,
     created_at: history[0].at,
     history,
   }
@@ -59,7 +130,10 @@ export function createStationSeed() {
     phone: c.phone,
     password: 'aquaflow123',
     containers_held: 4,
+    joined: at(20 + c.id.length * 3, 10),
   }))
+  // A second rider so the "who is bringing it?" picker has a choice
+  users.push({ id: 'u_leo', role: 'rider', full_name: 'Leo Manalo', email: 'leo@aquaflow.test', phone: '09195550188', password: 'aquaflow123', joined: at(60, 9) })
   const addresses = CUSTOMERS.map((c) => ({
     id: `a_${c.id}`,
     user_id: c.id,
@@ -93,6 +167,7 @@ export function createStationSeed() {
     makeOrder(1043, hana, { qty: 4, empties: 3, day: 0, period: 'morning', status: 'delivered', startedMinutesAgo: 280 }),
     makeOrder(1044, gio, { qty: 6, empties: 0, day: 0, period: 'morning', status: 'pending', startedMinutesAgo: 270, final: { status: 'rejected', note: 'Outside delivery area' } }),
     makeOrder(1045, carla, { qty: 2, empties: 2, day: 0, period: 'morning', status: 'pending', startedMinutesAgo: 260, final: { status: 'cancelled', note: 'Customer bought from a neighbor' } }),
+    ...pastOrders(CUSTOMERS),
   ]
 
   return {

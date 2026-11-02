@@ -48,6 +48,11 @@ class Order(models.Model):
     confirmation_code = models.CharField(max_length=6, editable=False)
     code_salt = models.CharField(max_length=16, editable=False)
 
+    # Who is bringing it. Set by the dispatcher when the order is sent out.
+    assigned_rider = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                       on_delete=models.SET_NULL, related_name="assigned_orders",
+                                       limit_choices_to={"role": "rider"})
+
     replan_count = models.PositiveSmallIntegerField(default=0)
     needs_review = models.BooleanField(default=False)
     source = models.CharField(max_length=20, choices=Source.choices, default=Source.MANUAL)

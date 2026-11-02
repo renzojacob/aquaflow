@@ -17,5 +17,12 @@ export default defineConfig({
     port: 8100, // backend CORS already allows this port
     strictPort: true,
     host: true, // also reachable from your phone on the same Wi-Fi
+    // Phone testing through an https tunnel (Cloudflare): the phone only talks to THIS server,
+    // and these requests are passed on to Django. Use VITE_API_BASE_URL=/ to switch it on.
+    proxy: {
+      '/api': { target: 'http://localhost:8000', changeOrigin: true },
+      '/admin': { target: 'http://localhost:8000', changeOrigin: true },
+    },
+    allowedHosts: ['.trycloudflare.com'],
   },
 })

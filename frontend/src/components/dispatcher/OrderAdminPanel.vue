@@ -9,10 +9,12 @@ import { computed, ref, watch } from 'vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import MapPicker from '@/components/map/MapPicker.vue'
 import OrderTimeline from '@/components/order/OrderTimeline.vue'
+import DeliverySheet from '@/components/dispatcher/DeliverySheet.vue'
 import ReasonSheet from '@/components/dispatcher/ReasonSheet.vue'
+import RiderCard from '@/components/order/RiderCard.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
 import StatusPill from '@/components/ui/StatusPill.vue'
-import { DISPATCHER_NEXT, MAX_ATTEMPTS } from '@/constants/orderStatus'
+import { DISPATCHER_NEXT, MAX_ATTEMPTS, riderOf } from '@/constants/orderStatus'
 import { showToast } from '@/composables/useToast'
 import { getOrderForStaff, runOrderAction } from '@/services/dispatcherService'
 import { PERIODS, containers, dateTimeOf, friendlyDay, peso } from '@/utils/format'
@@ -26,10 +28,23 @@ const order = ref(null)
 const loading = ref(true)
 const error = ref(null)
 const busyAction = ref('')
-const sheet = ref(null) // 'reject' | 'cancel' | null
+const sheet = ref(null) // 'reject' | 'cancel' | 'fail' | 'dispatch' | 'deliver' | null
 
 const REJECT_REASONS = ['Outside delivery area', 'Not enough stock today', 'Duplicate order', 'Could not reach customer']
 const CANCEL_REASONS = ['Customer asked to cancel', 'Not enough stock', 'Vehicle problem', 'Could not reach customer']
+const FAIL_REASONS = ['No one was home', 'Could not find the house', 'Customer refused', 'Road blocked']
+
+const rider = computed(() => (order.value ? riderOf(order.value) : null))
+
+/** One plain sentence: what should happen next with this order. */
+const NEXT_HINT = {
+  pending: 'Check the stock, then confirm or reject.',
+  confirmed: 'Start filling the containers when you can.',
+  preparing: 'Mark it ready once the containers are filled and sealed.',
+  ready_for_pickup: 'Send it out when the rider loads the tricycle.',
+  out_for_delivery: 'When the rider is back, mark it delivered or say why it failed.',
+  failed_delivery: 'Re-plan it once for the next trip, or cancel it.',
+}
 
 async function load() {
   loading.value = !order.value || order.value.id !== props.orderId
@@ -58,12 +73,15 @@ const DONE_TEXT = {
   reject: 'rejected',
   cancel: 'cancelled',
   replan: 'will go on the next trip',
+  dispatch: 'is on the way',
+  deliver: 'delivered',
+  fail: 'marked as not delivered',
 }
 
-async function run(action, reason = '') {
+async function run(action, reason = '', extra = {}) {
   busyAction.value = action
   try {
-    order.value = await runOrderAction(order.value.id, action, reason)
+    order.value = await runOrderAction(order.value.id, action, reason, extra)
     sheet.value = null
     showToast(`${order.value.code} ${DONE_TEXT[action]}`, 'success')
     emit('changed', order.value)
@@ -79,7 +97,7 @@ async function run(action, reason = '') {
 }
 
 function onAction(a) {
-  if (a.action === 'reject' || a.action === 'cancel') sheet.value = a.action
+  if (['reject', 'cancel', 'fail', 'dispatch', 'deliver'].includes(a.action)) sheet.value = a.action
   else run(a.action)
 }
 </script>
@@ -118,29 +136,29 @@ function onAction(a) {
           {{ a.label }}
         </AppButton>
       </div>
-      <p v-if="order.status === 'ready_for_pickup'" class="hint">Next: assign it to a trip in <b>Plan deliveries</b>.</p>
-      <p v-if="order.status === 'out_for_delivery' && order.trip" class="hint">On trip {{ order.trip.code }} with {{ order.trip.rider_name }}.</p>
+      <p v-if="NEXT_HINT[order.status]" class="hint">{{ NEXT_HINT[order.status] }}</p>
+      <RiderCard v-if="rider && ['out_for_delivery', 'delivered', 'failed_delivery'].includes(order.status)" :rider="rider" :status="order.status" />
 
       <!-- Key facts -->
       <dl class="facts">
         <div><dt>Containers</dt><dd class="big">{{ order.quantity }}</dd></div>
         <div><dt>Empties back</dt><dd class="big">{{ order.empties_to_return }}</dd></div>
         <div><dt>When</dt><dd>{{ friendlyDay(order.delivery_date) }}<br />{{ PERIODS[order.period].label }}</dd></div>
-        <div><dt>Collect</dt><dd>{{ peso(order.total) }}<br /><span class="af-small">cash</span></dd></div>
+        <div class="money"><dt>Collect</dt><dd class="big af-money">{{ peso(order.total) }}</dd></div>
       </dl>
 
       <section class="block">
-        <h3 class="af-caption">Deliver to</h3>
+        <h3 class="sub">Deliver to</h3>
         <p class="addr">
           <b>{{ order.address.street }}, {{ order.address.barangay }}</b><br />
           <i>{{ order.address.landmark }}</i>
         </p>
         <p v-if="order.notes" class="note">“{{ order.notes }}”</p>
-        <MapPicker :model-value="order.address" readonly height="180px" :zoom="16" />
+        <MapPicker :model-value="order.address" readonly height="190px" :zoom="15" />
       </section>
 
       <section class="block">
-        <h3 class="af-caption">History</h3>
+        <h3 class="sub">History</h3>
         <OrderTimeline :order="order" staff />
       </section>
 
@@ -155,6 +173,24 @@ function onAction(a) {
       :busy="busyAction === 'reject'"
       @close="sheet = null"
       @confirm="(r) => run('reject', r)"
+    />
+    <ReasonSheet
+      :is-open="sheet === 'fail'"
+      :title="`${order?.code} not delivered?`"
+      message="The containers go back to ready stock. You can re-plan it once."
+      confirm-label="Mark as not delivered"
+      :presets="FAIL_REASONS"
+      :busy="busyAction === 'fail'"
+      @close="sheet = null"
+      @confirm="(r) => run('fail', r)"
+    />
+    <DeliverySheet
+      :is-open="sheet === 'dispatch' || sheet === 'deliver'"
+      :mode="sheet === 'deliver' ? 'deliver' : 'dispatch'"
+      :order="order"
+      :busy="busyAction === 'dispatch' || busyAction === 'deliver'"
+      @close="sheet = null"
+      @confirm="(extra) => run(sheet, '', extra)"
     />
     <ReasonSheet
       :is-open="sheet === 'cancel'"
@@ -182,7 +218,10 @@ function onAction(a) {
 
 .facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--af-s2); margin: 0; }
 .facts > div { padding: var(--af-s3) var(--af-s4); border-radius: var(--af-r-sm); background: var(--af-surface-2); border: 1px solid var(--af-line); min-width: 0; }
-.facts dt { font-family: var(--af-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--af-ink-2); }
+.facts dt { font-size: 12.5px; font-weight: 700; color: var(--af-ink-2); }
+.facts dd.big.af-money { font-size: clamp(20px, 2.2vw, 26px); white-space: nowrap; }
+.facts .money { background: var(--af-sun-tint); border-color: color-mix(in srgb, var(--af-sun-glow) 30%, var(--af-line)); }
+.sub { margin: 0; font-family: var(--af-display); font-size: 15px; font-weight: 600; letter-spacing: -0.015em; }
 .facts dd { margin: 6px 0 0; font-size: 14px; font-weight: 650; font-variant-numeric: tabular-nums; }
 .facts dd.big { font-family: var(--af-display); font-size: 30px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
 

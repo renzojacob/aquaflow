@@ -16,7 +16,7 @@ export async function login(email, password) {
   if (env.useMock) {
     await mockDelay(500)
     const user = db().users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase())
-    if (!user || user.password !== password) {
+    if (!user || user.password !== password || user.is_active === false) {
       throw mockError('unauthorized', 401, 'Wrong email or password.')
     }
     return { token: `mock.${user.id}`, user: publicUser(user) }

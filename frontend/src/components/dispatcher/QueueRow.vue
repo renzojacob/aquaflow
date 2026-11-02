@@ -84,7 +84,7 @@ defineEmits(['open', 'quick-confirm'])
 .row__text { display: grid; gap: 3px; min-width: 0; }
 .row__top { display: flex; align-items: baseline; gap: var(--af-s2); min-width: 0; }
 .row__top b { font-size: 15px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.row__code { font-family: var(--af-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; color: var(--af-ink-2); flex: none; }
+.row__code { font-family: var(--af-font); font-size: 12.5px; font-weight: 700; letter-spacing: 0; color: var(--af-ink-2); flex: none; }
 .row__meta { font-size: 13px; color: var(--af-ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .row__quick { flex: none; }
 /* In a narrow list (phone, or the desktop split view) the tab already says the status */

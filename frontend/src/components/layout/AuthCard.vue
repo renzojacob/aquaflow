@@ -29,7 +29,7 @@ defineProps({
 
           <div class="af-auth__stage">
             <div class="af-auth__pitch">
-              <p class="af-auth__eyebrow">Calapan City · Oriental Mindoro</p>
+              <p class="af-auth__eyebrow">Water refills for Calapan City</p>
               <p class="af-auth__big af-shimmer">Water before you run out.</p>
               <p class="af-auth__small">Order 5-gallon refills in seconds. Watch your rider come to you. Pay cash at your door.</p>
             </div>
@@ -88,11 +88,8 @@ defineProps({
 .af-auth__eyebrow {
   display: none;
   margin: 0 0 var(--af-s4);
-  font-family: var(--af-mono);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-size: 15px;
+  font-weight: 700;
   color: var(--af-primary);
 }
 .af-auth__big {

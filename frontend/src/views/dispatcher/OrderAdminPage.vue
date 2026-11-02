@@ -13,7 +13,7 @@ const route = useRoute()
     <ion-header class="ion-no-border">
       <ion-toolbar>
         <ion-buttons slot="start">
-          <ion-back-button default-href="/dispatcher/orders" text="Queue" />
+          <ion-back-button :default-href="route.path.startsWith('/owner') ? '/owner/queue' : '/dispatcher/orders'" text="Queue" />
         </ion-buttons>
         <ion-title>Order</ion-title>
       </ion-toolbar>

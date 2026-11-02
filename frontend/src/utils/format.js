@@ -84,3 +84,30 @@ export function initials(name = '') {
 export function containers(n) {
   return `${n} ${n === 1 ? 'container' : 'containers'}`
 }
+
+/** ISO timestamp -> "just now" / "12 min ago" / "3 h ago" / "Yesterday" / "Oct 20" */
+export function ago(isoDateTime, now = new Date()) {
+  if (!isoDateTime) return ''
+  const t = new Date(isoDateTime)
+  const min = Math.round((now - t) / 60_000)
+  if (min < 1) return 'just now'
+  if (min < 60) return `${min} min ago`
+  const h = Math.round(min / 60)
+  if (h < 12 && t.toDateString() === now.toDateString()) return `${h} h ago`
+  const day = friendlyDay(toISODate(t))
+  return day === 'Today' ? timeOf(isoDateTime) : day
+}
+
+/** Minutes -> "1 h 20 min" / "45 min" */
+export function duration(minutes) {
+  const m = Math.max(0, Math.round(minutes))
+  const h = Math.floor(m / 60)
+  const r = m % 60
+  if (!h) return `${r} min`
+  return r ? `${h} h ${r} min` : `${h} h`
+}
+
+/** Short month name for charts: 5 -> "Jun" */
+export function monthShort(date) {
+  return date.toLocaleDateString('en-PH', { month: 'short' })
+}

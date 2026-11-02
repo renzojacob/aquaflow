@@ -30,7 +30,7 @@ body {
 .af-h3      { font-size: 18px; line-height: 26px; font-weight: 800; letter-spacing: -0.01em; }
 .af-body    { font-size: 16px; line-height: 24px; font-weight: 500; }
 .af-small   { font-size: 14px; line-height: 20px; color: var(--af-ink-2); }
-.af-caption { font-family: var(--af-mono); font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--af-ink-2); }
+.af-caption { font-family: var(--af-font); font-size: 13px; line-height: 18px; font-weight: 700; letter-spacing: 0; color: var(--af-ink-2); }
 .af-metric  { font-family: var(--af-display); font-size: 52px; line-height: 0.95; font-weight: 700; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
 .af-code    { font-family: var(--af-mono); font-weight: 600; letter-spacing: 0.3em; }
 
@@ -132,17 +132,88 @@ body {
 @media (min-width: 768px) {
   .af-container { padding-left: var(--af-s6); padding-right: var(--af-s6); }
 }
+/* Phones/tablets: leave room so the floating tab bar never covers the last item */
+@media (max-width: 991px) {
+  .af-container { padding-bottom: calc(var(--af-s8) + 56px); }
+}
 
-/* Content rises in, one block after another (list stagger) */
-.af-container > * { animation: af-rise var(--af-dur-3) var(--af-ease-out) both; }
-.af-container > *:nth-child(2) { animation-delay: 40ms; }
-.af-container > *:nth-child(3) { animation-delay: 80ms; }
-.af-container > *:nth-child(4) { animation-delay: 120ms; }
-.af-container > *:nth-child(5) { animation-delay: 160ms; }
-.af-container > *:nth-child(n + 6) { animation-delay: 200ms; }
+/* Pages don't slide in section by section: the tank's rising water is the one entrance moment.
+   af-rise is kept for things that appear because the person did something (new rows, sheets). */
 @keyframes af-rise {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: none; }
+}
+
+/* ---------- Dashboard layout ---------- */
+.af-dash { max-width: 1240px; gap: 20px; }
+.af-dash--narrow { max-width: 860px; }
+
+/* 12-column bento. Phones: everything full width. Tablets: halves. Desktop: the real spans. */
+.af-bento { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.af-bento > * { grid-column: span 12; min-width: 0; }
+.af-bento--stretch { align-items: stretch; }
+@media (min-width: 640px) {
+  .af-bento > .b-3, .af-bento > .b-4, .af-bento > .b-5, .af-bento > .b-6 { grid-column: span 6; }
+}
+@media (min-width: 1100px) {
+  .af-bento > .b-3 { grid-column: span 3; }
+  .af-bento > .b-4 { grid-column: span 4; }
+  .af-bento > .b-5 { grid-column: span 5; }
+  .af-bento > .b-6 { grid-column: span 6; }
+  .af-bento > .b-7 { grid-column: span 7; }
+  .af-bento > .b-8 { grid-column: span 8; }
+  .af-bento > .b-9 { grid-column: span 9; }
+}
+@media (min-width: 640px) and (max-width: 1099px) {
+  .af-bento > .b-7, .af-bento > .b-8, .af-bento > .b-9 { grid-column: span 12; }
+}
+
+/* Two surfaces, used on purpose:
+   .af-panel = frosted glass, for groups you read (charts, lists)
+   .af-inset = flat, no border, for small facts sitting inside or beside a panel */
+.af-panel {
+  position: relative;
+  display: grid;
+  gap: 18px;
+  align-content: start;
+  min-width: 0;
+  padding: 22px;
+  border-radius: 24px;
+  background: var(--af-surface);
+  border: 1px solid var(--af-line);
+  box-shadow: inset 0 1px 0 var(--af-glass-edge), var(--af-shadow-2);
+  backdrop-filter: var(--af-glass-blur);
+  -webkit-backdrop-filter: var(--af-glass-blur);
+}
+.af-inset { display: grid; gap: 6px; min-width: 0; padding: 14px 16px; border-radius: 16px; background: var(--af-surface-2); }
+.af-money { color: var(--af-sun); font-variant-numeric: tabular-nums; }
+.af-hairline { height: 1px; background: var(--af-line); border: 0; margin: 0; }
+
+/* Chips used for filters */
+.af-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px; max-width: 100%; }
+.af-chips::-webkit-scrollbar { display: none; }
+.af-chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: var(--af-r-pill);
+  border: 1px solid var(--af-line);
+  background: var(--af-surface);
+  color: var(--af-ink-2);
+  font: 750 13.5px var(--af-font);
+  cursor: pointer;
+  transition: background var(--af-dur) var(--af-ease), color var(--af-dur) var(--af-ease), border-color var(--af-dur) var(--af-ease);
+}
+.af-chip:hover { color: var(--af-ink); border-color: var(--af-line-strong); }
+.af-chip[aria-pressed='true'], .af-chip[aria-selected='true'] { background: var(--af-ink); color: var(--af-bg-solid); border-color: var(--af-ink); }
+.af-chip__n { min-width: 22px; padding: 2px 7px; border-radius: var(--af-r-pill); background: var(--af-surface-3); font-size: 12px; font-variant-numeric: tabular-nums; text-align: center; }
+.af-chip[aria-pressed='true'] .af-chip__n, .af-chip[aria-selected='true'] .af-chip__n { background: color-mix(in srgb, var(--af-bg-solid) 20%, transparent); }
+
+@media (max-width: 560px) {
+  .af-panel { padding: 18px; border-radius: 22px; }
 }
 
 /* Screen-reader-only text */
@@ -210,4 +281,11 @@ ion-refresher-content { --color: var(--af-primary); }
     animation-delay: 0ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Printing (owner reports): just the page content, on white */
+@media print {
+  .af-side, .af-tabbar, ion-header, .af-app-ocean, ion-refresher { display: none !important; }
+  html, body, ion-content, .ion-page { background: #ffffff !important; --background: #ffffff; }
+  .af-panel, .kpi { box-shadow: none !important; backdrop-filter: none !important; border-color: #cfe0e2 !important; }
 }

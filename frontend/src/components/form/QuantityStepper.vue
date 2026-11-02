@@ -63,5 +63,5 @@ function change(step) {
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
-.af-step__value small { display: block; margin-top: 8px; font-family: var(--af-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.14em; color: var(--af-ink-2); text-transform: uppercase; }
+.af-step__value small { display: block; margin-top: 6px; font-family: var(--af-font); font-size: 12.5px; font-weight: 700; letter-spacing: 0; color: var(--af-ink-2); }
 </style>

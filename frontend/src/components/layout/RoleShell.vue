@@ -164,7 +164,7 @@ function logout() {
 .af-side__user { display: flex; align-items: center; gap: var(--af-s3); padding: var(--af-s3); border-radius: var(--af-r-md); background: rgba(255, 255, 255, 0.05); border: 1px solid var(--af-deep-line); }
 .af-side__who { display: grid; min-width: 0; flex: 1; }
 .af-side__who b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.af-side__who span { font-family: var(--af-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--af-on-deep-2); margin-top: 2px; }
+.af-side__who span { font-size: 12.5px; font-weight: 650; color: var(--af-on-deep-2); margin-top: 1px; }
 .af-side__logout {
   width: 44px;
   height: 44px;

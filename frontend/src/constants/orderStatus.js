@@ -33,6 +33,13 @@ export const FINAL_STATUSES = ['delivered', 'rejected', 'cancelled']
 /** A failed delivery is re-planned once. After the 2nd failed attempt the order is closed. */
 export const MAX_ATTEMPTS = 2
 
+/** The rider bringing an order, if any: { name, phone } or null. Works for real and mock data. */
+export function riderOf(order) {
+  if (order?.rider) return order.rider
+  if (order?.trip?.rider_name) return { name: order.trip.rider_name, phone: order.trip.rider_phone || '' }
+  return null
+}
+
 /** Is this order still in progress? */
 export function isActive(order) {
   if (FINAL_STATUSES.includes(order.status)) return false
@@ -66,9 +73,16 @@ export const DISPATCHER_NEXT = Object.freeze({
     { action: 'ready', label: 'Mark ready for pickup', variant: 'primary' },
     { action: 'cancel', label: 'Cancel order', variant: 'danger' },
   ],
-  ready_for_pickup: [{ action: 'cancel', label: 'Cancel order', variant: 'danger' }],
+  ready_for_pickup: [
+    { action: 'dispatch', label: 'Send out for delivery', variant: 'primary' },
+    { action: 'cancel', label: 'Cancel order', variant: 'danger' },
+  ],
+  out_for_delivery: [
+    { action: 'deliver', label: 'Mark as delivered', variant: 'primary' },
+    { action: 'fail', label: "Couldn't deliver", variant: 'danger' },
+  ],
   failed_delivery: [
-    { action: 'replan', label: 'Re-plan for next trip', variant: 'primary' },
+    { action: 'replan', label: 'Re-plan (send again)', variant: 'primary' },
     { action: 'cancel', label: 'Cancel order', variant: 'danger' },
   ],
 })

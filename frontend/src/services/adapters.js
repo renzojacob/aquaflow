@@ -68,11 +68,17 @@ export function toOrder(o) {
     attempts: history.filter((h) => h.status === 'failed_delivery').length,
     delivery_code: o.confirmation_code,
     trip: null, // filled in when trips are connected
+    rider: o.rider ? { id: o.rider.id, name: o.rider.name, phone: o.rider.phone || '' } : null,
     created_at: o.created_at,
     history,
     rejection_reason: o.rejection_reason || '',
     cancel_reason: o.cancel_reason || '',
   }
+}
+
+/** API order for staff screens -> app Order + who ordered it */
+export function toStaffOrder(o) {
+  return { ...toOrder(o), customer: { name: o.customer_name || 'Customer', phone: o.customer_phone || '' } }
 }
 
 /** app "new order" form -> API body */

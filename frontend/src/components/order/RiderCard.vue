@@ -1,79 +1,48 @@
 <!--
-  RiderCard — "your rider" card shown once an order is out for delivery,
-  the way a food-delivery app shows the courier assigned to your order.
-
-  NOTE for Phase D: the backend doesn't expose a rider phone/photo to the
-  customer yet (only order.trip.rider_name). The "Call rider" button is
-  wired to the STATION phone for now, which is real. Swap `riderPhone`
-  for a real number once the backend adds it.
+  RiderCard — the person bringing the order, with a call button when we have their number.
+  Usage: <RiderCard :rider="{ name, phone }" status="out_for_delivery" />
 -->
 <script setup>
 import { computed } from 'vue'
 import { IonIcon } from '@ionic/vue'
-import { callOutline } from 'ionicons/icons'
+import { callOutline, chatbubbleOutline } from 'ionicons/icons'
 import { initials } from '@/utils/format'
 
 const props = defineProps({
-  trip: { type: Object, required: true },     // { rider_name, code, stops_before }
-  stationPhone: { type: String, default: '' }, // optional, honest fallback
+  rider: { type: Object, required: true }, // { name, phone }
+  status: { type: String, default: 'out_for_delivery' },
 })
-
-const etaText = computed(() =>
-  props.trip.stops_before === 0
-    ? 'Heading to you now'
-    : `${props.trip.stops_before} stop${props.trip.stops_before > 1 ? 's' : ''} away`,
+const line = computed(() =>
+  props.status === 'delivered' ? 'Delivered your order' : props.status === 'failed_delivery' ? 'Tried to deliver' : 'Bringing your water now',
 )
-const telHref = computed(() => (props.stationPhone ? `tel:${props.stationPhone.replace(/\s+/g, '')}` : ''))
+const tel = computed(() => (props.rider.phone ? props.rider.phone.replace(/\s+/g, '') : ''))
 </script>
 
 <template>
-  <section class="af-rider af-card" aria-labelledby="rider-title">
-    <span class="af-rider__avatar" aria-hidden="true">{{ initials(trip.rider_name) }}</span>
-    <div class="af-rider__info">
-      <h2 id="rider-title" class="af-rider__name">{{ trip.rider_name }}</h2>
-      <p class="af-rider__meta">
-        <span class="af-rider__dot" aria-hidden="true"></span>
-        <b>{{ etaText }}</b> · trip {{ trip.code }}
-      </p>
+  <section class="rc" aria-label="Your rider">
+    <span class="rc__avatar" aria-hidden="true">{{ initials(rider.name) }}</span>
+    <div class="rc__info">
+      <b class="rc__name">{{ rider.name }}</b>
+      <span class="rc__line"><i v-if="status === 'out_for_delivery'" class="rc__dot" aria-hidden="true"></i>{{ line }}</span>
     </div>
-    <a v-if="telHref" class="af-rider__call" :href="telHref" aria-label="Call the station about your rider">
-      <ion-icon :icon="callOutline" aria-hidden="true" />
-    </a>
+    <template v-if="tel">
+      <a class="rc__btn" :href="`sms:${tel}`" :aria-label="`Text ${rider.name}`"><ion-icon :icon="chatbubbleOutline" /></a>
+      <a class="rc__btn rc__btn--call" :href="`tel:${tel}`" :aria-label="`Call ${rider.name}`"><ion-icon :icon="callOutline" /></a>
+    </template>
   </section>
 </template>
 
 <style scoped>
-.af-rider { display: flex; align-items: center; gap: var(--af-s3); padding: var(--af-s4); }
-.af-rider__avatar {
-  width: 48px;
-  height: 48px;
-  flex: none;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(140deg, #4fe0d2 0%, #1aa6b5 100%);
-  color: #022320;
-  font-weight: 800;
-  font-size: 15px;
-}
-.af-rider__info { min-width: 0; flex: 1; display: grid; gap: 3px; }
-.af-rider__name { margin: 0; font-size: 15px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.af-rider__meta { margin: 0; display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--af-ink-2); }
-.af-rider__meta b { color: var(--af-primary); font-weight: 750; }
-.af-rider__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--af-primary); box-shadow: 0 0 6px var(--af-primary); flex: none; animation: af-rider-pulse 1.6s ease-in-out infinite; }
-@keyframes af-rider-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-.af-rider__call {
-  flex: none;
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--af-primary-tint);
-  color: var(--af-primary);
-  font-size: 19px;
-  text-decoration: none;
-  transition: background var(--af-dur) var(--af-ease);
-}
-.af-rider__call:hover { background: color-mix(in srgb, var(--af-primary) 26%, transparent); }
+.rc { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 22px; background: var(--af-surface); border: 1px solid var(--af-line); box-shadow: inset 0 1px 0 var(--af-glass-edge); }
+.rc__avatar { width: 50px; height: 50px; flex: none; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(140deg, #b9b4ff 0%, #4fe0d2 100%); color: #04161d; font-weight: 800; font-size: 16px; box-shadow: 0 0 0 3px var(--af-surface-solid), 0 0 0 4px color-mix(in srgb, var(--af-primary) 45%, transparent); }
+.rc__info { min-width: 0; flex: 1; display: grid; gap: 3px; }
+.rc__name { font-size: 16px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rc__line { display: flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 650; color: var(--af-ink-2); }
+.rc__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--af-primary); box-shadow: 0 0 8px var(--af-primary); animation: rc-pulse 1.6s ease-in-out infinite; }
+@keyframes rc-pulse { 50% { opacity: 0.4; } }
+.rc__btn { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; background: var(--af-surface-2); color: var(--af-primary); font-size: 19px; text-decoration: none; }
+.rc__btn:hover { background: var(--af-primary-tint); }
+.rc__btn--call { background: var(--af-primary); color: var(--af-on-primary); }
+.rc__btn--call:hover { background: var(--af-primary-hover); }
+@media (prefers-reduced-motion: reduce) { .rc__dot { animation: none; } }
 </style>

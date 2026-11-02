@@ -51,10 +51,18 @@ export function toApiError(error) {
   }
 
   const status = error.response.status
-  const detail = error.response.data?.detail
+  const body = error.response.data
+  const detail = body?.detail
   const text = typeof detail === 'string' ? detail : null
 
   switch (status) {
+    case 400: {
+      // Django REST Framework validation errors come back shaped like
+      // { "password": ["This password is too common."], "email": [...] }
+      // — not { detail: "..." } — so pull the first field's first message out.
+      const message = text ?? firstFieldError(body) ?? 'Some fields are invalid. Please check your entries.'
+      return { kind: 'validation', status, message, details: body }
+    }
     case 401:
       unauthorizedHandler?.()
       return { kind: 'unauthorized', status, message: text ?? 'Your session has ended. Please log in again.', details: detail }
@@ -70,8 +78,22 @@ export function toApiError(error) {
       return { kind: 'validation', status, message: text ?? first?.msg ?? 'Some fields are invalid.', details: detail }
     }
     default:
-      return { kind: 'server', status, message: text ?? 'Server error. Please try again.', details: detail }
+      return { kind: 'server', status, message: text ?? firstFieldError(body) ?? 'Server error. Please try again.', details: detail }
   }
+}
+
+/**
+ * Pull the first readable message out of a DRF field-error body, e.g.
+ * { "password": ["This password is too common."] } -> "This password is too common."
+ * { "non_field_errors": ["..."] } also works. Returns null if the shape doesn't match.
+ */
+function firstFieldError(body) {
+  if (!body || typeof body !== 'object') return null
+  for (const value of Object.values(body)) {
+    if (Array.isArray(value) && typeof value[0] === 'string') return value[0]
+    if (typeof value === 'string') return value
+  }
+  return null
 }
 
 http.interceptors.response.use(

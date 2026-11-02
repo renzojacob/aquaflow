@@ -52,6 +52,7 @@ const isEndState = computed(() => ['rejected', 'cancelled'].includes(props.order
 </template>
 
 <style scoped>
+.af-tracker { container-type: inline-size; }
 .af-tracker__row {
   display: flex;
   align-items: flex-start;
@@ -120,9 +121,17 @@ const isEndState = computed(() => ['rejected', 'cancelled'].includes(props.order
 .af-tracker__end { margin: var(--af-s4) 0 0; font-size: 14px; font-weight: 650; color: var(--af-ink-2); text-align: center; }
 .af-tracker__end.is-danger { color: var(--af-danger); }
 
-@media (max-width: 420px) {
-  .af-tracker__label { font-size: 10px; max-width: 54px; }
-  .af-tracker__dot { width: 32px; height: 32px; font-size: 15px; }
-  .af-tracker__line { top: 15px; left: calc(50% + 20px); right: calc(-50% + 20px); }
+/* Narrow (phone, or inside the tank): 6 labels don't fit side by side.
+   Show only the current step's word; the others stay readable for screen readers. */
+@container (max-width: 440px) {
+  .af-tracker__dot { width: 30px; height: 30px; font-size: 14px; }
+  .af-tracker__line { top: 14px; left: calc(50% + 19px); right: calc(-50% + 19px); }
+  .af-tracker__step:not(.is-now) .af-tracker__label {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+  .af-tracker__step.is-now .af-tracker__label { max-width: none; white-space: nowrap; font-size: 12px; }
+  .af-tracker__step:first-child.is-now .af-tracker__label { align-self: flex-start; }
+  .af-tracker__step:last-child.is-now .af-tracker__label { align-self: flex-end; }
 }
 </style>

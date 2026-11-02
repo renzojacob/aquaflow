@@ -1,5 +1,5 @@
 /* =====================================================================
-   AquaFlow design tokens — "Caustics"
+   AquaFlow design tokens — "Light through water"
    The idea: light dancing at the bottom of a pool.
    - Dark is the main theme (:root[data-theme="dark"]). Light is designed
      separately (:root), not just inverted.
@@ -17,6 +17,8 @@
          primary/tint 5.2 · amber/tint 6.1 · danger/tint 5.8 · success/tint 5.3
          status pills 5.0–5.7
    DEEP  ink-2 on deep 7.8 · mint on deep 9.1
+   MONEY sun #ffd58a on dark bg 13.5 · sun #8a5600 on light bg 5.4 · pearl on dark 9.9 · pearl on light 5.8
+   TANK  ink on water #146068 6.4 · #cfe6ea on water 5.6 (ink-2 on water is only 3.8: never use it there)
    ===================================================================== */
 
 :root {
@@ -43,6 +45,11 @@
   --af-water: #2bc4c0;         /* water fill (never text) */
   --af-water-deep: #0e8f93;
   --af-glow: 0 8px 22px rgba(0, 112, 103, 0.24);
+  --af-pearl: #5848c9;         /* light refracting through water: second accent */
+  --af-pearl-tint: #ecebff;
+  --af-sun: #8a5600;           /* money ONLY: prices, sales, totals (text-safe on light) */
+  --af-sun-tint: #fff3d9;
+  --af-sun-glow: #ffd58a;      /* decorative money glow (never text) */
 
   /* ---------- Deep water (same feel in both themes) ---------- */
   --af-deep: #052c35;
@@ -190,6 +197,11 @@
   --af-water: #4fe0d2;
   --af-water-deep: #1aa6b5;
   --af-glow: 0 0 0 6px rgba(79, 224, 210, 0.1), 0 10px 30px rgba(79, 224, 210, 0.22);
+  --af-pearl: #b9b4ff;
+  --af-pearl-tint: #1d1b3d;
+  --af-sun: #ffd58a;
+  --af-sun-tint: #33280f;
+  --af-sun-glow: #ffd58a;
 
   --af-deep: #02121a;
   --af-deep-2: #0a2630;
@@ -300,6 +312,10 @@
   --af-danger-tint: rgba(255, 138, 122, 0.14);
   --af-success: #6fe3a5;
   --af-focus: #9ef0e8;
+  --af-pearl: #b9b4ff;
+  --af-pearl-tint: rgba(185, 180, 255, 0.14);
+  --af-sun: #ffd58a;
+  --af-sun-tint: rgba(255, 213, 138, 0.14);
   --af-st-pending: #a9c3c8;   --af-st-pending-t: rgba(169, 195, 200, 0.14);
   --af-st-confirmed: #9db8ff; --af-st-confirmed-t: rgba(157, 184, 255, 0.14);
   --af-st-preparing: #c6b2ff; --af-st-preparing-t: rgba(198, 178, 255, 0.14);

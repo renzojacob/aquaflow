@@ -29,3 +29,70 @@ def start_trip(trip, rider, device_time=None):
     trip.status = Trip.Status.OUT
     trip.save(update_fields=["status", "updated_at"])
     return trip
+
+# ---------------------------------------------------------------------------
+# Dispatcher shortcuts for running deliveries before the Rider app exists.
+# They use the same transition() rules, so stock and history stay correct.
+# ---------------------------------------------------------------------------
+from django.contrib.auth import get_user_model
+from django.utils import timezone
+
+from apps.customers.services import record_containers
+from apps.delivery.models import DeliveryAttempt
+from apps.inventory.models import StockLevel
+from apps.inventory.services import apply_movement
+
+
+def ensure_stock_row(product):
+    """apply_movement() needs a StockLevel row; create an empty one the first time."""
+    StockLevel.objects.get_or_create(product=product)
+
+
+@transaction.atomic
+def send_out(order, by, rider_id=None):
+    """Ready -> Out for delivery, optionally naming the rider who carries it."""
+    rider = None
+    if rider_id:
+        rider = get_user_model().objects.filter(pk=rider_id, role="rider", is_active=True).first()
+        if rider is None:
+            raise ValidationError({"rider_id": ["Pick an active rider."]})
+    ensure_stock_row(order.product)
+    order = transition(order, S.OUT_FOR_DELIVERY, by=by,
+                       note=f"Sent out with {rider.get_full_name() or rider.username}" if rider else "Sent out")
+    if rider:
+        order.assigned_rider = rider
+        order.save(update_fields=["assigned_rider", "updated_at"])
+    return order
+
+
+@transaction.atomic
+def mark_delivered(order, by, empties_collected=None):
+    """Out for delivery -> Delivered. Records containers left and empties taken back."""
+    empties = order.expected_empties if empties_collected is None else int(empties_collected)
+    if empties < 0 or empties > 50:
+        raise ValidationError({"empties_collected": ["Enter how many empties were collected."]})
+    ensure_stock_row(order.product)
+    order = transition(order, S.DELIVERED, by=by, note="Delivered")
+    record_containers(order.customer, delivered=order.quantity, returned=empties,
+                      note=f"Order #{order.pk}", order=order)
+    if empties:
+        apply_movement(order.product, "empties_in", by, empty=empties, order=order)
+    DeliveryAttempt.objects.create(
+        order=order, rider=order.assigned_rider or by, outcome=DeliveryAttempt.Outcome.DELIVERED,
+        empties_collected=empties, device_time=timezone.now(),
+    )
+    return order
+
+
+@transaction.atomic
+def mark_failed(order, by, reason):
+    """Out for delivery -> Failed. The containers come back to ready stock."""
+    if len((reason or "").strip()) < 3:
+        raise ValidationError({"reason": ["Say why it could not be delivered."]})
+    ensure_stock_row(order.product)
+    order = transition(order, S.FAILED, by=by, note=reason.strip()[:255])
+    DeliveryAttempt.objects.create(
+        order=order, rider=order.assigned_rider or by, outcome=DeliveryAttempt.Outcome.FAILED,
+        failure_reason=DeliveryAttempt.FailureReason.OTHER, device_time=timezone.now(),
+    )
+    return order

@@ -9,6 +9,7 @@ import { dateISO } from '@/utils/format'
 import { insideArea } from '@/utils/geo'
 import { fromAddress, toAddress, toOrder, toOrderPayload } from './adapters'
 import { http } from './http'
+import { MINUTES_PER_STOP, ROAD_FACTOR, driveMinutes, mockRoute } from './riderService'
 
 /** @typedef {import('@/types/models').Order} Order */
 /** @typedef {import('@/types/models').Address} Address */
@@ -82,6 +83,40 @@ export async function listOrders(scope) {
   }
   const mine = await fetchMyOrders()
   return mine.filter((o) => (scope === 'active' ? isActive(o) : !isActive(o)))
+}
+
+/** Every one of my orders (active and past), newest first. Dashboards compute their numbers from this. */
+export async function listAllOrders() {
+  if (env.useMock) {
+    await mockDelay()
+    const me = currentUser()
+    return clone(db().orders.filter((o) => o.customer_id === me.id).sort(newestFirst))
+  }
+  return fetchMyOrders()
+}
+
+/** My account preferences: reminders on/off and the usual number of containers. */
+export async function getPreferences() {
+  if (env.useMock) {
+    await mockDelay(150)
+    const me = currentUser()
+    return { reminders_enabled: me.reminders_enabled ?? true, usual_quantity: me.usual_quantity ?? 3, containers_held: me.containers_held ?? 0 }
+  }
+  const { data } = await http.get('/api/me/profile/')
+  return data
+}
+
+/** @param {{ reminders_enabled?: boolean, usual_quantity?: number }} patch */
+export async function savePreferences(patch) {
+  if (env.useMock) {
+    await mockDelay(300)
+    const me = currentUser()
+    Object.assign(me, patch)
+    saveDb()
+    return getPreferences()
+  }
+  const { data } = await http.patch('/api/me/profile/', patch)
+  return data
 }
 
 /** @returns {Promise<Order>} */
@@ -163,6 +198,36 @@ export async function createOrder(payload) {
   }
   const { data } = await http.post('/api/customer/orders/', toOrderPayload(payload))
   return toOrder(data)
+}
+
+/**
+ * Live tracking for one of my orders: where the rider is, how many stops before me,
+ * distance and an ETA estimate. Only filled while the order is out for delivery.
+ */
+export async function trackOrder(id) {
+  if (env.useMock) {
+    await mockDelay(120)
+    const me = currentUser()
+    const o = db().orders.find((x) => x.id === id && x.customer_id === me.id)
+    if (!o) throw mockError('not_found', 404, 'Order not found.')
+    const st = db().settings.station
+    const out = { status: o.status, destination: { lat: o.address.lat, lng: o.address.lng }, station: { lat: st.lat, lng: st.lng }, rider: null, location: null, stops_before: null, distance_m: null, eta_minutes: null }
+    if (o.status !== 'out_for_delivery' || !o.rider) return out
+    out.rider = { name: o.rider.name, phone: o.rider.phone }
+    const loc = (db().rider_locations ?? {})[o.rider.id]
+    if (loc) out.location = { ...loc, fresh: Date.now() - new Date(loc.at).getTime() <= 10 * 60_000 }
+    const route = mockRoute(o.rider.id)
+    const idx = route.findIndex((r) => r.order.id === o.id)
+    if (idx >= 0) {
+      const straight = route.slice(0, idx + 1).reduce((sum, r) => sum + r.leg, 0)
+      out.stops_before = idx
+      out.distance_m = Math.round(straight * ROAD_FACTOR)
+      out.eta_minutes = driveMinutes(straight) + idx * MINUTES_PER_STOP
+    }
+    return clone(out)
+  }
+  const { data } = await http.get(`/api/customer/orders/${id}/track/`)
+  return data
 }
 
 /** Customer cancel: allowed only while Pending or Confirmed. */

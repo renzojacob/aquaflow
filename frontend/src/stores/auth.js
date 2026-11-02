@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 import { ROLE_HOME } from '@/config/navigation'
 import * as authService from '@/services/authService'
 import { tokenStorage } from '@/services/tokenStorage'
+import { stopSharing } from '@/composables/useRiderLocation'
 
 const USER_KEY = 'aquaflow.user'
 
@@ -44,6 +45,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function logout() {
+    stopSharing() // a rider's phone must not keep sending a location after logging out
     tokenStorage.clear()
     user.value = null
     try {

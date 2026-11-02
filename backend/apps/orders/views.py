@@ -1,3 +1,4 @@
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -29,7 +30,7 @@ class CustomerOrderViewSet(
     def get_queryset(self):
         qs = (
             Order.objects.filter(customer=self.request.user)
-            .select_related("product", "address")
+            .select_related("product", "address", "assigned_rider")
             .prefetch_related("history")
         )
         statuses = self.request.query_params.get("status")
@@ -49,6 +50,13 @@ class CustomerOrderViewSet(
         order = services.place_order(request.user, **serializer.validated_data)
         order = self.get_queryset().get(pk=order.pk)  # reload with history
         return Response(CustomerOrderSerializer(order).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(responses=OpenApiTypes.OBJECT)
+    @action(detail=True, methods=["get"])
+    def track(self, request, pk=None):
+        """Live tracking: the rider's last position, stops before this one, distance and ETA."""
+        from apps.delivery.tracking import track_payload  # local import: delivery imports orders
+        return Response(track_payload(self.get_object()))
 
     @extend_schema(request=CancelSerializer, responses=CustomerOrderSerializer)
     @action(detail=True, methods=["post"])

@@ -47,3 +47,23 @@ class DeliveryAttempt(models.Model):
 
     def __str__(self):
         return f"Order #{self.order_id}: {self.outcome}"
+
+class RiderLocation(models.Model):
+    """One GPS point sent by a rider's phone while delivering. The newest one is "where they are"."""
+
+    rider = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="locations")
+    lat = models.DecimalField(max_digits=9, decimal_places=6)
+    lng = models.DecimalField(max_digits=9, decimal_places=6)
+    accuracy_m = models.FloatField(null=True, blank=True)
+    heading = models.FloatField(null=True, blank=True)      # degrees, 0 = north
+    speed_mps = models.FloatField(null=True, blank=True)
+    is_simulated = models.BooleanField(default=False)       # demo drive, not a real GPS reading
+    device_time = models.DateTimeField()
+    server_time = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-server_time"]
+        indexes = [models.Index(fields=["rider", "-server_time"])]
+
+    def __str__(self):
+        return f"{self.rider} @ {self.lat},{self.lng}"

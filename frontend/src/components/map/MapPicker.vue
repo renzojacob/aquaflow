@@ -2,7 +2,7 @@
   MapPicker — Leaflet map with a draggable water-drop pin.
   - Tap the map or drag the pin to set the location (v-model = { lat, lng }).
   - Shows the station and the delivery area circle.
-  - Map colors follow light/dark theme (free CARTO tiles, OpenStreetMap data).
+  - Free OpenStreetMap tiles (no API key). Dark theme recolors the same tiles with a CSS filter.
   Usage: <MapPicker v-model="pin" :station="settings.station" :radius-km="8" />
          <MapPicker :model-value="order.address" readonly />
 -->
@@ -25,7 +25,6 @@ const el = ref(null)
 let map = null
 let pin = null
 let tiles = null
-let themeObserver = null
 let resizeObserver = null
 
 const CALAPAN = { lat: 13.4108, lng: 121.1792 }
@@ -44,10 +43,9 @@ const stationIcon = L.divIcon({
   iconAnchor: [15, 15],
 })
 
-function tileUrl() {
-  const dark = document.documentElement.dataset.theme === 'dark'
-  return `https://{s}.basemaps.cartocdn.com/${dark ? 'dark_all' : 'light_all'}/{z}/{x}/{y}{r}.png`
-}
+// OpenStreetMap's own free tiles: no API key needed (CARTO now requires one).
+// Please keep the attribution visible: it is the condition for using them.
+const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 
 function setPin(latlng, notify) {
   if (!pin) {
@@ -75,10 +73,9 @@ onMounted(() => {
     attributionControl: true,
   })
 
-  tiles = L.tileLayer(tileUrl(), {
+  tiles = L.tileLayer(TILE_URL, {
     maxZoom: 19,
-    subdomains: 'abcd',
-    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   }).addTo(map)
 
   if (props.station) {
@@ -102,10 +99,6 @@ onMounted(() => {
     map.on('click', (e) => setPin(e.latlng, true))
   }
 
-  // Swap map tiles when the app theme changes
-  themeObserver = new MutationObserver(() => tiles.setUrl(tileUrl()))
-  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
-
   // Leaflet must re-measure when it appears inside a modal or a resized layout
   resizeObserver = new ResizeObserver(() => map.invalidateSize())
   resizeObserver.observe(el.value)
@@ -125,7 +118,6 @@ watch(
 )
 
 onBeforeUnmount(() => {
-  themeObserver?.disconnect()
   resizeObserver?.disconnect()
   map?.remove()
 })
@@ -140,7 +132,12 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .af-map-wrap { position: relative; border-radius: var(--af-r-md); overflow: hidden; border: 1px solid var(--af-line); box-shadow: var(--af-shadow-1); isolation: isolate; }
-.af-map { position: absolute; inset: 0; background: var(--af-surface-2); }
+.af-map-wrap { height: 260px; }
+/* Fill the box with width/height, not position: Leaflet may set its own position
+   on the element (it does when it measures before styles load, e.g. inside a modal). */
+.af-map { width: 100%; height: 100%; background: var(--af-surface-2); }
+/* Dark theme: recolor the light map instead of loading a second (paid) dark map */
+:global([data-theme='dark']) .af-map :deep(.leaflet-tile-pane) { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.6); }
 .af-map__hint {
   position: absolute;
   left: 50%;
