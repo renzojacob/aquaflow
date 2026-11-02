@@ -54,6 +54,7 @@ class PublicSettingsView(APIView):
                 "lng": float(lng),
             },
             "service_radius_km": float(radius_m) / 1000,
+            "barangays": list(area.barangays) if area else [],
             "products": [
                 {"id": p.id, "name": p.name, "kind": p.kind, "price": float(p.price),
                  "description": p.description, "max_per_order": min(p.max_per_order, MAX_QUANTITY)}

@@ -149,6 +149,11 @@ def place_order(customer, *, address, delivery_date, period, items=None, quantit
     if address.customer_id != customer.pk or address.is_archived:
         raise ValidationError({"address": ["Choose one of your saved addresses."]})
 
+    from apps.station.services import outside_area_message
+    too_far = outside_area_message(address.lat, address.lng, address.barangay)
+    if too_far:
+        raise ValidationError({"address": [too_far]})
+
     today = timezone.localdate()
     if delivery_date < today or delivery_date > today + timedelta(days=MAX_DAYS_AHEAD):
         raise ValidationError({"delivery_date": ["You can order for today or tomorrow only."]})

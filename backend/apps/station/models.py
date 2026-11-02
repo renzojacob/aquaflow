@@ -14,6 +14,8 @@ class ServiceArea(models.Model):
     center_lat = models.DecimalField(max_digits=9, decimal_places=6)
     center_lng = models.DecimalField(max_digits=9, decimal_places=6)
     radius_m = models.PositiveIntegerField()
+    # Names of the barangays the station delivers to. Empty list = the whole radius.
+    barangays = models.JSONField(default=list, blank=True)
 
     def __str__(self):
         return self.name

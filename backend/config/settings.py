@@ -126,6 +126,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS")
 
+CSRF_TRUSTED_ORIGINS = env.list(
+    "CSRF_TRUSTED_ORIGINS",
+       default=["http://localhost:8100", "http://127.0.0.1:8100"],
+)
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 

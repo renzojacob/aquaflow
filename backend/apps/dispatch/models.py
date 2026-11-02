@@ -38,6 +38,8 @@ class Trip(models.Model):
     distance_is_estimate = models.BooleanField(default=False)   # True if haversine fallback was used
 
     version = models.PositiveIntegerField(default=1)            # bump on every change
+    downloaded_version = models.PositiveIntegerField(null=True, blank=True)   # version the rider's phone holds
+    downloaded_at = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
                                    on_delete=models.SET_NULL, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)

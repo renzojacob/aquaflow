@@ -97,3 +97,32 @@ def mark_failed(order, by, reason):
         failure_reason=DeliveryAttempt.FailureReason.OTHER, device_time=timezone.now(),
     )
     return order
+
+
+# ---------------------------------------------------------------------------
+# Rider download (offline copy of an approved trip)
+# ---------------------------------------------------------------------------
+import hashlib
+
+DOWNLOADABLE = (Trip.Status.APPROVED, Trip.Status.DOWNLOADED, Trip.Status.OUT)
+
+
+def code_hash(order):
+    """sha256("<salt>:<code>"). The phone checks what the customer reads out without ever seeing the code."""
+    return hashlib.sha256(f"{order.code_salt}:{order.confirmation_code}".encode()).hexdigest()
+
+
+@transaction.atomic
+def mark_downloaded(trip, rider):
+    """Remember which version the phone now holds, so the dispatcher can see if it is out of date."""
+    trip = Trip.objects.select_for_update().get(pk=trip.pk)
+    if trip.rider_id != rider.id:
+        raise ValidationError("This trip is assigned to another rider.")
+    if trip.status not in DOWNLOADABLE:
+        raise ValidationError("This trip is not ready to download yet.")
+    if trip.status == Trip.Status.APPROVED:
+        trip.status = Trip.Status.DOWNLOADED
+    trip.downloaded_version = trip.version
+    trip.downloaded_at = timezone.now()
+    trip.save(update_fields=["status", "downloaded_version", "downloaded_at", "updated_at"])
+    return trip

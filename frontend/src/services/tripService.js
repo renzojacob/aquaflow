@@ -117,3 +117,14 @@ export async function deleteTrip(id) {
   if (env.useMock) noMock()
   await http.delete(`${API}/trips/${id}`)
 }
+
+/**
+ * The one button: build draft trips for the day and period. Old drafts are replaced;
+ * approved, downloaded and running trips are never touched.
+ * @returns {Promise<{trips: Trip[], not_fitted: Array<{order_id:number, code:string, customer_name:string, barangay:string, containers:number, reason:string}>}>}
+ */
+export async function planSlot(date, period) {
+  if (env.useMock) noMock()
+  const { data } = await http.post(`${API}/plan`, { date, period })
+  return data
+}
