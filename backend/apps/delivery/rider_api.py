@@ -7,6 +7,10 @@ URL prefix: /api/v1/rider/
   POST orders/<id>/deliver       {code, empties_collected, lat, lng, accuracy_m, no_code}
   POST orders/<id>/fail          {failure_reason, note, lat, lng, accuracy_m}
 
+  GET  trips                     my approved/downloaded/out trips, today onward
+  POST trips/<id>/download       the offline copy: stops, details, coordinates, HASHED codes
+  POST trips/<id>/start          {device_time?}  loads the vehicle: every stop -> out for delivery
+
 The rules live in delivery.services.record_attempt (code check, geofence, containers,
 stock, per-address stats), so this file only reads the request and answers.
 """
@@ -22,6 +26,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.permissions import IsRider
+from apps.dispatch import services as dispatch_services
+from apps.dispatch.models import Trip, TripStop
 from apps.orders.models import Order
 from apps.station.models import SystemSetting
 
@@ -93,6 +99,12 @@ def _my_order(request, pk):
         Order.objects.select_related("customer", "address", "product"),
         pk=pk, assigned_rider=request.user,
     )
+
+
+def _my_stop(order, rider):
+    """The trip stop for this order, if it went out on one of my trips (None for direct dispatch)."""
+    return (TripStop.objects.filter(order=order, status=TripStop.Status.PENDING, trip__rider=rider)
+            .select_related("trip").first())
 
 
 class TodayView(APIView):
@@ -194,7 +206,7 @@ class DeliverView(APIView):
             raise ValidationError({"empties_collected": ["Enter how many empties you collected."]})
         lat, lng, acc = _gps(d)
         attempt = record_attempt(
-            order, request.user, DeliveryAttempt.Outcome.DELIVERED,
+            order, request.user, DeliveryAttempt.Outcome.DELIVERED, stop=_my_stop(order, request.user),
             device_time=timezone.now(), empties_collected=empties,
             code=None if no_code else code, gps_lat=lat, gps_lng=lng, gps_accuracy_m=acc,
             note="Delivered (customer had no code)" if no_code else "Delivered, code checked",
@@ -222,9 +234,93 @@ class FailView(APIView):
         extra = str(d.get("note") or "").strip()[:200]
         lat, lng, acc = _gps(d)
         record_attempt(
-            order, request.user, DeliveryAttempt.Outcome.FAILED,
+            order, request.user, DeliveryAttempt.Outcome.FAILED, stop=_my_stop(order, request.user),
             device_time=timezone.now(), failure_reason=reason,
             gps_lat=lat, gps_lng=lng, gps_accuracy_m=acc,
             note=f"{FAIL_TEXT[reason]}{': ' + extra if extra else ''}",
         )
         return Response({"status": "failed"})
+
+
+# ---------------------------------------------------------------------------
+# Trips (Feature B): download before leaving, then start it
+# ---------------------------------------------------------------------------
+def _my_trip(request, pk):
+    return get_object_or_404(Trip.objects.select_related("vehicle"), pk=pk, rider=request.user)
+
+
+def trip_summary(trip):
+    return {
+        "id": trip.pk,
+        "date": trip.date.isoformat(),
+        "period": trip.period,
+        "status": trip.status,
+        "version": trip.version,
+        "downloaded_version": trip.downloaded_version,
+        "vehicle": {"name": trip.vehicle.name, "plate": trip.vehicle.plate,
+                    "capacity": trip.vehicle.capacity_containers},
+        "stop_count": trip.stops.count(),
+    }
+
+
+def trip_download_payload(trip):
+    """
+    Everything the phone needs to work with no signal. The customer's code is never sent:
+    only sha256("<code_salt>:<code>") so the phone can check what the customer reads out.
+    The server checks the real code again when the delivery syncs.
+    """
+    stops = (trip.stops.select_related("order__customer", "order__address")
+             .prefetch_related("order__items__product").order_by("sequence"))
+    rows = []
+    for s in stops:
+        row = stop_row(s.order, s.sequence)
+        row.update({
+            "stop_status": s.status,
+            "expected_load_after": s.expected_load_after,
+            "eta": s.eta.isoformat() if s.eta else None,
+            "code_salt": s.order.code_salt,
+            "code_hash": dispatch_services.code_hash(s.order),
+        })
+        rows.append(row)
+    return {
+        **trip_summary(trip),
+        "code_hash": {"algorithm": "sha256", "input": "<code_salt>:<code>", "encoding": "hex"},
+        "total_distance_m": trip.total_distance_m,
+        "total_duration_s": trip.total_duration_s,
+        "distance_is_estimate": trip.distance_is_estimate,
+        "station": dict(zip(("lat", "lng"), station_point())),
+        "geofence_m": SystemSetting.load().geofence_threshold_m,
+        "stops": rows,
+        "downloaded_at": trip.downloaded_at.isoformat() if trip.downloaded_at else None,
+    }
+
+
+class TripListView(APIView):
+    permission_classes = [IsRider]
+
+    @extend_schema(responses=OpenApiTypes.OBJECT)
+    def get(self, request):
+        trips = (Trip.objects.filter(rider=request.user, date__gte=timezone.localdate(),
+                                     status__in=dispatch_services.DOWNLOADABLE)
+                 .select_related("vehicle").order_by("date", "period"))
+        return Response([trip_summary(t) for t in trips])
+
+
+class TripDownloadView(APIView):
+    permission_classes = [IsRider]
+
+    @extend_schema(request=None, responses=OpenApiTypes.OBJECT)
+    def post(self, request, pk):
+        trip = dispatch_services.mark_downloaded(_my_trip(request, pk), request.user)
+        return Response(trip_download_payload(Trip.objects.select_related("vehicle").get(pk=trip.pk)))
+
+
+class TripStartView(APIView):
+    permission_classes = [IsRider]
+
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
+    def post(self, request, pk):
+        trip = _my_trip(request, pk)
+        device_time = parse_datetime(str(request.data.get("device_time") or "")) or timezone.now()
+        trip = dispatch_services.start_trip(trip, request.user, device_time=device_time)
+        return Response(trip_summary(Trip.objects.select_related("vehicle").get(pk=trip.pk)))

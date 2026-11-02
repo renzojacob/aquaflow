@@ -181,3 +181,81 @@ export async function fail(id, payload) {
   const { data } = await http.post(`${API}/orders/${id}/fail`, payload)
   return data
 }
+
+// ---------- Trips (download before leaving, then start) ----------
+// Real mode only: /api/v1/rider/trips. The downloaded copy is kept on the phone so the
+// stop list, addresses and code check still work with no signal.
+
+const TRIP_KEY = (id) => `aquaflow.trip.${id}`
+
+function tripsNeedServer() {
+  throw mockError('server', null, 'Trips need the AquaFlow server. Turn off demo mode (VITE_USE_MOCK).')
+}
+
+/**
+ * My approved / downloaded / out trips, today onward.
+ * Compare `version` with `downloaded_version`: if it's higher, the dispatcher changed it, download again.
+ * @returns {Promise<Array<{id:number, date:string, period:string, status:string, version:number, downloaded_version:number|null, vehicle:{name:string, plate:string, capacity:number}, stop_count:number}>>}
+ */
+export async function listMyTrips() {
+  if (env.useMock) tripsNeedServer()
+  const { data } = await http.get(`${API}/trips`)
+  return data
+}
+
+/**
+ * Download the trip and keep a copy on the phone.
+ * Each stop has `code_salt` + `code_hash` instead of the customer's code (see checkCodeOffline).
+ */
+export async function downloadTrip(id) {
+  if (env.useMock) tripsNeedServer()
+  const { data } = await http.post(`${API}/trips/${id}/download`)
+  try {
+    localStorage.setItem(TRIP_KEY(id), JSON.stringify(data))
+  } catch {
+    // storage full or blocked: the trip still works while online
+  }
+  return data
+}
+
+/** The copy saved by downloadTrip, or null. Use this when offline. */
+export function getSavedTrip(id) {
+  try {
+    const raw = localStorage.getItem(TRIP_KEY(id))
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
+export function forgetSavedTrip(id) {
+  try {
+    localStorage.removeItem(TRIP_KEY(id))
+  } catch {
+    // nothing to do
+  }
+}
+
+/** Load the vehicle: every stop becomes "out for delivery". Then getToday() shows the stops. */
+export async function startTrip(id) {
+  if (env.useMock) tripsNeedServer()
+  const { data } = await http.post(`${API}/trips/${id}/start`, { device_time: new Date().toISOString() })
+  return data
+}
+
+/**
+ * Check the code the customer reads out against the downloaded hash, with no signal.
+ * Same formula as the backend: sha256("<code_salt>:<code>") as hex.
+ * Convenience only: the server checks the real code again when the delivery reaches it.
+ * @param {{ code_salt: string, code_hash: string }} stop  a stop from the downloaded trip
+ * @param {string} code
+ * @returns {Promise<boolean|null>}  null if this device can't hash (very old WebView)
+ */
+export async function checkCodeOffline(stop, code) {
+  const subtle = globalThis.crypto?.subtle
+  if (!subtle || !stop?.code_salt || !stop?.code_hash) return null
+  const bytes = new TextEncoder().encode(`${stop.code_salt}:${String(code).trim()}`)
+  const digest = await subtle.digest('SHA-256', bytes)
+  const hex = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('')
+  return hex === stop.code_hash
+}

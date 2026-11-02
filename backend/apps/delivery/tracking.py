@@ -68,6 +68,17 @@ def route_for(rider):
     loc = last_location(rider)
     here = (loc["lat"], loc["lng"]) if loc and loc["fresh"] else station_point()
     ordered = []
+
+    # Orders on a trip follow the sequence the dispatcher approved
+    from apps.dispatch.models import TripStop
+    seq = dict(TripStop.objects.filter(order__in=remaining, status=TripStop.Status.PENDING,
+                                       trip__rider=rider).values_list("order_id", "sequence"))
+    for o in sorted((o for o in remaining if o.pk in seq), key=lambda o: seq[o.pk]):
+        ordered.append((o, haversine_m(here[0], here[1], o.lat, o.lng)))
+        here = (float(o.lat), float(o.lng))
+    remaining = [o for o in remaining if o.pk not in seq]
+
+    # Anything sent out directly: nearest remaining stop next
     while remaining:
         nxt = min(remaining, key=lambda o: haversine_m(here[0], here[1], o.lat, o.lng))
         dist = haversine_m(here[0], here[1], nxt.lat, nxt.lng)
