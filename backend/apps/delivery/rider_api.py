@@ -152,6 +152,10 @@ class TodayView(APIView):
                 "minutes_left": minutes,
             },
             "station": dict(zip(("lat", "lng"), station_point())),
+            # road line of the trip I'm on (null for a straight-line estimate or no trip)
+            "route_line": (Trip.objects.filter(rider=request.user, status=Trip.Status.OUT)
+                           .order_by("-updated_at")
+                           .values_list("route_line", flat=True).first()),
             "location": last_location(request.user),
             "geofence_m": SystemSetting.load().geofence_threshold_m,
         })
@@ -288,6 +292,7 @@ def trip_download_payload(trip):
         "total_distance_m": trip.total_distance_m,
         "total_duration_s": trip.total_duration_s,
         "distance_is_estimate": trip.distance_is_estimate,
+        "route_line": trip.route_line,
         "station": dict(zip(("lat", "lng"), station_point())),
         "geofence_m": SystemSetting.load().geofence_threshold_m,
         "stops": rows,

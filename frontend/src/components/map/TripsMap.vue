@@ -1,5 +1,6 @@
 <!--
   TripsMap: every trip of the day in its own colour, numbered stops, and orders not planned yet in grey.
+  A trip with `route_line` (roads from OpenRouteService) is drawn solid; an estimate is dotted.
   Usage: <TripsMap :station="{lat,lng}" :trips="trips" :unplanned="unplanned" :selected-id="3" />
   Colours are paired with numbers and the card list, so colour is never the only clue.
 -->
@@ -36,8 +37,16 @@ function draw(fit = true) {
   props.trips.forEach((t, i) => {
     const color = tripColor(i)
     const dim = props.selectedId != null && props.selectedId !== t.id
-    const line = [...(home ? [home] : []), ...t.stops.map((s) => [s.lat, s.lng]), ...(home ? [home] : [])]
-    L.polyline(line, { color, weight: props.selectedId === t.id ? 5 : 3, opacity: dim ? 0.35 : 0.9, dashArray: '2 8', lineCap: 'round' }).addTo(layer)
+    const weight = props.selectedId === t.id ? 5 : 3
+    if (t.route_line?.length > 1) {
+      // Real roads from OpenRouteService: solid line
+      L.polyline(t.route_line, { color, weight: weight + 1, opacity: dim ? 0.3 : 0.85, lineJoin: 'round' }).addTo(layer)
+      for (const p of t.route_line) pts.push(p)
+    } else {
+      // Estimate: dotted straight lines station -> stops -> station
+      const line = [...(home ? [home] : []), ...t.stops.map((s) => [s.lat, s.lng]), ...(home ? [home] : [])]
+      L.polyline(line, { color, weight, opacity: dim ? 0.35 : 0.9, dashArray: '2 8', lineCap: 'round' }).addTo(layer)
+    }
     for (const s of t.stops) {
       L.marker([s.lat, s.lng], { icon: stopIcon(s.sequence, color, dim), keyboard: false, title: `${t.vehicle.name} stop ${s.sequence}: ${s.customer_name}` }).addTo(layer)
       pts.push([s.lat, s.lng])

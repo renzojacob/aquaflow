@@ -2,14 +2,17 @@
 Trip planning: group orders into trips (one per vehicle), put each trip's stops in a
 sensible order, and work out the load, distance and arrival times.
 
-No paid map service is used. Distances are straight-line (haversine) x ROAD_FACTOR, so every
-trip is marked distance_is_estimate = True. Good enough for a small city; say so in the manuscript.
+Distances and times come from OpenRouteService (routing.py) when ORS_API_KEY is set: a road
+distance matrix to choose the stop order, and the road route for the trip's numbers and map line.
+Without a key, or if ORS fails, they fall back to straight-line (haversine) x ROAD_FACTOR and the
+trip is marked distance_is_estimate = True.
 
 How the grouping works ("sweep" method):
   1. Stand at the station and sort the orders by compass direction, so neighbours sit together.
   2. Fill the first vehicle with orders in that order until the containers no longer fit,
      then the next vehicle, and so on. An order that doesn't fit is skipped, a later one may.
-  3. Order the stops of each trip with nearest-stop-first, then a 2-opt pass that removes crossings.
+  3. Order the stops of each trip with nearest-stop-first, then a 2-opt pass that removes crossings
+     (both on road distances from the ORS matrix: one request per trip).
 Orders that fit no vehicle are returned with the reason, never dropped silently.
 """
 from datetime import datetime, timedelta
@@ -19,11 +22,11 @@ from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
 
-from apps.delivery.tracking import MINUTES_PER_STOP, ROAD_FACTOR, TRICYCLE_KMH, station_point
+from apps.delivery.tracking import MINUTES_PER_STOP, TRICYCLE_KMH, station_point
 from apps.orders.models import Order
 from apps.orders.services import PERIOD_START
-from apps.station.geo import haversine_m
 
+from . import routing
 from .models import Trip, TripChangeLog, TripStop, Vehicle
 
 S = Order.Status
@@ -36,10 +39,6 @@ SPEED_MPS = TRICYCLE_KMH * 1000 / 3600
 # ---------------------------------------------------------------------------
 def _pt(o):
     return float(o.lat), float(o.lng)
-
-
-def _road_m(a, b):
-    return haversine_m(a[0], a[1], b[0], b[1]) * ROAD_FACTOR
 
 
 def unplanned_orders(day, period=None):
@@ -80,22 +79,27 @@ def capacity_error(vehicle, orders):
 
 
 def best_sequence(orders, start=None):
-    """Nearest-stop-first from the station, then 2-opt on the round trip."""
+    """Nearest-stop-first from the station, then 2-opt on the round trip (road distances)."""
     orders = list(orders)
     if len(orders) < 2:
         return orders
     start = start or station_point()
 
-    left, here, route = orders[:], start, []
+    # One matrix for the station + every stop: index 0 is the station, order k is index k + 1
+    m = routing.matrix([start] + [_pt(o) for o in orders])
+    idx = {id(o): k + 1 for k, o in enumerate(orders)}
+    d = lambda a, b: m.distance(a, b)
+
+    left, here, route = orders[:], 0, []
     while left:
-        nxt = min(left, key=lambda o: _road_m(here, _pt(o)))
+        nxt = min(left, key=lambda o: d(here, idx[id(o)]))
         route.append(nxt)
         left.remove(nxt)
-        here = _pt(nxt)
+        here = idx[id(nxt)]
 
     def tour_len(seq):
-        pts = [start] + [_pt(o) for o in seq] + [start]
-        return sum(_road_m(pts[i], pts[i + 1]) for i in range(len(pts) - 1))
+        pts = [0] + [idx[id(o)] for o in seq] + [0]
+        return sum(d(pts[i], pts[i + 1]) for i in range(len(pts) - 1))
 
     best, best_len, improved = route, tour_len(route), len(route) > 2
     while improved:
@@ -110,34 +114,46 @@ def best_sequence(orders, start=None):
 
 
 def route_numbers(orders, day, period, start=None):
-    """Distance (with the way back), drive+stop time, and an arrival time for every stop."""
+    """
+    Distance (with the way back), drive+stop time, an arrival time for every stop, the road
+    line for the map, and whether it's an estimate. Returns (meters, seconds, etas, line, estimate).
+    """
     start = start or station_point()
     leave = timezone.make_aware(datetime.combine(day, PERIOD_START[period]))
-    here, clock, dist, etas = start, leave, 0.0, []
-    for o in orders:
-        leg = _road_m(here, _pt(o))
-        dist += leg
-        clock += timedelta(seconds=leg / SPEED_MPS)
-        etas.append(clock)
-        clock += timedelta(minutes=MINUTES_PER_STOP)
-        here = _pt(o)
-    back = _road_m(here, start) if orders else 0
-    dist += back
-    total_s = (clock - leave).total_seconds() + back / SPEED_MPS
-    return round(dist), ceil(total_s), etas
+    points = [start] + [_pt(o) for o in orders] + [start]
+
+    road = routing.directions(points) if orders else None
+    if road:
+        legs, line, estimate = road["legs"], road["line"], False
+    else:
+        legs = [routing.straight_leg(points[i], points[i + 1]) for i in range(len(points) - 1)]
+        line, estimate = None, True
+
+    clock, dist, etas = leave, 0.0, []
+    for k, (meters, secs) in enumerate(legs):
+        dist += meters
+        # ORS times are for a car; a loaded tricycle is never faster than TRICYCLE_KMH
+        clock += timedelta(seconds=max(secs, meters / SPEED_MPS))
+        if k < len(orders):                      # the last leg is the way back
+            etas.append(clock)
+            clock += timedelta(minutes=MINUTES_PER_STOP)
+    total_s = (clock - leave).total_seconds()
+    return round(dist), ceil(total_s), etas, line, estimate
 
 
 def write_stops(trip, orders):
     """Replace a trip's stops with `orders` (already in delivery order) and refresh every number."""
     trip.stops.all().delete()
     _, _, after = load_profile(orders)
-    dist, secs, etas = route_numbers(orders, trip.date, trip.period)
+    dist, secs, etas, line, estimate = route_numbers(orders, trip.date, trip.period)
     TripStop.objects.bulk_create([
         TripStop(trip=trip, order=o, sequence=i + 1, expected_load_after=after[i], eta=etas[i])
         for i, o in enumerate(orders)
     ])
-    trip.total_distance_m, trip.total_duration_s, trip.distance_is_estimate = dist, secs, True
-    trip.save(update_fields=["total_distance_m", "total_duration_s", "distance_is_estimate", "updated_at"])
+    trip.total_distance_m, trip.total_duration_s, trip.distance_is_estimate = dist, secs, estimate
+    trip.route_line = line
+    trip.save(update_fields=["total_distance_m", "total_duration_s", "distance_is_estimate",
+                             "route_line", "updated_at"])
 
 
 def bump_version(trip):

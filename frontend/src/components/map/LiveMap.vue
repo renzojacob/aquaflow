@@ -2,8 +2,10 @@
   LiveMap — the station, the stops and a moving rider, for live tracking.
   The rider marker glides from one GPS point to the next (no jumping), points the way
   it's heading, and the dashed line shows the way still to go.
+  With `route` (the trip's road path from OpenRouteService) the roads are drawn as a solid line
+  and the dashed line only joins the rider to the next stop.
   Usage:
-    <LiveMap :station="{lat,lng}" :stops="[{ id, lat, lng, seq, mine }]" :rider="{ lat, lng, heading, is_simulated }" />
+    <LiveMap :station="{lat,lng}" :stops="[{ id, lat, lng, seq, mine }]" :rider="{ lat, lng, heading, is_simulated }" :route="[[lat, lng], ...]" />
 -->
 <script setup>
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -16,6 +18,7 @@ const props = defineProps({
   rider: { type: Object, default: null },          // { lat, lng, heading?, is_simulated? }
   height: { type: String, default: '320px' },
   label: { type: String, default: 'Live delivery map' },
+  route: { type: Array, default: null },           // [[lat, lng], ...] road path, or null
 })
 
 const el = ref(null)
@@ -23,6 +26,7 @@ let map = null
 let tiles = null
 let riderMarker = null
 let line = null
+let road = null
 let stopLayer = null
 let resizeObserver = null
 let anim = null
@@ -54,8 +58,17 @@ function drawStops() {
   for (const s of props.stops) L.marker([s.lat, s.lng], { icon: stopIcon(s), keyboard: false, interactive: false }).addTo(stopLayer)
 }
 
+function drawRoad() {
+  road?.remove()
+  road = props.route?.length > 1
+    ? L.polyline(props.route, { color: '#1AA6B5', weight: 5, opacity: 0.75, lineJoin: 'round', interactive: false }).addTo(map)
+    : null
+}
+
 function drawLine(from) {
-  const pts = [from ? [from.lat, from.lng] : null, ...props.stops.map((s) => [s.lat, s.lng])].filter(Boolean)
+  // On the roads already drawn, only show "you -> next stop"; without them, the whole way
+  const ahead = road ? props.stops.slice(0, 1) : props.stops
+  const pts = [from ? [from.lat, from.lng] : null, ...ahead.map((s) => [s.lat, s.lng])].filter(Boolean)
   if (line) line.setLatLngs(pts)
   else line = L.polyline(pts, { color: '#4FE0D2', weight: 3, opacity: 0.85, dashArray: '2 9', lineCap: 'round' }).addTo(map)
 }
@@ -100,6 +113,7 @@ onMounted(() => {
   map = L.map(el.value, { center: [start.lat, start.lng], zoom: 15, scrollWheelZoom: false, attributionControl: true })
   tiles = L.tileLayer(TILE_URL, { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(map)
   if (props.station) L.marker([props.station.lat, props.station.lng], { icon: stationIcon, interactive: false, keyboard: false }).addTo(map)
+  drawRoad()
   stopLayer = L.layerGroup().addTo(map)
   drawStops()
   if (props.rider) moveRider(props.rider)
@@ -113,6 +127,10 @@ watch(() => props.rider && `${props.rider.lat},${props.rider.lng},${props.rider.
   const first = !riderMarker
   moveRider(props.rider)
   if (first && !fitted) fit()
+})
+watch(() => props.route, () => {
+  drawRoad()
+  drawLine(riderMarker?.getLatLng() ?? props.station)
 })
 watch(() => props.stops.map((s) => `${s.id}:${s.seq}`).join('|'), () => {
   drawStops()

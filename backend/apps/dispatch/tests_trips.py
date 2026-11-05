@@ -235,6 +235,29 @@ class TripApiTests(TripBase):
         # a trip that left cannot be deleted or edited
         self.assertEqual(self.as_(self.dispatcher).delete(f"{API}/trips/{t['id']}").status_code, 400)
 
+    def test_started_trip_reaches_the_rider_and_completes(self):
+        """After start, the rider sees the stops, can deliver them, and the trip completes."""
+        t = self.make([self.o2, self.o1], rider=self.rider).data      # far one first on purpose
+        self.as_(self.dispatcher).post(f"{API}/trips/{t['id']}/approve")
+        # an order on a trip can't be sent out directly any more
+        transition(self.o1, "preparing", by=self.dispatcher)
+        transition(self.o1, "ready", by=self.dispatcher)
+        r = self.client.post(f"{API}/orders/{self.o1.pk}/dispatch", {"rider_id": self.rider.pk}, format="json")
+        self.assertEqual(r.status_code, 400, r.data)
+
+        rc = self.as_(self.rider)
+        self.assertEqual(rc.post(f"/api/v1/rider/trips/{t['id']}/start", {}, format="json").status_code, 200)
+        for o in (self.o1, self.o2):
+            self.assertEqual(Order.objects.get(pk=o.pk).assigned_rider, self.rider)
+        today = rc.get("/api/v1/rider/today").data
+        self.assertEqual([s["id"] for s in today["stops"]], [self.o2.pk, self.o1.pk])   # trip order
+
+        for o in (self.o2, self.o1):
+            code = Order.objects.get(pk=o.pk).confirmation_code
+            r = rc.post(f"/api/v1/rider/orders/{o.pk}/deliver", {"code": code, "empties_collected": 0}, format="json")
+            self.assertEqual(r.status_code, 200, r.data)
+        self.assertEqual(Trip.objects.get(pk=t["id"]).status, "completed")
+
     def test_rider_cannot_have_two_trips_in_one_slot(self):
         self.make([self.o1], rider=self.rider)
         r = self.make([self.o2], vehicle=self.v2, rider=self.rider)

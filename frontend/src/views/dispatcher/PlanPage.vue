@@ -4,7 +4,8 @@
   trip per vehicle (never more containers than the vehicle holds). Then you adjust: reorder stops,
   move an order to another trip, pick the rider, and approve. An approved trip can be downloaded by
   the rider. Orders that fit no vehicle are listed with the reason, never dropped.
-  Distances and arrival times are estimates (straight-line x 1.35 at tricycle speed).
+  Distances and arrival times come from OpenRouteService road routes when the server has an
+  ORS_API_KEY; otherwise they are estimates (straight-line x 1.35 at tricycle speed).
 -->
 <script setup>
 import { computed, ref, watch } from 'vue'
@@ -157,7 +158,7 @@ const load_pct = (t) => Math.min(100, Math.round((t.load.peak / Math.max(1, t.lo
       <div class="af-container af-dash">
         <header class="top">
           <h1 class="title">Plan deliveries</h1>
-          <p class="af-small">One trip per vehicle. Distances and times are estimates.</p>
+          <p class="af-small">One trip per vehicle. Solid lines follow the roads; dotted lines and “estimate” mean straight-line distances.</p>
         </header>
 
         <section class="af-panel bar-controls" aria-label="Day and time">

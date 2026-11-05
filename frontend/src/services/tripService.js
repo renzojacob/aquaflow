@@ -42,6 +42,7 @@ function noMock() {
  * @property {number} total_distance_m
  * @property {number} total_duration_s
  * @property {boolean} distance_is_estimate
+ * @property {Array<[number, number]>|null} route_line  road path [[lat, lng], ...] from OpenRouteService, null for an estimate
  * @property {boolean} phone_out_of_date  rider must download again
  * @property {TripStop[]} stops
  * @property {Array<{at:string, action:string, order_id:number|null, by:string|null}>} [change_log]

@@ -1,8 +1,10 @@
 <!--
   Rider: today's deliveries.
+  Trips the station approved for me: download each one (an offline copy with hashed codes),
+  then start it when the vehicle is loaded, so its stops go out for delivery.
   Tank (water = share of today's stops done), location sharing (real GPS or demo drive),
   the NEXT stop as a big card (navigate, call, deliver with the customer's code, or report a problem),
-  a live map of all stops, then the rest of the stops in order (nearest first).
+  a live map of all stops, then the rest of the stops in trip order.
 -->
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
@@ -23,6 +25,7 @@ import {
   cashOutline,
   chatboxEllipsesOutline,
   cubeOutline,
+  downloadOutline,
   locateOutline,
   navigateOutline,
   playOutline,
@@ -40,8 +43,20 @@ import TankHero from '@/components/dash/TankHero.vue'
 import TextField from '@/components/form/TextField.vue'
 import { showToast } from '@/composables/useToast'
 import { useRiderLocation } from '@/composables/useRiderLocation'
-import { FAIL_REASONS, deliver, fail, getToday } from '@/services/riderService'
-import { PERIODS, ago, containers, duration, peso } from '@/utils/format'
+import { env } from '@/config/env'
+import {
+  FAIL_REASONS,
+  checkCodeOffline,
+  deliver,
+  downloadTrip,
+  fail,
+  forgetSavedTrip,
+  getSavedTrip,
+  getToday,
+  listMyTrips,
+  startTrip,
+} from '@/services/riderService'
+import { PERIODS, ago, containers, dateISO, duration, friendlyDay, peso } from '@/utils/format'
 
 const { location, startLive, startDemo, retarget, stopSharing } = useRiderLocation()
 
@@ -49,10 +64,98 @@ const data = ref(null)
 const loading = ref(true)
 const error = ref(null)
 
+// ---------- trips (download, then start) ----------
+const trips = ref([])        // approved / downloaded / out trips for me
+const saved = ref({})        // trip id -> the copy kept on this phone
+const tripBusy = reactive({}) // trip id -> true while downloading
+
+function readSaved() {
+  const map = {}
+  for (const tr of trips.value) {
+    const copy = getSavedTrip(tr.id)
+    if (copy) map[tr.id] = copy
+  }
+  saved.value = map
+}
+
+/** Drop copies of trips that are finished or no longer mine. */
+function forgetOldCopies() {
+  const keep = new Set(trips.value.map((tr) => String(tr.id)))
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i)
+      const id = key?.startsWith('aquaflow.trip.') ? key.slice('aquaflow.trip.'.length) : null
+      if (id && !keep.has(id)) forgetSavedTrip(id)
+    }
+  } catch {
+    // storage blocked: nothing to clean
+  }
+}
+
+async function loadTrips() {
+  if (env.useMock) return (trips.value = []) // trips need the real server
+  try {
+    trips.value = await listMyTrips()
+    forgetOldCopies()
+  } catch {
+    // no signal: keep the last list; the saved copies still work
+  }
+  readSaved()
+}
+
+const waiting = computed(() => trips.value.filter((tr) => tr.status !== 'out'))
+const isCurrent = (tr) => saved.value[tr.id]?.version === tr.version // this phone has the latest version
+const isChanged = (tr) => !!saved.value[tr.id] && !isCurrent(tr)
+const tripLabel = (tr) => `${friendlyDay(tr.date)} ${PERIODS[tr.period]?.label.toLowerCase() ?? tr.period}`
+const tripContainers = (tr) => (saved.value[tr.id]?.stops ?? []).reduce((n, s) => n + (s.containers ?? 0), 0)
+
+async function download(tr) {
+  tripBusy[tr.id] = true
+  try {
+    const copy = await downloadTrip(tr.id)
+    saved.value = { ...saved.value, [tr.id]: copy }
+    trips.value = trips.value.map((x) => (x.id === tr.id ? { ...x, status: copy.status, version: copy.version } : x))
+    showToast(`Trip downloaded: ${copy.stops.length} stop${copy.stops.length === 1 ? '' : 's'}. The list works without signal now.`, 'success')
+  } catch (e) {
+    showToast(e.message, 'danger')
+  } finally {
+    tripBusy[tr.id] = false
+  }
+}
+
+const ssheet = reactive({ open: false, trip: null, busy: false, error: '' })
+function openStart(tr) {
+  Object.assign(ssheet, { open: true, trip: tr, busy: false, error: '' })
+}
+async function confirmStart() {
+  ssheet.busy = true
+  ssheet.error = ''
+  try {
+    await startTrip(ssheet.trip.id)
+    ssheet.open = false
+    showToast('Trip started. Customers can now see you are on the way.', 'success')
+    await load()
+  } catch (e) {
+    ssheet.error = e.message
+  } finally {
+    ssheet.busy = false
+  }
+}
+
+/** The downloaded stop for an order (has code_salt + code_hash), or null. */
+function savedStop(orderId) {
+  for (const copy of Object.values(saved.value)) {
+    const s = copy?.stops?.find((x) => x.id === orderId)
+    if (s) return s
+  }
+  return null
+}
+
 async function load() {
   error.value = null
   try {
-    data.value = await getToday()
+    const [today] = await Promise.all([getToday(), loadTrips()])
+    data.value = today
   } catch (e) {
     error.value = e
   } finally {
@@ -116,6 +219,12 @@ async function confirmDeliver() {
   if (!dsheet.noCode && !dsheet.code.trim()) return (dsheet.error = 'Type the code from the customer’s app.')
   dsheet.busy = true
   try {
+    // Check against the downloaded hash first, so a wrong code is caught even with no signal.
+    // The server checks the real code again either way.
+    if (!dsheet.noCode && (await checkCodeOffline(savedStop(dsheet.order.id), dsheet.code)) === false) {
+      dsheet.error = "That code doesn't match. Ask the customer to read it again from their app."
+      return
+    }
     const r = await deliver(dsheet.order.id, {
       ...(dsheet.noCode ? { no_code: true } : { code: dsheet.code.trim() }),
       empties_collected: dsheet.empties,
@@ -177,6 +286,31 @@ async function confirmFail() {
         </div>
 
         <template v-else-if="data">
+          <!-- ===== Trips to download / start ===== -->
+          <section v-if="waiting.length" class="af-panel trips" aria-label="Your trips">
+            <SectionHead title="Your trips" sub="Download before you leave. Start when the vehicle is loaded." />
+            <article v-for="tr in waiting" :key="tr.id" class="trip">
+              <div class="trip__head">
+                <b>{{ tripLabel(tr) }}</b>
+                <span class="trip__badge" :class="isCurrent(tr) ? 'is-ready' : isChanged(tr) ? 'is-changed' : ''">
+                  {{ isCurrent(tr) ? 'On this phone' : isChanged(tr) ? 'Changed' : 'Not downloaded' }}
+                </span>
+              </div>
+              <p class="trip__meta">Trip #{{ tr.id }} · {{ tr.vehicle.name }} ({{ tr.vehicle.plate }}) · {{ tr.stop_count }} stop{{ tr.stop_count === 1 ? '' : 's' }}</p>
+              <p v-if="isChanged(tr)" class="trip__warn" role="status">The station changed this trip. Download it again before you start.</p>
+              <ol v-if="isCurrent(tr)" class="trip__stops">
+                <li v-for="s in saved[tr.id].stops" :key="s.id">
+                  <span class="trip__seq" aria-hidden="true">{{ s.sequence }}</span>
+                  <span><b>{{ s.customer.name }}</b> {{ s.address.barangay }} · {{ containers(s.containers) }}</span>
+                </li>
+              </ol>
+              <AppButton v-if="!isCurrent(tr)" block :loading="!!tripBusy[tr.id]" @click="download(tr)">
+                <ion-icon :icon="downloadOutline" aria-hidden="true" /> {{ isChanged(tr) ? 'Download again' : 'Download trip' }}
+              </AppButton>
+              <AppButton v-else block @click="openStart(tr)"><ion-icon :icon="playOutline" aria-hidden="true" /> Start trip</AppButton>
+            </article>
+          </section>
+
           <div class="af-bento af-bento--stretch">
             <!-- ===== The day ===== -->
             <TankHero class="b-7" compact :level="doneShare" :label="`${t.delivered + t.failed} of ${t.delivered + t.failed + stops.length} stops done today`">
@@ -184,6 +318,7 @@ async function confirmFail() {
               <h1 class="t-title">{{ stops.length ? `${stops.length} stop${stops.length > 1 ? 's' : ''} to go` : 'No stops right now' }}</h1>
               <p class="tank__soft t-sub">
                 <template v-if="stops.length">{{ containers(t.on_board) }} on board. Collect {{ peso(t.to_collect) }}. About {{ duration(t.minutes_left) }} of driving and handing over.</template>
+                <template v-else-if="waiting.length">Download and start your trip above to load its stops.</template>
                 <template v-else>When the station sends an order out with you, it shows up here.</template>
               </p>
               <div class="share" :class="`share--${share.tone}`">
@@ -231,12 +366,12 @@ async function confirmFail() {
 
           <!-- ===== Map ===== -->
           <section v-if="stops.length" class="mapcard" aria-label="Map of your stops">
-            <LiveMap :station="data.station" :stops="mapStops" :rider="riderPoint" height="360px" label="Map of your stops, numbered in order" />
+            <LiveMap :station="data.station" :stops="mapStops" :rider="riderPoint" :route="data.route_line" height="360px" label="Map of your stops, numbered in order" />
           </section>
 
           <!-- ===== All stops ===== -->
           <section v-if="stops.length > 1" class="af-panel" aria-labelledby="all-title">
-            <SectionHead title="After that" :sub="`${stops.length - 1} more, nearest first`" />
+            <SectionHead title="After that" :sub="`${stops.length - 1} more, in order`" />
             <ol class="stops">
               <li v-for="s in stops.slice(1)" :key="s.id" class="stop">
                 <span class="stop__seq" aria-hidden="true">{{ s.sequence }}</span>
@@ -279,6 +414,25 @@ async function confirmFail() {
             </div>
             <p v-if="dsheet.error && dsheet.noCode" class="err-line" role="alert">{{ dsheet.error }}</p>
             <AppButton type="submit" size="lg" block :loading="dsheet.busy">Mark as delivered</AppButton>
+          </form>
+        </ion-content>
+      </ion-modal>
+
+      <!-- Start trip sheet -->
+      <ion-modal :is-open="ssheet.open" :breakpoints="[0, 0.6, 1]" :initial-breakpoint="0.6" @did-dismiss="ssheet.open = false">
+        <ion-content>
+          <form v-if="ssheet.trip" class="sheet" novalidate @submit.prevent="confirmStart">
+            <header>
+              <h2 class="af-h2">Start trip #{{ ssheet.trip.id }}?</h2>
+              <p class="af-small">
+                Load {{ containers(tripContainers(ssheet.trip)) }} for {{ ssheet.trip.stop_count }} stop{{ ssheet.trip.stop_count === 1 ? '' : 's' }}.
+                Every stop becomes “out for delivery” and the customers can follow you on the map.
+              </p>
+            </header>
+            <p v-if="ssheet.trip.date !== dateISO(0)" class="trip__warn" role="status">This trip is for {{ tripLabel(ssheet.trip) }}, not today. Start it only if the station told you to.</p>
+            <p v-if="ssheet.error" class="err-line" role="alert">{{ ssheet.error }}</p>
+            <AppButton type="submit" size="lg" block :loading="ssheet.busy">The vehicle is loaded. Start.</AppButton>
+            <AppButton variant="ghost" block @click="ssheet.open = false">Not yet</AppButton>
           </form>
         </ion-content>
       </ion-modal>
@@ -341,6 +495,21 @@ async function confirmFail() {
 .next__btns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .nbtn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; border-radius: 999px; background: var(--af-surface-2); border: 1px solid var(--af-line-strong); color: var(--af-ink); font: 750 14.5px var(--af-font); text-decoration: none; }
 .nbtn ion-icon { color: var(--af-primary); font-size: 18px; }
+
+.trips { gap: 12px; margin-bottom: 16px; }
+.trip { display: grid; gap: 10px; padding: 14px; border-radius: 20px; background: var(--af-surface-2); border: 1px solid var(--af-line); }
+.trip__head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.trip__head b { font-size: 16px; font-weight: 800; }
+.trip__badge { padding: 4px 10px; border-radius: 999px; background: var(--af-pearl-tint); color: var(--af-pearl); font-size: 12.5px; font-weight: 800; }
+.trip__badge.is-ready { background: var(--af-primary-tint); color: var(--af-primary); }
+.trip__badge.is-changed { background: var(--af-amber-tint); color: var(--af-amber-fg); }
+.trip__meta { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--af-ink-2); }
+.trip__warn { margin: 0; padding: 10px 12px; border-radius: 14px; background: var(--af-amber-tint); color: var(--af-amber-fg); font-size: 14px; font-weight: 650; line-height: 1.45; }
+.trip__stops { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.trip__stops li { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--af-ink-2); min-width: 0; }
+.trip__stops li > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trip__stops b { color: var(--af-ink); font-weight: 750; }
+.trip__seq { flex: none; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--af-pearl-tint); color: var(--af-pearl); font-size: 13px; font-weight: 800; }
 
 .mapcard { border-radius: 28px; overflow: hidden; border: 1px solid var(--af-line); box-shadow: var(--af-shadow-2); }
 

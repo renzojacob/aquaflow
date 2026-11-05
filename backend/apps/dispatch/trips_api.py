@@ -68,6 +68,7 @@ def trip_payload(trip, with_log=False):
         "load": {"departure": departure, "peak": peak, "capacity": trip.vehicle.capacity_containers},
         "total_distance_m": trip.total_distance_m, "total_duration_s": trip.total_duration_s,
         "distance_is_estimate": trip.distance_is_estimate,
+        "route_line": trip.route_line,             # [[lat, lng], ...] on the roads, or null
         "phone_out_of_date": trip.status == Trip.Status.DOWNLOADED and trip.downloaded_version != trip.version,
         "stops": [{
             "sequence": s.sequence, "status": s.status, "order_id": s.order_id,

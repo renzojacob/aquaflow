@@ -40,6 +40,9 @@ class Trip(models.Model):
     version = models.PositiveIntegerField(default=1)            # bump on every change
     downloaded_version = models.PositiveIntegerField(null=True, blank=True)   # version the rider's phone holds
     downloaded_at = models.DateTimeField(null=True, blank=True)
+    # Road path station -> stops -> station from OpenRouteService, as [[lat, lng], ...].
+    # None when it's a straight-line estimate (no API key, or ORS was down).
+    route_line = models.JSONField(null=True, blank=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
                                    on_delete=models.SET_NULL, related_name="+")
     created_at = models.DateTimeField(auto_now_add=True)

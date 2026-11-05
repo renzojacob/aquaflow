@@ -17,14 +17,21 @@ def start_trip(trip, rider, device_time=None):
     if trip.status not in (Trip.Status.APPROVED, Trip.Status.DOWNLOADED):
         raise ValidationError(f"Trip can't be started from '{trip.status}'.")
 
-    for stop in trip.stops.filter(status=TripStop.Status.PENDING).select_related("order"):
+    stops = list(trip.stops.filter(status=TripStop.Status.PENDING).select_related("order"))
+    if not stops:
+        raise ValidationError("This trip has no stops left to deliver.")
+
+    for stop in stops:
         order = stop.order
         if order.status not in PATH[:-1]:
             raise ValidationError(f"Order #{order.pk} is '{order.status}' and can't go out.")
         # Loading the vehicle means the order is ready, so walk it forward to out_for_delivery
         for nxt in PATH[PATH.index(order.status) + 1:]:
-            note = "" if nxt == S.OUT_FOR_DELIVERY else "auto on trip start"
+            note = f"Trip #{trip.pk} started" if nxt == S.OUT_FOR_DELIVERY else "auto on trip start"
             order = transition(order, nxt, by=rider, device_time=device_time, note=note)
+        # The rider's stop list, deliver/fail and customer tracking all look at assigned_rider
+        order.assigned_rider = rider
+        order.save(update_fields=["assigned_rider", "updated_at"])
 
     trip.status = Trip.Status.OUT
     trip.save(update_fields=["status", "updated_at"])
@@ -51,6 +58,10 @@ def ensure_stock_row(product):
 @transaction.atomic
 def send_out(order, by, rider_id=None):
     """Ready -> Out for delivery, optionally naming the rider who carries it."""
+    stop = TripStop.objects.filter(order=order).exclude(status=TripStop.Status.FAILED).first()
+    if stop is not None:
+        raise ValidationError(
+            f"This order is on Trip #{stop.trip_id}. It goes out when the rider starts that trip.")
     rider = None
     if rider_id:
         rider = get_user_model().objects.filter(pk=rider_id, role="rider", is_active=True).first()

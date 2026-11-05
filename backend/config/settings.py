@@ -131,6 +131,12 @@ CSRF_TRUSTED_ORIGINS = env.list(
        default=["http://localhost:8100", "http://127.0.0.1:8100"],
 )
 
+# OpenRouteService (heiGIT): road distances, travel times and route lines for trips.
+# Leave ORS_API_KEY empty to use straight-line estimates (no network calls at all).
+ORS_API_KEY = env("ORS_API_KEY", default="")
+ORS_PROFILE = env("ORS_PROFILE", default="driving-car")
+ORS_TIMEOUT_S = env.int("ORS_TIMEOUT_S", default=8)
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
