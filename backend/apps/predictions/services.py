@@ -266,7 +266,7 @@ def send_reminder(prediction):
                 context={
                     "first_name": user.first_name or user.username,
                     "runout_date": prediction.predicted_runout_date.isoformat(),
-                    "runout_day": prediction.predicted_runout_date.strftime("%A, %b %-d"),
+                    "runout_day": f"{prediction.predicted_runout_date:%A, %b} {prediction.predicted_runout_date.day}",
                     "quantity": usual_quantity(prediction),
                     "address_label": prediction.address.label or "your address",
                     "reorder_url": reorder_url(prediction),
