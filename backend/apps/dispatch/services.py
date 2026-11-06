@@ -93,6 +93,8 @@ def mark_delivered(order, by, empties_collected=None):
         order=order, rider=order.assigned_rider or by, outcome=DeliveryAttempt.Outcome.DELIVERED,
         empties_collected=empties, device_time=timezone.now(),
     )
+    from apps.predictions.services import refresh_after_delivery   # local: predictions imports orders
+    refresh_after_delivery(order)                                   # Feature C
     return order
 
 

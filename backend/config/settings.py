@@ -137,6 +137,9 @@ ORS_API_KEY = env("ORS_API_KEY", default="")
 ORS_PROFILE = env("ORS_PROFILE", default="driving-car")
 ORS_TIMEOUT_S = env.int("ORS_TIMEOUT_S", default=8)
 
+# Where the customer app lives: links in emails (e.g. the refill reminder's reorder link) point here.
+FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:8100")
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 

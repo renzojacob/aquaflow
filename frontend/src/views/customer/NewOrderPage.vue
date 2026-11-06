@@ -131,7 +131,7 @@ async function load() {
         else extras[p.id] = n
       }
     }
-    const wanted = a.find((x) => x.id === route.query.address)
+    const wanted = a.find((x) => String(x.id) === String(route.query.address))
     form.address_id = wanted?.id ?? a.find((x) => x.is_default)?.id ?? a[0]?.id ?? ''
     form.empties = Math.min(held.value, refills.value)
   } catch (e) {

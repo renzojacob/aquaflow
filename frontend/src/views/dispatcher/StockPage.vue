@@ -16,6 +16,7 @@ import {
 } from 'ionicons/icons'
 
 import AppButton from '@/components/ui/AppButton.vue'
+import DemandPanel from '@/components/dispatcher/DemandPanel.vue'
 import QuantityStepper from '@/components/form/QuantityStepper.vue'
 import SectionHead from '@/components/dash/SectionHead.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
@@ -30,6 +31,7 @@ const stock = ref(null)
 const loading = ref(true)
 const error = ref(null)
 const tab = ref('refill')
+const demand = ref(null) // Feature C panel; refreshed whenever stock changes
 
 const refill = reactive({ quantity: 10, reason: '', busy: false, error: '' })
 const receive = reactive({ quantity: 10, reason: '', busy: false, error: '' })
@@ -45,7 +47,10 @@ async function load() {
     loading.value = false
   }
 }
-onIonViewWillEnter(load)
+onIonViewWillEnter(() => {
+  load()
+  demand.value?.load()
+})
 
 async function save(form, payload, done) {
   form.busy = true
@@ -53,6 +58,7 @@ async function save(form, payload, done) {
   try {
     stock.value = await adjustStock(payload)
     showToast(done, 'success')
+    demand.value?.load()
     form.reason = ''
     if ('quantity' in form && payload.type === 'correction') form.quantity = ''
   } catch (e) {
@@ -186,6 +192,9 @@ const LOG = {
               </form>
             </section>
           </div>
+
+          <!-- Feature C: what the coming week probably needs -->
+          <DemandPanel ref="demand" />
 
           <!-- Where every container is -->
           <section class="af-panel" aria-labelledby="flow-title">

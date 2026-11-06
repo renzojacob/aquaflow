@@ -21,6 +21,7 @@ import TripsMap from '@/components/map/TripsMap.vue'
 import { tripColor } from '@/constants/tripColors'
 import { showToast } from '@/composables/useToast'
 import { listRiders } from '@/services/dispatcherService'
+import { getDemand } from '@/services/refillService'
 import { getServiceArea } from '@/services/fleetService'
 import { approveTrip, assignTrip, createTrip, deleteTrip, listTrips, listVehicles, planSlot, setTripStops } from '@/services/tripService'
 import { containers, dateISO, duration, friendlyDay, PERIODS, timeOf } from '@/utils/format'
@@ -38,6 +39,7 @@ const error = ref(null)
 const planning = ref(false)
 const busy = ref(null) // key of the thing being changed: "trip:3", "order:7"
 const selectedId = ref(null)
+const likely = ref(null) // Feature C: predicted reorders for this day (tentative, never planned)
 
 const dayOptions = computed(() => [
   { value: dateISO(0), label: 'Today' },
@@ -66,6 +68,9 @@ async function load() {
     vehicles.value = v
     riders.value = r
     station.value = { lat: a.lat, lng: a.lng }
+    getDemand(2)
+      .then((d) => (likely.value = d.days.find((x) => x.date === day.value) ?? null))
+      .catch(() => (likely.value = null))
   } catch (e) {
     error.value = e
   } finally {
@@ -267,6 +272,21 @@ const load_pct = (t) => Math.min(100, Math.round((t.load.peak / Math.max(1, t.lo
               </ul>
               <p v-if="!vehicles.length" class="af-small">No vehicles are set up. Ask the owner to add them on the Vehicles screen.</p>
             </section>
+
+            <section v-if="likely?.households.length" class="af-panel tentative" aria-labelledby="likely-title">
+              <SectionHead
+                title="Likely to reorder (tentative)"
+                :sub="`${containers(likely.predicted)} predicted for ${friendlyDay(day).toLowerCase()}. Not orders yet, so they can't go on a trip.`"
+              />
+              <ul class="plain">
+                <li v-for="h in likely.households" :key="h.prediction_id" class="unp">
+                  <span class="stop__text">
+                    <b>{{ h.customer }}</b>
+                    <span>{{ h.barangay || h.address }} · {{ containers(h.containers) }}<template v-if="h.overdue_days"> · ran out {{ h.overdue_days }}d ago</template></span>
+                  </span>
+                </li>
+              </ul>
+            </section>
           </div>
 
           <aside class="map" aria-label="Map">
@@ -332,4 +352,6 @@ select { min-height: 44px; border-radius: 12px; border: 1px solid var(--af-line)
   .stop__btns { grid-column: 1 / -1; justify-content: flex-start; }
   .bar-controls > :last-child { margin-left: 0; width: 100%; }
 }
+.tentative { border: 1px dashed var(--af-line-strong); }
+.tentative .stop__text b { font-weight: 700; }
 </style>

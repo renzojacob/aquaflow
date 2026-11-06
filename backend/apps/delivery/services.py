@@ -9,6 +9,7 @@ from apps.inventory.services import apply_movement
 from apps.orders.models import Order
 from apps.orders.services import refill_product, transition
 from apps.predictions.models import AddressPeriodStats
+from apps.predictions.services import refresh_after_delivery
 from apps.station.geo import haversine_m
 from apps.station.models import SystemSetting
 from .models import DeliveryAttempt
@@ -70,7 +71,11 @@ def record_attempt(order, rider, outcome, *, device_time, stop=None,
         stop.save(update_fields=["status"])
         _complete_trip_if_done(stop.trip_id)
 
-    # Later: refresh the refill prediction (#4) and queue the "delivered" email
+    # Feature C: a new delivery moves the household's predicted run-out date
+    if outcome == O.DELIVERED:
+        refresh_after_delivery(order)
+
+    # Later: queue the "delivered" email
     return attempt
 
 

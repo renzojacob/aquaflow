@@ -2,6 +2,7 @@
   Owner: reports. Sales and deliveries per day for the chosen period, as a chart and as a
   table with totals, ready to print (the sidebar and buttons are hidden on paper).
   All numbers come from real orders (GET /api/v1/dispatch/summary).
+  Feature C: the refill prediction backtest sits under the sales numbers.
 -->
 <script setup>
 import { computed, ref } from 'vue'
@@ -12,6 +13,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AreaChart from '@/components/viz/AreaChart.vue'
 import BarChart from '@/components/viz/BarChart.vue'
 import KpiTile from '@/components/dash/KpiTile.vue'
+import RefillAccuracy from '@/components/dash/RefillAccuracy.vue'
 import SectionHead from '@/components/dash/SectionHead.vue'
 import SegmentedControl from '@/components/form/SegmentedControl.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
@@ -138,6 +140,8 @@ const period = computed(() => (days.value.length ? `${fmtDay(days.value[0].date)
             </div>
             <p class="af-small">Sales count delivered orders only, at the price on each order. {{ containers(totals.containers) }} delivered in this period.</p>
           </section>
+
+          <RefillAccuracy />
         </template>
       </div>
     </ion-content>

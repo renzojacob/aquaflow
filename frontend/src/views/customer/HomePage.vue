@@ -18,6 +18,7 @@ import {
   onIonViewWillEnter,
   useIonRouter,
 } from '@ionic/vue'
+import { useRoute } from 'vue-router'
 import {
   addCircleOutline,
   callOutline,
@@ -34,6 +35,7 @@ import {
 } from 'ionicons/icons'
 
 import ActivityFeed from '@/components/dash/ActivityFeed.vue'
+import RefillForecast from '@/components/dash/RefillForecast.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import BarChart from '@/components/viz/BarChart.vue'
 import KpiTile from '@/components/dash/KpiTile.vue'
@@ -49,12 +51,15 @@ import { ORDER_FLOW, isActive, riderOf } from '@/constants/orderStatus'
 import { cartShort, refillsOf, reorderQuery } from '@/constants/cart'
 import { useCountUp } from '@/composables/useCountUp'
 import { getCustomerSummary, getOrderSettings, listAddresses, listAllOrders, periodOpen, trackOrder } from '@/services/customerService'
+import { getRefillCards, reorderRefill } from '@/services/refillService'
+import { showToast } from '@/composables/useToast'
 import { useAuthStore } from '@/stores/auth'
 import { PERIODS, clockLabel, containers, dateISO, duration, friendlyDay, greeting, peso } from '@/utils/format'
 import { activityFeed, orderStats } from '@/utils/orderStats'
 
 const auth = useAuthStore()
 const ionRouter = useIonRouter()
+const route = useRoute()
 
 const loading = ref(true)
 const error = ref(null)
@@ -62,6 +67,7 @@ const summary = ref(null)
 const orders = ref([])
 const settings = ref(null)
 const addresses = ref([])
+const refill = ref([]) // Feature C: one card per household
 
 // ticks once a minute so "closes in 40 min" stays true
 const now = ref(new Date())
@@ -90,7 +96,14 @@ const firstName = computed(() => auth.user?.full_name?.split(' ')[0] ?? '')
 async function load() {
   error.value = null
   try {
-    const [s, all, st, a] = await Promise.all([getCustomerSummary(), listAllOrders(), getOrderSettings(), listAddresses()])
+    const [s, all, st, a, r] = await Promise.all([
+      getCustomerSummary(),
+      listAllOrders(),
+      getOrderSettings(),
+      listAddresses(),
+      getRefillCards().catch(() => []), // the prediction is a bonus: never block the home screen on it
+    ])
+    refill.value = r
     summary.value = s
     orders.value = all
     refreshEta()
@@ -173,6 +186,29 @@ const nextWindow = computed(() => {
   const w = windows.value.find((x) => x.open)
   return w ? `${w.label} today, ${w.hours}` : `Tomorrow morning, ${PERIODS.morning.hours}`
 })
+
+// ---------- Feature C: never run out ----------
+// The reminder email links to /customer/home?reorder=<prediction id>: put that household first and highlight it.
+const fromReminder = computed(() => (route.query.reorder != null ? String(route.query.reorder) : null))
+const refillMain = computed(() => refill.value.find((c) => fromReminder.value && String(c.prediction_id) === fromReminder.value) ?? refill.value[0] ?? null)
+const refillOthers = computed(() => refill.value.filter((c) => c !== refillMain.value))
+const reordering = ref(false)
+async function reorderNow(card) {
+  reordering.value = true
+  try {
+    const order = await reorderRefill(card)
+    showToast(`Ordered ${containers(card.reorder.quantity)}. The station will confirm it soon.`, 'success')
+    if (fromReminder.value) ionRouter.replace('/customer/home')
+    await load()
+    go(`/customer/orders/${order.id}`)
+  } catch (e) {
+    showToast(e.message, 'danger')
+    load()
+  } finally {
+    reordering.value = false
+  }
+}
+const customizeRefill = (card) => go(`/customer/order?qty=${card.reorder.quantity}&address=${card.address.id}`)
 
 // ---------- navigation ----------
 const go = (path) => ionRouter.push(path)
@@ -273,6 +309,19 @@ function reorder() {
               />
             </section>
           </div>
+
+          <!-- ===== Feature C: when you'll run out ===== -->
+          <RefillForecast
+            v-if="refillMain"
+            :card="refillMain"
+            :others="refillOthers"
+            :highlight="fromReminder != null && String(refillMain.prediction_id) === fromReminder"
+            :busy="reordering"
+            @reorder="reorderNow"
+            @customize="customizeRefill"
+            @track="(id) => go(`/customer/orders/${id}`)"
+            @settings="go('/customer/profile')"
+          />
 
           <!-- Other orders in progress -->
           <section v-if="others.length" class="others" aria-label="Other orders in progress">

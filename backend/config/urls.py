@@ -14,6 +14,7 @@ urlpatterns = [
     path("api/customer/", include("apps.customers.urls")),
     path("api/", include("apps.orders.urls")),
     path("api/", include("apps.station.urls")),             # settings/public/
+    path("api/", include("apps.predictions.urls")),         # Feature C: refill prediction
     path("api/v1/dispatch/", include("apps.dispatch.urls")),   # dispatcher + owner
     path("api/v1/owner/", include("apps.accounts.staff_urls")),  # owner: people
     path("api/v1/rider/", include("apps.delivery.urls")),      # rider app
