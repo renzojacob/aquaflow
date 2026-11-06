@@ -2,6 +2,9 @@
   Rider: today's deliveries.
   Trips the station approved for me: download each one (an offline copy with hashed codes),
   then start it when the vehicle is loaded, so its stops go out for delivery.
+  Works with no signal (Feature B): start, delivered and couldn't-deliver are saved in the
+  phone's outbox first and synced when the signal is back. The stop list comes from the
+  server, or offline from the phone's copy, with outbox actions applied on top.
   Tank (water = share of today's stops done), location sharing (real GPS or demo drive),
   the NEXT stop as a big card (navigate, call, deliver with the customer's code, or report a problem),
   a live map of all stops, then the rest of the stops in trip order.
@@ -43,18 +46,18 @@ import TankHero from '@/components/dash/TankHero.vue'
 import TextField from '@/components/form/TextField.vue'
 import { showToast } from '@/composables/useToast'
 import { useRiderLocation } from '@/composables/useRiderLocation'
+import RiderSyncBanner from '@/components/rider/RiderSyncBanner.vue'
 import { env } from '@/config/env'
+import { enqueue, listOutbox, syncNow, syncState } from '@/offline/outbox'
+import { forgetTripsExcept, loadDay, saveTrip, savedStop, savedTrips } from '@/offline/riderDay'
 import {
   FAIL_REASONS,
   checkCodeOffline,
   deliver,
   downloadTrip,
   fail,
-  forgetSavedTrip,
-  getSavedTrip,
   getToday,
   listMyTrips,
-  startTrip,
 } from '@/services/riderService'
 import { PERIODS, ago, containers, dateISO, duration, friendlyDay, peso } from '@/utils/format'
 
@@ -63,47 +66,40 @@ const { location, startLive, startDemo, retarget, stopSharing } = useRiderLocati
 const data = ref(null)
 const loading = ref(true)
 const error = ref(null)
+const offline = ref(false)     // showing the phone's copy, not the server's
+const savedAt = ref(null)
+const outbox = ref([])         // my actions waiting to sync
 
 // ---------- trips (download, then start) ----------
 const trips = ref([])        // approved / downloaded / out trips for me
 const saved = ref({})        // trip id -> the copy kept on this phone
 const tripBusy = reactive({}) // trip id -> true while downloading
 
-function readSaved() {
+async function readSaved() {
   const map = {}
-  for (const tr of trips.value) {
-    const copy = getSavedTrip(tr.id)
-    if (copy) map[tr.id] = copy
-  }
+  for (const copy of await savedTrips()) map[copy.id] = copy
   saved.value = map
-}
-
-/** Drop copies of trips that are finished or no longer mine. */
-function forgetOldCopies() {
-  const keep = new Set(trips.value.map((tr) => String(tr.id)))
-  try {
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const key = localStorage.key(i)
-      const id = key?.startsWith('aquaflow.trip.') ? key.slice('aquaflow.trip.'.length) : null
-      if (id && !keep.has(id)) forgetSavedTrip(id)
-    }
-  } catch {
-    // storage blocked: nothing to clean
-  }
 }
 
 async function loadTrips() {
   if (env.useMock) return (trips.value = []) // trips need the real server
   try {
     trips.value = await listMyTrips()
-    forgetOldCopies()
+    await forgetTripsExcept(trips.value.map((tr) => tr.id))
   } catch {
-    // no signal: keep the last list; the saved copies still work
+    // no signal: list the trips saved on this phone so they can still be started
+    if (!trips.value.length) {
+      trips.value = (await savedTrips()).map((c) => ({
+        id: c.id, date: c.date, period: c.period, status: c.status, version: c.version,
+        vehicle: c.vehicle, stop_count: c.stops?.length ?? 0,
+      }))
+    }
   }
-  readSaved()
+  await readSaved()
 }
 
-const waiting = computed(() => trips.value.filter((tr) => tr.status !== 'out'))
+const startedHere = computed(() => new Set(outbox.value.filter((r) => r.action_type === 'start_trip' && r.status !== 'rejected').map((r) => r.trip_id)))
+const waiting = computed(() => trips.value.filter((tr) => tr.status !== 'out' && !startedHere.value.has(tr.id)))
 const isCurrent = (tr) => saved.value[tr.id]?.version === tr.version // this phone has the latest version
 const isChanged = (tr) => !!saved.value[tr.id] && !isCurrent(tr)
 const tripLabel = (tr) => `${friendlyDay(tr.date)} ${PERIODS[tr.period]?.label.toLowerCase() ?? tr.period}`
@@ -113,6 +109,7 @@ async function download(tr) {
   tripBusy[tr.id] = true
   try {
     const copy = await downloadTrip(tr.id)
+    await saveTrip(copy)
     saved.value = { ...saved.value, [tr.id]: copy }
     trips.value = trips.value.map((x) => (x.id === tr.id ? { ...x, status: copy.status, version: copy.version } : x))
     showToast(`Trip downloaded: ${copy.stops.length} stop${copy.stops.length === 1 ? '' : 's'}. The list works without signal now.`, 'success')
@@ -131,9 +128,13 @@ async function confirmStart() {
   ssheet.busy = true
   ssheet.error = ''
   try {
-    await startTrip(ssheet.trip.id)
+    const row = await enqueue({ action_type: 'start_trip', trip_id: ssheet.trip.id, meta: { label: `Start trip #${ssheet.trip.id}` } })
     ssheet.open = false
-    showToast('Trip started. Customers can now see you are on the way.', 'success')
+    await load()
+    const r = await sendAndGet(row)
+    if (!r) showToast('Trip started on this phone. It will sync when you have signal.', 'warning')
+    else if (r.result === 'rejected') showToast(`Trip not started: ${r.error}`, 'danger')
+    else showToast('Trip started. Customers can now see you are on the way.', 'success')
     await load()
   } catch (e) {
     ssheet.error = e.message
@@ -142,26 +143,33 @@ async function confirmStart() {
   }
 }
 
-/** The downloaded stop for an order (has code_salt + code_hash), or null. */
-function savedStop(orderId) {
-  for (const copy of Object.values(saved.value)) {
-    const s = copy?.stops?.find((x) => x.id === orderId)
-    if (s) return s
-  }
-  return null
+/** Sync now and return the server's answer for this action, or null if it couldn't be reached. */
+async function sendAndGet(row) {
+  const { results } = await syncNow()
+  return results.get(row.key) ?? null
 }
 
 async function load() {
   error.value = null
   try {
-    const [today] = await Promise.all([getToday(), loadTrips()])
-    data.value = today
+    if (env.useMock) {
+      data.value = await getToday()
+      return
+    }
+    await loadTrips()
+    const day = await loadDay()
+    outbox.value = await listOutbox()
+    data.value = day.data
+    offline.value = day.offline
+    savedAt.value = day.savedAt
   } catch (e) {
     error.value = e
   } finally {
     loading.value = false
   }
 }
+// A sync finished somewhere (auto-sync, Sync screen): show the server's view again
+watch(() => syncState.lastSyncAt, () => load())
 onIonViewWillEnter(load)
 async function refresh(ev) {
   await load()
@@ -214,6 +222,8 @@ function openDeliver(o) {
   Object.assign(dsheet, { open: true, order: o, code: '', empties: o.expected_empties, noCode: false, busy: false, error: '' })
 }
 const gps = () => (location.position ? { lat: location.position.lat, lng: location.position.lng, accuracy_m: location.position.accuracy_m } : {})
+// Same position, in the sync API's field names
+const syncGps = () => (location.position ? { gps_lat: location.position.lat, gps_lng: location.position.lng, gps_accuracy_m: location.position.accuracy_m } : {})
 async function confirmDeliver() {
   dsheet.error = ''
   if (!dsheet.noCode && !dsheet.code.trim()) return (dsheet.error = 'Type the code from the customer’s app.')
@@ -221,20 +231,30 @@ async function confirmDeliver() {
   try {
     // Check against the downloaded hash first, so a wrong code is caught even with no signal.
     // The server checks the real code again either way.
-    if (!dsheet.noCode && (await checkCodeOffline(savedStop(dsheet.order.id), dsheet.code)) === false) {
+    if (!dsheet.noCode && (await checkCodeOffline(await savedStop(dsheet.order.id), dsheet.code)) === false) {
       dsheet.error = "That code doesn't match. Ask the customer to read it again from their app."
       return
     }
-    const r = await deliver(dsheet.order.id, {
-      ...(dsheet.noCode ? { no_code: true } : { code: dsheet.code.trim() }),
-      empties_collected: dsheet.empties,
-      ...gps(),
+    const o = dsheet.order
+    const body = { ...(dsheet.noCode ? { no_code: true } : { code: dsheet.code.trim() }), empties_collected: dsheet.empties }
+    if (env.useMock) {
+      const r = await deliver(o.id, { ...body, ...gps() })
+      dsheet.open = false
+      showToast(r.geofence_flagged ? `${o.code} delivered. Marked for a check: you were far from the pin.` : `${o.code} delivered. Collect ${peso(o.total)}.`, r.geofence_flagged ? 'warning' : 'success')
+      return await load()
+    }
+    const row = await enqueue({
+      action_type: 'deliver', order_id: o.id, payload: { ...body, ...syncGps() },
+      meta: { label: `Delivered ${o.code}`, customer: o.customer.name, stop: o },
     })
     dsheet.open = false
-    showToast(
-      r.geofence_flagged ? `${dsheet.order.code} delivered. Marked for a check: you were far from the pin.` : `${dsheet.order.code} delivered. Collect ${peso(dsheet.order.total)}.`,
-      r.geofence_flagged ? 'warning' : 'success',
-    )
+    await load()
+    const r = await sendAndGet(row)
+    if (!r) showToast(`${o.code} saved on this phone. Collect ${peso(o.total)}. It will sync when you have signal.`, 'warning')
+    else if (r.result === 'rejected') showToast(`${o.code} was not accepted: ${r.error} See the Sync screen.`, 'danger')
+    else if (r.conflicts?.includes('delivered_after_cancel')) showToast(`${o.code} had been cancelled by the customer. Your delivery was kept and the station was told.`, 'warning')
+    else if (r.conflicts?.includes('code_mismatch')) showToast(`${o.code} delivered, but the code didn't match. The station will check it.`, 'warning')
+    else showToast(`${o.code} delivered. Collect ${peso(o.total)}.`, 'success')
     await load()
   } catch (e) {
     dsheet.error = e.message
@@ -252,9 +272,24 @@ async function confirmFail() {
   fsheet.busy = true
   fsheet.error = ''
   try {
-    await fail(fsheet.order.id, { failure_reason: fsheet.reason, note: fsheet.note, ...gps() })
+    const o = fsheet.order
+    if (env.useMock) {
+      await fail(o.id, { failure_reason: fsheet.reason, note: fsheet.note, ...gps() })
+      fsheet.open = false
+      showToast(`${o.code} goes back to the station.`, 'success')
+      return await load()
+    }
+    const row = await enqueue({
+      action_type: 'fail', order_id: o.id, payload: { failure_reason: fsheet.reason, note: fsheet.note, ...syncGps() },
+      meta: { label: `Couldn't deliver ${o.code}`, customer: o.customer.name, stop: o,
+              failure_text: FAIL_REASONS.find((x) => x.value === fsheet.reason)?.label ?? fsheet.reason },
+    })
     fsheet.open = false
-    showToast(`${fsheet.order.code} goes back to the station.`, 'success')
+    await load()
+    const r = await sendAndGet(row)
+    if (!r) showToast(`${o.code} saved on this phone. It will sync when you have signal.`, 'warning')
+    else if (r.result === 'rejected') showToast(`${o.code} was not accepted: ${r.error} See the Sync screen.`, 'danger')
+    else showToast(`${o.code} goes back to the station.`, 'success')
     await load()
   } catch (e) {
     fsheet.error = e.message
@@ -278,6 +313,10 @@ async function confirmFail() {
       </ion-refresher>
 
       <div class="af-container af-dash">
+        <RiderSyncBanner />
+        <p v-if="offline" class="offline-note" role="status">
+          No signal. Showing what's saved on this phone{{ savedAt ? ` (from ${ago(savedAt)})` : '' }}.
+        </p>
         <div v-if="loading" class="af-panel"><SkeletonList :rows="4" /></div>
         <div v-else-if="error" class="af-panel err" role="alert">
           <b>Couldn't load your deliveries</b>
@@ -497,6 +536,7 @@ async function confirmFail() {
 .nbtn ion-icon { color: var(--af-primary); font-size: 18px; }
 
 .trips { gap: 12px; margin-bottom: 16px; }
+.offline-note { margin: 0 0 12px; font-size: 13.5px; font-weight: 650; color: var(--af-ink-2); }
 .trip { display: grid; gap: 10px; padding: 14px; border-radius: 20px; background: var(--af-surface-2); border: 1px solid var(--af-line); }
 .trip__head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
 .trip__head b { font-size: 16px; font-weight: 800; }

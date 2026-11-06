@@ -183,10 +183,9 @@ export async function fail(id, payload) {
 }
 
 // ---------- Trips (download before leaving, then start) ----------
-// Real mode only: /api/v1/rider/trips. The downloaded copy is kept on the phone so the
-// stop list, addresses and code check still work with no signal.
-
-const TRIP_KEY = (id) => `aquaflow.trip.${id}`
+// Real mode only: /api/v1/rider/trips. The downloaded copy is kept on the phone (IndexedDB, see
+// offline/riderDay.js) so the stop list, addresses and code check still work with no signal.
+// Starting a trip, delivering and failing go through the outbox (offline/outbox.js).
 
 function tripsNeedServer() {
   throw mockError('server', null, 'Trips need the AquaFlow server. Turn off demo mode (VITE_USE_MOCK).')
@@ -204,39 +203,19 @@ export async function listMyTrips() {
 }
 
 /**
- * Download the trip and keep a copy on the phone.
+ * Download the trip. Save it with saveTrip() from offline/riderDay.js.
  * Each stop has `code_salt` + `code_hash` instead of the customer's code (see checkCodeOffline).
  */
 export async function downloadTrip(id) {
   if (env.useMock) tripsNeedServer()
   const { data } = await http.post(`${API}/trips/${id}/download`)
-  try {
-    localStorage.setItem(TRIP_KEY(id), JSON.stringify(data))
-  } catch {
-    // storage full or blocked: the trip still works while online
-  }
   return data
 }
 
-/** The copy saved by downloadTrip, or null. Use this when offline. */
-export function getSavedTrip(id) {
-  try {
-    const raw = localStorage.getItem(TRIP_KEY(id))
-    return raw ? JSON.parse(raw) : null
-  } catch {
-    return null
-  }
-}
-
-export function forgetSavedTrip(id) {
-  try {
-    localStorage.removeItem(TRIP_KEY(id))
-  } catch {
-    // nothing to do
-  }
-}
-
-/** Load the vehicle: every stop becomes "out for delivery". Then getToday() shows the stops. */
+/**
+ * Load the vehicle: every stop becomes "out for delivery". Direct call; the rider screen uses the
+ * outbox instead (start_trip action), so it works offline too.
+ */
 export async function startTrip(id) {
   if (env.useMock) tripsNeedServer()
   const { data } = await http.post(`${API}/trips/${id}/start`, { device_time: new Date().toISOString() })
@@ -258,4 +237,14 @@ export async function checkCodeOffline(stop, code) {
   const digest = await subtle.digest('SHA-256', bytes)
   const hex = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('')
   return hex === stop.code_hash
+}
+
+/**
+ * My last 50 actions as the server recorded them (Sync screen), newest first.
+ * @returns {Promise<Array<{idempotency_key:string, action_type:string, label:string, order_id:number|null, trip_id:number|null, result:'applied'|'duplicate'|'rejected'|'conflict', error:string, conflicts:string[], device_time:string, server_time:string}>>}
+ */
+export async function syncHistory() {
+  if (env.useMock) return []
+  const { data } = await http.get(`${API}/sync`)
+  return data
 }

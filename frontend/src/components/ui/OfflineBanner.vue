@@ -1,18 +1,19 @@
 <!--
   OfflineBanner — tells the rider whether actions are saved locally or synced.
-  Phase 5 connects it to the real network status + outbox. For now it is driven by props.
+  Connected to the real outbox by components/rider/RiderSyncBanner.vue; this part only draws.
   Usage:
     <OfflineBanner state="offline" :pending="3" />
     <OfflineBanner state="syncing" :done="1" :total="3" />
     <OfflineBanner state="synced" :total="3" />
+    <OfflineBanner state="attention" :pending="1" />   (actions the server did not accept)
 -->
 <script setup>
 import { computed } from 'vue'
 import { IonIcon } from '@ionic/vue'
-import { cloudDoneOutline, cloudOfflineOutline } from 'ionicons/icons'
+import { alertCircleOutline, cloudDoneOutline, cloudOfflineOutline } from 'ionicons/icons'
 
 const props = defineProps({
-  state: { type: String, required: true }, // offline | syncing | synced
+  state: { type: String, required: true }, // offline | syncing | synced | attention
   pending: { type: Number, default: 0 },
   done: { type: Number, default: 0 },
   total: { type: Number, default: 0 },
@@ -21,6 +22,7 @@ const props = defineProps({
 const text = computed(() => {
   if (props.state === 'offline') return "You're offline. Deliveries are saved on this phone."
   if (props.state === 'syncing') return 'Back online · syncing your actions…'
+  if (props.state === 'attention') return props.pending === 1 ? "1 action wasn't accepted. Open Sync to see why." : `${props.pending} actions weren't accepted. Open Sync to see why.`
   return props.total === 1 ? 'Your action is synced' : `All ${props.total} actions synced`
 })
 
@@ -36,6 +38,7 @@ const count = computed(() => {
 <template>
   <div class="af-banner" :class="`af-banner--${state}`" role="status">
     <ion-icon v-if="state === 'offline'" :icon="cloudOfflineOutline" aria-hidden="true" />
+    <ion-icon v-else-if="state === 'attention'" :icon="alertCircleOutline" aria-hidden="true" />
     <span v-else-if="state === 'syncing'" class="af-banner__spin" aria-hidden="true"></span>
     <ion-icon v-else :icon="cloudDoneOutline" aria-hidden="true" />
     <span class="af-banner__text">{{ text }}</span>
@@ -59,6 +62,7 @@ const count = computed(() => {
 .af-banner--offline { background: var(--af-amber-tint); color: var(--af-amber-fg); }
 .af-banner--syncing { background: var(--af-primary-tint); color: var(--af-primary); }
 .af-banner--synced { background: var(--af-success-tint); color: var(--af-success); }
+.af-banner--attention { background: var(--af-danger-tint); color: var(--af-danger); }
 .af-banner__text { flex: 1; min-width: 160px; }
 .af-banner__count {
   font-family: var(--af-mono);

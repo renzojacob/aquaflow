@@ -7,6 +7,9 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router'
 
 import RoleShell from '@/components/layout/RoleShell.vue'
+import RiderDonePage from '@/views/rider/RiderDonePage.vue'
+import RiderSyncPage from '@/views/rider/RiderSyncPage.vue'
+import RiderTripPage from '@/views/rider/RiderTripPage.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const soon = () => import('@/views/shared/ComingSoonPage.vue')
@@ -51,7 +54,7 @@ const routes = [
       { path: 'orders/:id', component: () => import('@/views/dispatcher/OrderAdminPage.vue') },
       { path: 'plan', component: () => import('@/views/dispatcher/PlanPage.vue') },
       { path: 'stock', component: () => import('@/views/dispatcher/StockPage.vue') },
-      placeholder('conflicts', 'Conflicts', 4, ['Rider offline actions that clashed with server changes', 'Accept or override each one']),
+      { path: 'conflicts', component: () => import('@/views/dispatcher/ConflictsPage.vue') },
       { path: 'more', component: more },
     ],
   },
@@ -63,9 +66,11 @@ const routes = [
     meta: { role: 'rider' },
     children: [
       { path: '', redirect: '/rider/trip' },
-      { path: 'trip', component: () => import('@/views/rider/RiderTripPage.vue') },
-      { path: 'done', component: () => import('@/views/rider/RiderDonePage.vue') },
-      placeholder('sync', 'Offline sync', 5, ['Keep delivering with no signal', '"3 actions waiting to sync"', 'Result of each synced action']),
+      // Bundled with the app, not loaded on demand: a rider with no signal must still be able
+      // to open every rider screen (Feature B)
+      { path: 'trip', component: RiderTripPage },
+      { path: 'done', component: RiderDonePage },
+      { path: 'sync', component: RiderSyncPage },
       { path: 'more', component: more },
     ],
   },

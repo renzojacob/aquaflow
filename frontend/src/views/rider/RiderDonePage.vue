@@ -3,7 +3,7 @@
   empties brought back, and every stop with its result (and a note if the station will check it).
 -->
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { IonContent, IonHeader, IonIcon, IonPage, IonRefresher, IonRefresherContent, IonTitle, IonToolbar, onIonViewWillEnter } from '@ionic/vue'
 import { cashOutline, checkmarkCircleOutline, cubeOutline, refreshCircleOutline, shieldCheckmarkOutline, warningOutline } from 'ionicons/icons'
 
@@ -12,6 +12,10 @@ import EmptyState from '@/components/ui/EmptyState.vue'
 import KpiTile from '@/components/dash/KpiTile.vue'
 import SectionHead from '@/components/dash/SectionHead.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
+import RiderSyncBanner from '@/components/rider/RiderSyncBanner.vue'
+import { env } from '@/config/env'
+import { syncState } from '@/offline/outbox'
+import { loadDay } from '@/offline/riderDay'
 import { getToday } from '@/services/riderService'
 import { containers, peso, timeOf } from '@/utils/format'
 
@@ -22,7 +26,8 @@ const error = ref(null)
 async function load() {
   error.value = null
   try {
-    data.value = await getToday()
+    // Real mode: the server's day with this phone's unsynced actions on top (works offline)
+    data.value = env.useMock ? await getToday() : (await loadDay()).data
   } catch (e) {
     error.value = e
   } finally {
@@ -30,6 +35,7 @@ async function load() {
   }
 }
 onIonViewWillEnter(load)
+watch(() => syncState.lastSyncAt, () => load())
 async function refresh(ev) {
   await load()
   ev.target.complete()
@@ -51,6 +57,7 @@ const done = computed(() => data.value?.done ?? [])
       </ion-refresher>
 
       <div class="af-container af-dash af-dash--narrow">
+        <RiderSyncBanner />
         <header class="top">
           <h1 class="title">Done today</h1>
           <p class="af-small">Hand the cash and empties to the station at the end of your trip.</p>
@@ -85,7 +92,9 @@ const done = computed(() => data.value?.done ?? [])
                     <template v-if="d.code_ok"> · <ion-icon :icon="shieldCheckmarkOutline" aria-hidden="true" /> code checked</template>
                   </span>
                   <span v-else class="row__meta">{{ d.failure }}</span>
-                  <span v-if="d.geofence_flagged || d.code_ok === false" class="row__flag">The station will check this one{{ d.code_ok === false ? ': no code' : ': far from the pin' }}</span>
+                  <span v-if="d.waiting === 'pending'" class="row__wait">Saved on this phone · waiting to sync</span>
+                  <span v-else-if="d.waiting === 'rejected'" class="row__flag">Not accepted: {{ d.error }}</span>
+                  <span v-else-if="d.geofence_flagged || d.code_ok === false" class="row__flag">The station will check this one{{ d.code_ok === false ? ': no code' : ': far from the pin' }}</span>
                 </span>
                 <span class="row__end">
                   <b v-if="d.outcome === 'delivered'" class="af-money">{{ peso(d.total) }}</b>
@@ -117,6 +126,7 @@ const done = computed(() => data.value?.done ?? [])
 .row__text > span { font-size: 13px; color: var(--af-ink-2); font-weight: 550; }
 .row__meta { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .row__flag { color: var(--af-amber-fg) !important; font-weight: 700 !important; }
+.row__wait { color: var(--af-primary) !important; font-weight: 700 !important; }
 .row__end { display: grid; justify-items: end; gap: 2px; }
 .row__end b { font-family: var(--af-display); font-size: 16px; font-weight: 650; }
 .row__end time { font-size: 12.5px; font-weight: 650; color: var(--af-ink-2); }

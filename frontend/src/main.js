@@ -8,6 +8,7 @@ import { initTheme } from './composables/useTheme'
 import { initSpotlight } from './theme/spotlight'
 import { oceanPageTransition } from './theme/pageTransition'
 import { setUnauthorizedHandler } from './services/http'
+import { startAutoSync } from './offline/outbox'
 import { useAuthStore } from './stores/auth'
 
 /* Fonts are bundled with the app (not loaded from Google),
@@ -57,6 +58,9 @@ setUnauthorizedHandler(() => {
   useAuthStore(pinia).logout()
   router.replace({ name: 'login' })
 })
+
+// Rider outbox (Feature B): sync at start, when the signal comes back, and every 30 s if needed
+startAutoSync(pinia)
 
 // Wait for the first route to load before showing the app (avoids a flash)
 router.isReady().then(() => {
