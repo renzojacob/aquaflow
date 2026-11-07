@@ -85,15 +85,45 @@ function mockSlots(addressId, quantity) {
 }
 
 /**
+ * Feature E (demo mode): same rules as backend/apps/delivery/best_time.py, from the mock orders.
+ * A delivered order is one success; each failed try in its history is one failure.
+ */
+function mockBestTime(addressId) {
+  if (!addressId) return null
+  const tally = { morning: { attempts: 0, delivered: 0 }, afternoon: { attempts: 0, delivered: 0 } }
+  for (const o of db().orders.filter((x) => x.address?.id === addressId && tally[x.period])) {
+    const fails = (o.history ?? []).filter((h) => h.status === 'failed_delivery').length
+    tally[o.period].attempts += fails + (o.status === 'delivered' ? 1 : 0)
+    tally[o.period].delivered += o.status === 'delivered' ? 1 : 0
+  }
+  const { morning: m, afternoon: a } = tally
+  if (m.attempts + a.attempts < (db().settings.best_time_min_attempts ?? 4)) return null
+  const rate = (t) => t.delivered / t.attempts
+  const of = (t, p) => `${t.delivered} of ${t.attempts} ${p} deliver${t.attempts === 1 ? 'y' : 'ies'}`
+  if (m.attempts && a.attempts) {
+    const [best, other] = rate(m) >= rate(a) ? ['morning', 'afternoon'] : ['afternoon', 'morning']
+    if (rate(tally[best]) - rate(tally[other]) < 0.4) return null
+    return { period: best, basis: 'compared', stats: tally, summary: `${of(tally[best], best)} worked here, but only ${of(tally[other], other)}.` }
+  }
+  const tried = m.attempts ? 'morning' : 'afternoon'
+  const untried = tried === 'morning' ? 'afternoon' : 'morning'
+  if (rate(tally[tried]) >= 0.5) return null
+  return { period: untried, basis: 'untried', stats: tally, summary: `Only ${of(tally[tried], tried)} worked here.` }
+}
+
+/**
  * Room left in each period the customer can order for (today and tomorrow), and whether a
  * trip is already planned near the address. A hint for the form: the server checks again.
+ * best_time (Feature E): the period that usually works at this address, or null.
  * @param {{ address_id?: string, quantity?: number }} q
- * @returns {Promise<{ slots: SlotAvailability[], nearby_radius_m: number }>}
+ * @returns {Promise<{ slots: SlotAvailability[], nearby_radius_m: number,
+ *   best_time: { period: 'morning'|'afternoon', basis: 'compared'|'untried', summary: string,
+ *     stats: Record<string, { attempts: number, delivered: number }> } | null }>}
  */
 export async function getSlotAvailability({ address_id, quantity = 0 } = {}) {
   if (env.useMock) {
     await mockDelay(120)
-    return { slots: mockSlots(address_id, quantity), nearby_radius_m: db().settings.nearby_radius_m ?? 1000 }
+    return { slots: mockSlots(address_id, quantity), nearby_radius_m: db().settings.nearby_radius_m ?? 1000, best_time: mockBestTime(address_id) }
   }
   const params = { quantity }
   if (address_id) params.address = address_id

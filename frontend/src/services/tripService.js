@@ -29,6 +29,9 @@ function noMock() {
  * @property {number} expected_empties
  * @property {number|null} expected_load_after
  * @property {string|null} eta         ISO time
+ * @property {BetterPeriod|null} better_period  Feature E: this address usually works better in the other period
+ *
+ * @typedef {{ period: 'morning'|'afternoon', basis: 'compared'|'untried', summary: string }} BetterPeriod
  *
  * @typedef {Object} Trip
  * @property {number} id

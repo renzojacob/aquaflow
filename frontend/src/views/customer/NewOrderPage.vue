@@ -17,7 +17,7 @@ import {
   onIonViewWillEnter,
   useIonRouter,
 } from '@ionic/vue'
-import { addOutline, bagHandleOutline, cashOutline, checkmarkCircle, navigateCircleOutline, partlySunnyOutline, removeOutline, sunnyOutline, timeOutline } from 'ionicons/icons'
+import { addOutline, bagHandleOutline, cashOutline, checkmarkCircle, navigateCircleOutline, partlySunnyOutline, removeOutline, ribbonOutline, sunnyOutline, timeOutline } from 'ionicons/icons'
 import { KIND } from '@/constants/cart'
 
 import AddressFormModal from '@/components/address/AddressFormModal.vue'
@@ -80,6 +80,7 @@ const refills = computed(() => cart.value.filter((l) => l.kind === 'refill').red
 // A hint for choosing: the server checks again when the order is placed.
 const slots = ref({}) // 'YYYY-MM-DD|period' -> SlotAvailability
 const nearbyM = ref(1000)
+const bestTime = ref(null) // Feature E: the period that usually works at this address
 const nearbyLabel = computed(() => (nearbyM.value >= 1000 ? `${+(nearbyM.value / 1000).toFixed(1)} km` : `${nearbyM.value} m`))
 let slotTimer = null
 let slotRequest = 0 // only the newest answer counts if the customer taps quickly
@@ -90,6 +91,7 @@ async function loadSlots() {
     if (mine !== slotRequest) return
     slots.value = Object.fromEntries(r.slots.map((s) => [`${s.date}|${s.period}`, s]))
     nearbyM.value = r.nearby_radius_m ?? 1000
+    bestTime.value = r.best_time ?? null
   } catch {
     if (mine === slotRequest) slots.value = {} // unknown: don't block, the server still decides
   }
@@ -131,6 +133,24 @@ const dayOptions = computed(() => [
   { value: 'today', label: 'Today', disabled: todayClosed.value },
   { value: 'tomorrow', label: 'Tomorrow' },
 ])
+
+// ---------- best time to deliver (Feature E) ----------
+// A suggestion only: the customer's choice stands. Shown when they pick the other time.
+const bestOption = computed(() => (bestTime.value ? periodOptions.value.find((p) => p.value === bestTime.value.period) : null))
+const bestNudge = computed(() => {
+  const b = bestTime.value
+  if (!b || form.period === b.period || !selectedAddress.value) return null
+  const best = PERIODS[b.period].label
+  const other = PERIODS[form.period].label.toLowerCase()
+  const tb = b.stats[b.period]
+  const to = b.stats[form.period]
+  const where = selectedAddress.value.label || 'this address'
+  const text =
+    b.basis === 'compared'
+      ? `${best} usually works best at ${where}: ${tb.delivered} of ${tb.attempts} ${best.toLowerCase()} deliveries reached you, but only ${to.delivered} of ${to.attempts} ${other} ones.`
+      : `${PERIODS[form.period].label} deliveries often miss you at ${where} (${to.delivered} of ${to.attempts} reached you). ${best} might work better.`
+  return { text, best, canSwitch: !!bestOption.value?.open }
+})
 
 /** What the badge on a time button says about room left. */
 function roomNote(p) {
@@ -372,10 +392,20 @@ function addNote(text) {
                   <span v-if="!p.timeOpen" class="period__note period__note--closed">Closed for today</span>
                   <span v-else-if="roomNote(p)" class="period__note" :class="`period__note--${roomNote(p).tone}`">{{ roomNote(p).text }}</span>
                   <span v-else-if="closesIn(p.value)" class="period__note period__note--soon"><ion-icon :icon="timeOutline" aria-hidden="true" /> {{ closesIn(p.value) }}</span>
-                  <span v-if="p.open && p.room?.delivery_nearby" class="period__near">
-                    <ion-icon :icon="navigateCircleOutline" aria-hidden="true" /> Delivery nearby
+                  <span v-if="p.open && (p.room?.delivery_nearby || bestTime?.period === p.value)" class="period__chips">
+                    <span v-if="bestTime?.period === p.value" class="period__best">
+                      <ion-icon :icon="ribbonOutline" aria-hidden="true" /> {{ bestTime.basis === 'compared' ? 'Usually works best' : 'Worth a try' }}
+                    </span>
+                    <span v-if="p.room?.delivery_nearby" class="period__near">
+                      <ion-icon :icon="navigateCircleOutline" aria-hidden="true" /> Delivery nearby
+                    </span>
                   </span>
                 </button>
+              </div>
+              <div v-if="bestNudge" class="best-nudge" role="status">
+                <ion-icon :icon="ribbonOutline" aria-hidden="true" />
+                <p>{{ bestNudge.text }}</p>
+                <AppButton v-if="bestNudge.canSwitch" variant="secondary" size="sm" @click="form.period = bestTime.period">Switch to {{ bestNudge.best.toLowerCase() }}</AppButton>
               </div>
               <p v-if="nothingOpen" class="alert" role="status">
                 Every delivery time for today and tomorrow is full for {{ containers(refills) }}. Try fewer containers, or check again later.
@@ -524,9 +554,33 @@ function addNote(text) {
 .period__note { grid-column: 2; display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 750; }
 .period__note--soon { color: var(--af-amber-fg); }
 .period__note--closed { color: var(--af-danger); }
+.period__chips { grid-column: 2; display: flex; flex-wrap: wrap; gap: 6px; }
+.period__best {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--af-sun-tint);
+  color: var(--af-amber-fg);
+  font-size: 12px;
+  font-weight: 750;
+}
+.period__best ion-icon { font-size: 15px; }
+.best-nudge {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px 10px;
+  align-items: start;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--af-sun-tint);
+  border: 1px solid color-mix(in srgb, var(--af-sun) 35%, transparent);
+}
+.best-nudge > ion-icon { font-size: 20px; color: var(--af-amber-fg); margin-top: 1px; }
+.best-nudge p { margin: 0; font-size: 14px; font-weight: 600; line-height: 1.45; color: var(--af-ink); }
+.best-nudge :deep(.af-btn) { grid-column: 2; justify-self: start; }
 .period__near {
-  grid-column: 2;
-  justify-self: start;
   display: inline-flex;
   align-items: center;
   gap: 4px;

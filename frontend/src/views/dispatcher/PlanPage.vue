@@ -151,6 +151,9 @@ function addOrder(o, choice) {
   }
 }
 
+/** Feature E: this address usually works better in the other period. */
+const betterLabel = (b) => (b.basis === 'compared' ? `${PERIODS[b.period].label} works better here` : `Try ${PERIODS[b.period].label.toLowerCase()} here`)
+
 const load_pct = (t) => Math.min(100, Math.round((t.load.peak / Math.max(1, t.load.capacity)) * 100))
 </script>
 
@@ -185,7 +188,10 @@ const load_pct = (t) => Math.min(100, Math.round((t.load.peak / Math.max(1, t.lo
             <section v-if="notFitted.length" class="af-panel warn" role="alert" aria-label="Orders that did not fit">
               <SectionHead :title="`${notFitted.length} ${notFitted.length === 1 ? 'order' : 'orders'} did not fit`" sub="Add a vehicle, switch one on, or move them to another time" />
               <ul class="plain">
-                <li v-for="o in notFitted" :key="o.order_id"><b>{{ o.code }}</b> {{ o.customer_name }} · {{ containers(o.containers) }}<br /><span class="af-small">{{ o.reason }}</span></li>
+                <li v-for="o in notFitted" :key="o.order_id">
+                  <b>{{ o.code }}</b> {{ o.customer_name }} · {{ containers(o.containers) }}<br /><span class="af-small">{{ o.reason }}</span>
+                  <span v-if="o.better_period" class="better"><b>{{ betterLabel(o.better_period) }}.</b> {{ o.better_period.summary }}</span>
+                </li>
               </ul>
             </section>
 
@@ -235,6 +241,7 @@ const load_pct = (t) => Math.min(100, Math.round((t.load.peak / Math.max(1, t.lo
                   <span class="stop__text">
                     <b>{{ s.code }} · {{ s.customer_name }}</b>
                     <span>{{ s.barangay || s.address }} · {{ containers(s.containers) }}<template v-if="s.eta"> · about {{ timeOf(s.eta) }}</template></span>
+                    <span v-if="s.better_period" class="better"><b>{{ betterLabel(s.better_period) }}.</b> {{ s.better_period.summary }}</span>
                   </span>
                   <span v-if="editable(t)" class="stop__btns">
                     <button type="button" class="ibtn" :disabled="k === 0 || busy === `trip:${t.id}`" :aria-label="`Move ${s.code} earlier`" @click="moveStop(t, k, -1)"><ion-icon :icon="arrowUpOutline" /></button>
@@ -262,6 +269,7 @@ const load_pct = (t) => Math.min(100, Math.round((t.load.peak / Math.max(1, t.lo
                   <span class="stop__text">
                     <b>{{ o.code }} · {{ o.customer_name }}</b>
                     <span>{{ o.barangay || o.address }} · {{ containers(o.containers) }}</span>
+                    <span v-if="o.better_period" class="better"><b>{{ betterLabel(o.better_period) }}.</b> {{ o.better_period.summary }}</span>
                   </span>
                   <select class="mini" :aria-label="`Add ${o.code} to a trip`" :disabled="busy === `order:${o.order_id}` || (!editableTrips.length && !freeVehicles.length)" @change="addOrder(o, $event.target.value); $event.target.value = ''">
                     <option value="">Add to…</option>
@@ -352,6 +360,19 @@ select { min-height: 44px; border-radius: 12px; border: 1px solid var(--af-line)
   .stop__btns { grid-column: 1 / -1; justify-content: flex-start; }
   .bar-controls > :last-child { margin-left: 0; width: 100%; }
 }
+.stop__text .better,
+.plain .better {
+  display: block;
+  margin-top: 4px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--af-sun-tint);
+  color: var(--af-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.better b { color: var(--af-amber-fg); font-weight: 800; }
 .tentative { border: 1px dashed var(--af-line-strong); }
 .tentative .stop__text b { font-weight: 700; }
 </style>

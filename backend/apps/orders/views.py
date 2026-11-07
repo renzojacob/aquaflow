@@ -30,6 +30,7 @@ class SlotAvailabilityView(APIView):
     Feature D. GET /api/customer/slots/?address=&quantity=
     Room left in every period the customer can order for (today and tomorrow),
     and whether a trip is already planned near the address.
+    Feature E: best_time = the period that usually works at this address, or null.
     """
 
     permission_classes = [IsCustomer]
@@ -56,7 +57,12 @@ class SlotAvailabilityView(APIView):
                     lat=address.lat if address else None, lng=address.lng if address else None,
                 )
                 out.append({**a.as_dict(), "open": is_open})
-        return Response({"slots": out, "nearby_radius_m": SystemSetting.load().nearby_radius_m})
+        from apps.delivery.best_time import best_period    # local: delivery imports orders
+        return Response({
+            "slots": out,
+            "nearby_radius_m": SystemSetting.load().nearby_radius_m,
+            "best_time": best_period(address.pk) if address else None,   # Feature E
+        })
 
 
 @extend_schema(

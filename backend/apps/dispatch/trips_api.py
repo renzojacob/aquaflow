@@ -27,6 +27,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.permissions import IsDispatcherOrOwner
+from apps.delivery.best_time import best_periods
 from apps.orders.models import Order
 
 from . import planner
@@ -44,12 +45,25 @@ def _name(u):
     return u.get_full_name() or u.username
 
 
-def _order_brief(o):
+def _hint(o, hints):
+    """Feature E: the period that usually works at this order's address, if it isn't this one."""
+    s = (hints or {}).get(o.address_id)
+    if not s or s["period"] == o.period:
+        return None
+    return {"period": s["period"], "basis": s["basis"], "summary": s["summary"]}
+
+
+def hints_for(orders):
+    return best_periods(o.address_id for o in orders)
+
+
+def _order_brief(o, hints=None):
     return {
         "order_id": o.pk, "code": f"AF-{o.pk}", "status": o.status, "period": o.period,
         "customer_name": _name(o.customer), "barangay": o.address.barangay,
         "address": o.address_text, "lat": float(o.lat), "lng": float(o.lng),
         "containers": o.containers, "expected_empties": o.expected_empties,
+        "better_period": _hint(o, hints),
     }
 
 
@@ -57,6 +71,7 @@ def trip_payload(trip, with_log=False):
     trip = Trip.objects.select_related("vehicle", "rider").get(pk=trip.pk)
     stops = (trip.stops.select_related("order__customer", "order__address").order_by("sequence"))
     orders = [s.order for s in stops]
+    hints = hints_for(orders)
     departure, peak, _ = planner.load_profile(orders)
     data = {
         "id": trip.pk, "date": trip.date.isoformat(), "period": trip.period,
@@ -78,6 +93,7 @@ def trip_payload(trip, with_log=False):
             "containers": s.order.containers, "expected_empties": s.order.expected_empties,
             "expected_load_after": s.expected_load_after,
             "eta": s.eta.isoformat() if s.eta else None,
+            "better_period": _hint(s.order, hints),
         } for s in stops],
     }
     if with_log:
@@ -178,9 +194,11 @@ class TripListCreateView(APIView):
         trips = Trip.objects.filter(date=day)
         if period:
             trips = trips.filter(period=period)
+        unplanned = list(planner.unplanned_orders(day, period))
+        hints = hints_for(unplanned)
         return Response({
             "trips": [trip_payload(t) for t in trips.order_by("period", "vehicle__name")],
-            "unplanned": [_order_brief(o) for o in planner.unplanned_orders(day, period)],
+            "unplanned": [_order_brief(o, hints) for o in unplanned],
         })
 
     @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
@@ -314,7 +332,8 @@ class PlanSlotView(APIView):
     def post(self, request):
         day, period = _slot(request.data)
         trips, leftovers = planner.plan_slot(day, period, request.user)
+        hints = hints_for([o for o, _ in leftovers])
         return Response({
             "trips": [trip_payload(t) for t in trips],
-            "not_fitted": [{**_order_brief(o), "reason": why} for o, why in leftovers],
+            "not_fitted": [{**_order_brief(o, hints), "reason": why} for o, why in leftovers],
         }, status=http.HTTP_201_CREATED)
