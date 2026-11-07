@@ -17,7 +17,7 @@ import {
   onIonViewWillEnter,
   useIonRouter,
 } from '@ionic/vue'
-import { addOutline, bagHandleOutline, cashOutline, checkmarkCircle, partlySunnyOutline, removeOutline, sunnyOutline, timeOutline } from 'ionicons/icons'
+import { addOutline, bagHandleOutline, cashOutline, checkmarkCircle, navigateCircleOutline, partlySunnyOutline, removeOutline, sunnyOutline, timeOutline } from 'ionicons/icons'
 import { KIND } from '@/constants/cart'
 
 import AddressFormModal from '@/components/address/AddressFormModal.vue'
@@ -33,6 +33,7 @@ import {
   createOrder,
   getCustomerSummary,
   getOrderSettings,
+  getSlotAvailability,
   listAddresses,
   periodOpen,
 } from '@/services/customerService'
@@ -75,29 +76,78 @@ const total = computed(() => cart.value.reduce((s, l) => s + l.line_total, 0))
 const units = computed(() => cart.value.reduce((s, l) => s + l.quantity, 0))
 const refills = computed(() => cart.value.filter((l) => l.kind === 'refill').reduce((s, l) => s + l.quantity, 0))
 
-const periodOptions = computed(() =>
-  Object.entries(PERIODS).map(([value, p]) => ({
-    value,
-    ...p,
-    icon: value === 'morning' ? sunnyOutline : partlySunnyOutline,
-    open: settings.value ? periodOpen(settings.value, deliveryDate.value, value) : true,
-    cutoff: settings.value?.cutoff[value],
-  })),
+// ---------- room left per delivery time (Feature D) ----------
+// A hint for choosing: the server checks again when the order is placed.
+const slots = ref({}) // 'YYYY-MM-DD|period' -> SlotAvailability
+const nearbyM = ref(1000)
+const nearbyLabel = computed(() => (nearbyM.value >= 1000 ? `${+(nearbyM.value / 1000).toFixed(1)} km` : `${nearbyM.value} m`))
+let slotTimer = null
+let slotRequest = 0 // only the newest answer counts if the customer taps quickly
+async function loadSlots() {
+  const mine = ++slotRequest
+  try {
+    const r = await getSlotAvailability({ address_id: form.address_id, quantity: refills.value })
+    if (mine !== slotRequest) return
+    slots.value = Object.fromEntries(r.slots.map((s) => [`${s.date}|${s.period}`, s]))
+    nearbyM.value = r.nearby_radius_m ?? 1000
+  } catch {
+    if (mine === slotRequest) slots.value = {} // unknown: don't block, the server still decides
+  }
+}
+watch(
+  () => [form.address_id, refills.value],
+  () => {
+    if (loading.value) return
+    clearTimeout(slotTimer)
+    slotTimer = setTimeout(loadSlots, 250)
+  },
 )
-const todayClosed = computed(() =>
-  settings.value ? !Object.keys(PERIODS).some((p) => periodOpen(settings.value, dateISO(0), p)) : false,
+
+/** Can this day + time be picked? Closed by the clock, or no room for this many containers. */
+function slotState(date, period) {
+  const timeOpen = settings.value ? periodOpen(settings.value, date, period) : true
+  const room = slots.value[`${date}|${period}`] ?? null
+  const noRoom = !!(room?.limited && !room.fits)
+  return { timeOpen, noRoom, room, open: timeOpen && !noRoom }
+}
+
+const periodOptions = computed(() =>
+  Object.entries(PERIODS).map(([value, p]) => {
+    const st = slotState(deliveryDate.value, value)
+    return {
+      value,
+      ...p,
+      icon: value === 'morning' ? sunnyOutline : partlySunnyOutline,
+      ...st,
+      cutoff: settings.value?.cutoff[value],
+    }
+  }),
+)
+const todayClosed = computed(() => (settings.value ? !Object.keys(PERIODS).some((p) => slotState(dateISO(0), p).open) : false))
+const nothingOpen = computed(
+  () => settings.value && ![0, 1].some((d) => Object.keys(PERIODS).some((p) => slotState(dateISO(d), p).open)),
 )
 const dayOptions = computed(() => [
   { value: 'today', label: 'Today', disabled: todayClosed.value },
   { value: 'tomorrow', label: 'Tomorrow' },
 ])
 
-// Keep the choice valid: if the picked time closed, move to the next open one
-watch([deliveryDate, settings], () => {
+/** What the badge on a time button says about room left. */
+function roomNote(p) {
+  const r = p.room
+  if (!r?.limited) return null
+  if (r.remaining === 0) return { text: 'Fully booked', tone: 'closed' }
+  if (p.noRoom) return { text: `Only ${containers(r.remaining)} left`, tone: 'closed' }
+  if (r.almost_full) return { text: `${containers(r.remaining)} left`, tone: 'soon' }
+  return null
+}
+
+// Keep the choice valid: if the picked time closed or filled up, move to the next open one
+watch([deliveryDate, settings, slots], () => {
   if (!settings.value) return
   if (form.day === 'today' && todayClosed.value) form.day = 'tomorrow'
-  if (!periodOpen(settings.value, deliveryDate.value, form.period)) {
-    form.period = periodOptions.value.find((p) => p.open)?.value ?? 'morning'
+  if (!slotState(deliveryDate.value, form.period).open) {
+    form.period = periodOptions.value.find((p) => p.open)?.value ?? form.period
   }
 })
 
@@ -134,6 +184,7 @@ async function load() {
     const wanted = a.find((x) => String(x.id) === String(route.query.address))
     form.address_id = wanted?.id ?? a.find((x) => x.is_default)?.id ?? a[0]?.id ?? ''
     form.empties = Math.min(held.value, refills.value)
+    await loadSlots()
   } catch (e) {
     loadError.value = e
   } finally {
@@ -174,6 +225,7 @@ async function submit() {
     ionRouter.navigate(`/customer/orders/${order.id}`, 'forward', 'push')
   } catch (e) {
     submitError.value = e.message
+    loadSlots() // someone may have just taken the last room: refresh the badges
   } finally {
     submitting.value = false
   }
@@ -317,10 +369,20 @@ function addNote(text) {
                     <b>{{ p.label }}</b>
                     <span>{{ p.hours }}</span>
                   </span>
-                  <span v-if="!p.open" class="period__note period__note--closed">Closed for today</span>
+                  <span v-if="!p.timeOpen" class="period__note period__note--closed">Closed for today</span>
+                  <span v-else-if="roomNote(p)" class="period__note" :class="`period__note--${roomNote(p).tone}`">{{ roomNote(p).text }}</span>
                   <span v-else-if="closesIn(p.value)" class="period__note period__note--soon"><ion-icon :icon="timeOutline" aria-hidden="true" /> {{ closesIn(p.value) }}</span>
+                  <span v-if="p.open && p.room?.delivery_nearby" class="period__near">
+                    <ion-icon :icon="navigateCircleOutline" aria-hidden="true" /> Delivery nearby
+                  </span>
                 </button>
               </div>
+              <p v-if="nothingOpen" class="alert" role="status">
+                Every delivery time for today and tomorrow is full for {{ containers(refills) }}. Try fewer containers, or check again later.
+              </p>
+              <p v-else-if="periodOptions.some((p) => p.open && p.room?.delivery_nearby)" class="af-small near-hint">
+                <b>Delivery nearby</b> means a rider is already coming within {{ nearbyLabel }} of you then.
+              </p>
               <p class="af-small">
                 Same-day orders: morning before {{ clockLabel(settings.cutoff.morning) }}, afternoon before {{ clockLabel(settings.cutoff.afternoon) }}.
               </p>
@@ -462,6 +524,21 @@ function addNote(text) {
 .period__note { grid-column: 2; display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 750; }
 .period__note--soon { color: var(--af-amber-fg); }
 .period__note--closed { color: var(--af-danger); }
+.period__near {
+  grid-column: 2;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--af-success-tint);
+  color: var(--af-success);
+  font-size: 12px;
+  font-weight: 750;
+}
+.period__near ion-icon { font-size: 15px; }
+.near-hint b { color: var(--af-success); }
 .period:hover:not(:disabled) { border-color: color-mix(in srgb, var(--af-primary) 45%, var(--af-line)); }
 .period[aria-checked='true'] { border-color: var(--af-primary); background: var(--af-primary-tint); }
 .period:disabled { opacity: 0.55; cursor: not-allowed; }

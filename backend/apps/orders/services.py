@@ -162,7 +162,14 @@ def place_order(customer, *, address, delivery_date, period, items=None, quantit
             {"period": ["That delivery time is closed for today. Pick another time."]}
         )
 
-    # TODO (#3, Feature D): reject the order here if the slot is full.
+    # Feature D: never promise a slot the fleet can't serve. Lock the slot first so two
+    # customers can't both take the last containers; the lock ends with this transaction.
+    if containers:
+        from .slots import full_slot_message, lock_slot, slot_availability
+        lock_slot(delivery_date, period)
+        room = slot_availability(delivery_date, period, containers=containers)
+        if not room.fits:
+            raise ValidationError({"period": [full_slot_message(room, Order.Period(period).label)]})
 
     profile = CustomerProfile.objects.filter(user=customer).first()
     held = profile.containers_held if profile else 0
