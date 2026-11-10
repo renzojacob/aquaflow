@@ -85,16 +85,45 @@ function mockSlots(addressId, quantity) {
 }
 
 /**
+ * Feature E (demo mode): same rules as backend/apps/delivery/best_time.py, from the mock orders.
+ * A delivered order is one success; each failed try in its history is one failure.
+ */
+function mockBestTime(addressId) {
+  if (!addressId) return null
+  const tally = { morning: { attempts: 0, delivered: 0 }, afternoon: { attempts: 0, delivered: 0 } }
+  for (const o of db().orders.filter((x) => x.address?.id === addressId && tally[x.period])) {
+    const fails = (o.history ?? []).filter((h) => h.status === 'failed_delivery').length
+    tally[o.period].attempts += fails + (o.status === 'delivered' ? 1 : 0)
+    tally[o.period].delivered += o.status === 'delivered' ? 1 : 0
+  }
+  const { morning: m, afternoon: a } = tally
+  if (m.attempts + a.attempts < (db().settings.best_time_min_attempts ?? 4)) return null
+  const rate = (t) => t.delivered / t.attempts
+  const of = (t, p) => `${t.delivered} of ${t.attempts} ${p} deliver${t.attempts === 1 ? 'y' : 'ies'}`
+  if (m.attempts && a.attempts) {
+    const [best, other] = rate(m) >= rate(a) ? ['morning', 'afternoon'] : ['afternoon', 'morning']
+    if (rate(tally[best]) - rate(tally[other]) < 0.4) return null
+    return { period: best, basis: 'compared', stats: tally, summary: `${of(tally[best], best)} worked here, but only ${of(tally[other], other)}.` }
+  }
+  const tried = m.attempts ? 'morning' : 'afternoon'
+  const untried = tried === 'morning' ? 'afternoon' : 'morning'
+  if (rate(tally[tried]) >= 0.5) return null
+  return { period: untried, basis: 'untried', stats: tally, summary: `Only ${of(tally[tried], tried)} worked here.` }
+}
+
+/**
  * Room left in each period the customer can order for (today and tomorrow), and whether a
- * trip is already planned near the address. A hint for the form: the server checks again,
- * and the form treats any error here as "unknown" (it never blocks ordering).
+ * trip is already planned near the address. A hint for the form: the server checks again.
+ * best_time (Feature E): the period that usually works at this address, or null.
  * @param {{ address_id?: string, quantity?: number }} q
- * @returns {Promise<{ slots: SlotAvailability[], nearby_radius_m: number, best_time?: object | null }>}
+ * @returns {Promise<{ slots: SlotAvailability[], nearby_radius_m: number,
+ *   best_time: { period: 'morning'|'afternoon', basis: 'compared'|'untried', summary: string,
+ *     stats: Record<string, { attempts: number, delivered: number }> } | null }>}
  */
 export async function getSlotAvailability({ address_id, quantity = 0 } = {}) {
   if (env.useMock) {
     await mockDelay(120)
-    return { slots: mockSlots(address_id, quantity), nearby_radius_m: db().settings.nearby_radius_m ?? 1000, best_time: null }
+    return { slots: mockSlots(address_id, quantity), nearby_radius_m: db().settings.nearby_radius_m ?? 1000, best_time: mockBestTime(address_id) }
   }
   const params = { quantity }
   if (address_id) params.address = address_id
@@ -225,6 +254,15 @@ export async function createOrder(payload) {
     }
     if (!periodOpen(s, payload.delivery_date, payload.period)) {
       throw mockError('validation', 422, 'That delivery time is closed for today. Pick another time.')
+    }
+    if (refills) {
+      const slot = mockSlots(address.id, refills).find((x) => x.date === payload.delivery_date && x.period === payload.period)
+      if (slot && !slot.fits) {
+        const label = payload.period === 'morning' ? 'Morning' : 'Afternoon'
+        throw mockError('validation', 422, slot.remaining === 0
+          ? `${label} is fully booked for that day. Please pick another time.`
+          : `Only ${slot.remaining} container${slot.remaining === 1 ? '' : 's'} left for ${label.toLowerCase()}. Order ${slot.remaining} or fewer, or pick another time.`)
+      }
     }
     if (payload.empties_to_return < 0 || payload.empties_to_return > (me.containers_held ?? 0)) {
       throw mockError('validation', 422, `You can return up to ${me.containers_held ?? 0} empty containers.`)

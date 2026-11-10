@@ -287,16 +287,22 @@ def send_due_reminders(today=None, dry_run=False):
 # ---------------------------------------------------------------------------
 # One-tap reorder
 # ---------------------------------------------------------------------------
-def earliest_slot(now=None):
-    """(date, period) of the first delivery time customers can still order for."""
+def earliest_slot(now=None, containers=0):
+    """
+    (date, period) of the first delivery time customers can still order for, skipping
+    periods with no room for `containers` (Feature D). If every slot is full this still
+    returns tomorrow morning, and place_order() explains that it's full.
+    """
     from apps.orders.services import PERIOD_START
+    from apps.orders.slots import slot_availability
     now = timezone.localtime(now) if now else timezone.localtime()
     today = now.date()
     for day in (today, today + timedelta(days=1)):
         for period in (Order.Period.MORNING, Order.Period.AFTERNOON):
             if day > today or now.time() < PERIOD_START[period]:
-                return day, period
-    return today + timedelta(days=1), Order.Period.MORNING   # not reached: tomorrow is always open
+                if not containers or slot_availability(day, period, containers=containers).fits:
+                    return day, period
+    return today + timedelta(days=1), Order.Period.MORNING
 
 
 @transaction.atomic
@@ -318,7 +324,7 @@ def reorder(customer, prediction, *, delivery_date=None, period=None):
             raise ValidationError({"address": ["Add a delivery address first."]})
 
     if delivery_date is None or period is None:
-        delivery_date, period = earliest_slot()
+        delivery_date, period = earliest_slot(containers=usual_quantity(prediction))
 
     order = place_order(customer, address=address, delivery_date=delivery_date, period=period,
                         quantity=usual_quantity(prediction), source=Order.Source.REMINDER_REORDER)
@@ -341,7 +347,6 @@ def customer_cards(customer, today=None):
     histories = delivered_histories(customer=customer)
     preds = {p.address_id: p for p in RefillPrediction.objects.filter(customer=customer, is_current=True)}
     product = default_product()
-    slot_day, slot_period = earliest_slot()
 
     cards = []
     for a in Address.objects.filter(customer=customer, is_archived=False).order_by("-is_default", "id"):
@@ -364,6 +369,7 @@ def customer_cards(customer, today=None):
             cards.append(card)
             continue
         qty = usual_quantity(p)
+        slot_day, slot_period = earliest_slot(containers=qty)     # skips full slots (Feature D)
         reminder = p.reminders.order_by("sent_at").first()
         days_left = (p.predicted_runout_date - today).days
         card.update({
