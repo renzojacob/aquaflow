@@ -191,6 +191,7 @@ const load_pct = (t) => Math.min(100, Math.round((t.load.peak / Math.max(1, t.lo
 
             <EmptyState
               v-if="!trips.length && !unplanned.length"
+              art="tricycle"
               title="Nothing to plan"
               :message="`No confirmed orders for ${friendlyDay(day).toLowerCase()}’s ${period}. Confirm orders on the Orders screen first.`"
             />

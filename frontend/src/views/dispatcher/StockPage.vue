@@ -259,11 +259,11 @@ const LOG = {
 
 <style scoped>
 /* ---------- tank ---------- */
-.t-kicker { font-size: 14px; font-weight: 750; color: #cfe6ea; }
+.t-kicker { font-size: 14px; font-weight: 750; color: var(--af-on-deep-soft); }
 .t-title { margin: 0; font-family: var(--af-display); font-size: clamp(30px, 4.4vw, 52px); font-weight: 650; letter-spacing: -0.045em; line-height: 1; max-width: 14ch; }
 .t-sub { margin: 0; font-size: 15px; line-height: 1.55; font-weight: 550; max-width: 46ch; }
-.t-bar { margin-top: auto; padding: 14px 16px; border-radius: 18px; background: rgba(2, 18, 26, 0.42); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-.t-bar :deep(*) { --af-ink-2: #cfe6ea; }
+.t-bar { margin-top: auto; padding: 14px 16px; border-radius: 18px; background: rgba(var(--af-deep-rgb), 0.42); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.t-bar :deep(*) { --af-ink-2: var(--af-on-deep-soft); }
 
 /* ---------- record ---------- */
 .form { display: grid; gap: 14px; }

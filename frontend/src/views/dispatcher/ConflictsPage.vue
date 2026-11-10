@@ -96,6 +96,7 @@ const late = (c) => {
         </div>
         <EmptyState
           v-else-if="!rows.length"
+          art="waves"
           :title="scope === 'open' ? 'No conflicts' : 'Nothing handled yet'"
           :message="scope === 'open' ? 'Riders’ offline actions all matched the server.' : 'Conflicts you handle show up here.'"
         />

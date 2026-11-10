@@ -294,6 +294,7 @@ const dayOptions = [
           </ul>
           <div v-else class="af-panel">
             <EmptyState
+              art="drop"
               :title="search ? 'No matching orders' : `No ${TABS.find((t) => t.key === tab).label.toLowerCase()} orders`"
               :message="search ? 'Try another name, code or barangay.' : `Nothing here for ${friendlyDay(date).toLowerCase()}.`"
             />
@@ -314,8 +315,8 @@ const dayOptions = [
 
 /* ---------- tank ---------- */
 .t-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
-.t-day { font-size: 14px; font-weight: 750; color: #cfe6ea; }
-.t-top :deep(.af-seg) { background: rgba(2, 18, 26, 0.45); }
+.t-day { font-size: 14px; font-weight: 750; color: var(--af-on-deep-soft); }
+.t-top :deep(.af-seg) { background: rgba(var(--af-deep-rgb), 0.45); }
 .t-title { margin: 0; font-family: var(--af-display); font-size: clamp(28px, 4vw, 46px); font-weight: 650; letter-spacing: -0.045em; line-height: 1.02; max-width: 18ch; }
 .t-sub { margin: 0; font-size: 15px; font-weight: 550; }
 .pipe { list-style: none; margin: 6px 0 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
@@ -325,19 +326,19 @@ const dayOptions = [
   gap: 2px;
   padding: 12px 10px;
   border-radius: 18px;
-  border: 1px solid rgba(230, 244, 246, 0.14);
-  background: rgba(2, 18, 26, 0.42);
+  border: 1px solid color-mix(in srgb, var(--af-on-deep) 14%, transparent);
+  background: rgba(var(--af-deep-rgb), 0.42);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  color: #e6f4f6;
+  color: var(--af-on-deep);
   font-family: var(--af-font);
   text-align: left;
   cursor: pointer;
 }
 .pipe__step b { font-family: var(--af-display); font-size: 26px; font-weight: 650; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
-.pipe__step span { font-size: 12.5px; font-weight: 700; color: #cfe6ea; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pipe__step.is-on { border-color: #7ff0e4; box-shadow: inset 0 0 0 1px #7ff0e4; }
-.pipe__step.is-hot b { color: #ffd58a; }
+.pipe__step span { font-size: 12.5px; font-weight: 700; color: var(--af-on-deep-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pipe__step.is-on { border-color: var(--af-glow-c-hi); box-shadow: inset 0 0 0 1px var(--af-glow-c-hi); }
+.pipe__step.is-hot b { color: var(--af-sun); }
 
 /* ---------- side ---------- */
 .side { display: grid; gap: 16px; align-content: start; }
@@ -351,7 +352,7 @@ const dayOptions = [
 .warn { margin: 0; display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px; background: var(--af-amber-tint); color: var(--af-amber-fg); font-size: 13.5px; font-weight: 700; }
 .riders { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .riders li { display: grid; grid-template-columns: 36px 1fr auto; gap: 10px; align-items: center; }
-.riders__av { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(140deg, #b9b4ff, #4fe0d2); color: #04161d; font-size: 13px; font-weight: 800; }
+.riders__av { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(140deg, var(--af-accent-on-deep), var(--af-glow-c)); color: var(--af-on-glow); font-size: 13px; font-weight: 800; }
 .riders__name { display: grid; font-size: 14.5px; font-weight: 750; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .riders__name small { font-size: 12px; font-weight: 600; color: var(--af-ink-2); overflow: hidden; text-overflow: ellipsis; }
 .riders__state { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px; background: color-mix(in srgb, var(--af-success) 14%, transparent); color: var(--af-success); font-size: 12.5px; font-weight: 750; }
