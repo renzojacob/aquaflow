@@ -198,9 +198,9 @@ const statLine = (u) =>
 .person:last-child { border-bottom: 0; }
 .person--off { opacity: 0.55; }
 .person__av { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; font-weight: 800; font-size: 14px; background: var(--af-surface-3); color: var(--af-ink); }
-.av--rider { background: linear-gradient(140deg, #b9b4ff, #4fe0d2); color: #04161d; }
-.av--owner { background: linear-gradient(140deg, #ffd58a, #f2a33a); color: #2b1a00; }
-.av--dispatcher { background: linear-gradient(140deg, #9db8ff, #4fe0d2); color: #04161d; }
+.av--rider { background: linear-gradient(140deg, var(--af-accent-on-deep), var(--af-glow-c)); color: var(--af-on-glow); }
+.av--owner { background: linear-gradient(140deg, var(--af-sun-glow), var(--af-amber)); color: var(--af-on-sun); }
+.av--dispatcher { background: linear-gradient(140deg, var(--af-info), var(--af-glow-c)); color: var(--af-on-glow); }
 .person__text { display: grid; gap: 2px; min-width: 0; }
 .person__text b { font-size: 15px; font-weight: 800; }
 .person__text > span { font-size: 13px; color: var(--af-ink-2); font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

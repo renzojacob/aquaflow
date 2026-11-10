@@ -84,16 +84,16 @@ const meanwhile = computed(() => MEANWHILE[key.value] ?? null)
   padding: 28px;
   border-radius: 32px;
   background:
-    repeating-linear-gradient(0deg, rgba(159, 195, 201, 0.06) 0 1px, transparent 1px 28px),
-    repeating-linear-gradient(90deg, rgba(159, 195, 201, 0.06) 0 1px, transparent 1px 28px),
-    radial-gradient(80% 90% at 100% 0%, rgba(185, 180, 255, 0.2), transparent 60%),
-    linear-gradient(180deg, #072a33 0%, #04161d 100%);
-  box-shadow: inset 0 0 0 1px rgba(159, 195, 201, 0.16), var(--af-shadow-3);
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--af-on-deep-2) 6%, transparent) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--af-on-deep-2) 6%, transparent) 0 1px, transparent 1px 28px),
+    radial-gradient(80% 90% at 100% 0%, color-mix(in srgb, var(--af-accent-on-deep) 20%, transparent), transparent 60%),
+    linear-gradient(180deg, var(--af-tank-bg-1) 0%, var(--af-tank-bg-2) 100%);
+  box-shadow: inset 0 0 0 1px var(--af-deep-line), var(--af-shadow-3);
 }
 .hero__text { display: grid; gap: 12px; min-width: 0; }
-.hero__tag { display: inline-flex; align-items: center; gap: 8px; justify-self: start; padding: 7px 12px; border-radius: 999px; background: rgba(255, 213, 138, 0.14); color: #ffd58a; font-size: 13px; font-weight: 750; }
-.hero__title { margin: 0; font-family: var(--af-display); font-size: clamp(30px, 4.6vw, 48px); font-weight: 650; letter-spacing: -0.045em; line-height: 1; color: #e6f4f6; }
-.hero__sub { margin: 0; font-size: 15.5px; line-height: 1.55; color: #cfe6ea; max-width: 44ch; }
+.hero__tag { display: inline-flex; align-items: center; gap: 8px; justify-self: start; padding: 7px 12px; border-radius: 999px; background: rgba(var(--af-sun-rgb), 0.14); color: var(--af-sun); font-size: 13px; font-weight: 750; }
+.hero__title { margin: 0; font-family: var(--af-display); font-size: clamp(30px, 4.6vw, 48px); font-weight: 650; letter-spacing: -0.045em; line-height: 1; color: var(--af-on-deep); }
+.hero__sub { margin: 0; font-size: 15.5px; line-height: 1.55; color: var(--af-on-deep-soft); max-width: 44ch; }
 .hero__jug { flex: none; filter: drop-shadow(0 16px 24px rgba(0, 0, 0, 0.4)); }
 
 .h { margin: 0; font-family: var(--af-display); font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }

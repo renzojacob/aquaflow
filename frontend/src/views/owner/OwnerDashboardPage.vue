@@ -239,13 +239,13 @@ const go = (path) => ionRouter.navigate(path, 'root', 'replace')
 .hello { margin: 0; font-size: 17px; font-weight: 600; color: var(--af-ink-2); }
 .hello b { color: var(--af-ink); font-weight: 800; }
 
-.t-kicker { font-size: 14px; font-weight: 750; color: #f5e3bf; }
-.t-money { margin: 0; font-family: var(--af-display); font-size: clamp(44px, 7vw, 84px); font-weight: 650; letter-spacing: -0.05em; line-height: 0.95; color: #ffd58a; text-shadow: 0 0 40px rgba(255, 213, 138, 0.35); font-variant-numeric: tabular-nums; }
+.t-kicker { font-size: 14px; font-weight: 750; color: var(--af-on-sun-soft); }
+.t-money { margin: 0; font-family: var(--af-display); font-size: clamp(44px, 7vw, 84px); font-weight: 650; letter-spacing: -0.05em; line-height: 0.95; color: var(--af-sun); text-shadow: 0 0 40px rgba(var(--af-sun-rgb), 0.35); font-variant-numeric: tabular-nums; }
 .t-sub { margin: 0; font-size: 15px; line-height: 1.55; font-weight: 550; max-width: 46ch; }
 .t-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: auto; max-width: 520px; }
-.t-stats div { display: grid; gap: 2px; padding: 12px 14px; border-radius: 18px; background: rgba(20, 16, 4, 0.45); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.t-stats div { display: grid; gap: 2px; padding: 12px 14px; border-radius: 18px; background: var(--af-tank-sun-scrim); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 .t-stats b { font-family: var(--af-display); font-size: 24px; font-weight: 650; letter-spacing: -0.03em; }
-.t-stats span { font-size: 12.5px; font-weight: 700; color: #f5e3bf; }
+.t-stats span { font-size: 12.5px; font-weight: 700; color: var(--af-on-sun-soft); }
 
 .side { display: grid; gap: 12px; align-content: start; }
 .kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }

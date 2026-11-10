@@ -156,9 +156,13 @@ const period = computed(() => (days.value.length ? `${fmtDay(days.value[0].date)
 .kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 @media (min-width: 1000px) { .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; } }
 
-.tablewrap { overflow-x: auto; }
-.table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 14.5px; }
-.table th, .table td { padding: 11px 12px; text-align: right; border-bottom: 1px solid var(--af-line); white-space: nowrap; }
+.tablewrap { overflow: auto; max-height: 70vh; border-radius: 16px; border: 1px solid var(--af-line); }
+.table { width: 100%; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; font-size: 14.5px; }
+.table th, .table td { padding: 11px 14px; text-align: right; border-bottom: 1px solid var(--af-line); white-space: nowrap; }
+.table thead th { position: sticky; top: 0; z-index: 1; background: color-mix(in srgb, var(--af-surface-solid) 92%, transparent); backdrop-filter: blur(8px); text-transform: uppercase; letter-spacing: 0.06em; }
+.table tbody tr:nth-child(even) td, .table tbody tr:nth-child(even) th { background: var(--af-surface-2); }
+.table tbody tr:hover td, .table tbody tr:hover th { background: var(--af-brand-tint); }
+.table tfoot th, .table tfoot td { position: sticky; bottom: 0; background: color-mix(in srgb, var(--af-surface-solid) 94%, transparent); backdrop-filter: blur(8px); }
 .table th:first-child { text-align: left; }
 .table thead th { font-size: 12.5px; font-weight: 750; color: var(--af-ink-2); }
 .table tbody th { font-weight: 700; }
