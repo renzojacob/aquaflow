@@ -80,7 +80,7 @@ const done = computed(() => data.value?.done ?? [])
 
           <section class="af-panel">
             <SectionHead title="Every stop" :sub="done.length ? `${done.length} today, newest first` : ''" />
-            <EmptyState v-if="!done.length" title="Nothing yet today" message="Deliveries you finish show up here." />
+            <EmptyState v-if="!done.length" art="tricycle" title="Nothing yet today" message="Deliveries you finish show up here." />
             <ol v-else class="list">
               <li v-for="d in done" :key="`${d.id}-${d.at}`" class="row" :class="`row--${d.outcome}`">
                 <span class="row__icon" aria-hidden="true"><ion-icon :icon="d.outcome === 'delivered' ? checkmarkCircleOutline : warningOutline" /></span>

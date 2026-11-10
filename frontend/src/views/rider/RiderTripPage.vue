@@ -399,7 +399,7 @@ async function confirmFail() {
               <AppButton variant="ghost" block @click="openFail(next)"><ion-icon :icon="warningOutline" aria-hidden="true" /> Couldn't deliver</AppButton>
             </section>
             <section v-else class="af-panel b-5">
-              <EmptyState title="Nothing to deliver" :message="t.delivered ? `You delivered ${t.delivered} today. Nice work.` : 'Wait for the station to send an order out with you.'" />
+              <EmptyState art="tricycle" title="Nothing to deliver" :message="t.delivered ? `You delivered ${t.delivered} today. Nice work.` : 'Wait for the station to send an order out with you.'" />
             </section>
           </div>
 
@@ -498,21 +498,21 @@ async function confirmFail() {
 </template>
 
 <style scoped>
-.t-kicker { font-size: 14px; font-weight: 750; color: #cfe6ea; }
+.t-kicker { font-size: 14px; font-weight: 750; color: var(--af-on-deep-soft); }
 .t-title { margin: 0; font-family: var(--af-display); font-size: clamp(30px, 4.4vw, 46px); font-weight: 650; letter-spacing: -0.045em; line-height: 1; }
 .t-sub { margin: 0; font-size: 15px; line-height: 1.55; font-weight: 550; max-width: 46ch; }
 
-.share { display: grid; grid-template-columns: auto 1fr; gap: 10px 12px; align-items: center; margin-top: auto; padding: 12px 14px; border-radius: 18px; background: rgba(2, 18, 26, 0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-.share__dot { width: 10px; height: 10px; border-radius: 50%; background: #8fb3ba; }
-.share--on .share__dot { background: #6fe3a5; box-shadow: 0 0 0 4px rgba(111, 227, 165, 0.25); animation: sh-pulse 1.6s ease-in-out infinite; }
-.share--demo .share__dot { background: #b9b4ff; box-shadow: 0 0 0 4px rgba(185, 180, 255, 0.25); animation: sh-pulse 1.6s ease-in-out infinite; }
-.share--bad .share__dot, .share--warn .share__dot { background: #ffb454; }
+.share { display: grid; grid-template-columns: auto 1fr; gap: 10px 12px; align-items: center; margin-top: auto; padding: 12px 14px; border-radius: 18px; background: rgba(var(--af-deep-rgb), 0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.share__dot { width: 10px; height: 10px; border-radius: 50%; background: var(--af-on-deep-2); }
+.share--on .share__dot { background: var(--af-success); box-shadow: 0 0 0 4px color-mix(in srgb, var(--af-success) 25%, transparent); animation: sh-pulse 1.6s ease-in-out infinite; }
+.share--demo .share__dot { background: var(--af-accent-on-deep); box-shadow: 0 0 0 4px color-mix(in srgb, var(--af-accent-on-deep) 25%, transparent); animation: sh-pulse 1.6s ease-in-out infinite; }
+.share--bad .share__dot, .share--warn .share__dot { background: var(--af-amber); }
 @keyframes sh-pulse { 50% { opacity: 0.45; } }
-.share__text { display: grid; font-size: 14px; font-weight: 750; color: #e6f4f6; }
-.share__text small { font-size: 12px; font-weight: 600; color: #cfe6ea; }
+.share__text { display: grid; font-size: 14px; font-weight: 750; color: var(--af-on-deep); }
+.share__text small { font-size: 12px; font-weight: 600; color: var(--af-on-deep-soft); }
 .share__btns { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; }
-.sbtn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(230, 244, 246, 0.25); background: rgba(255, 255, 255, 0.06); color: #e6f4f6; font: 750 13.5px var(--af-font); cursor: pointer; }
-.sbtn--main { background: #4fe0d2; border-color: #4fe0d2; color: #022320; }
+.sbtn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(230, 244, 246, 0.25); background: rgba(255, 255, 255, 0.06); color: var(--af-on-deep); font: 750 13.5px var(--af-font); cursor: pointer; }
+.sbtn--main { background: var(--af-glow-c); border-color: var(--af-glow-c); color: var(--af-on-glow); }
 
 .next { gap: 12px; border-color: color-mix(in srgb, var(--af-primary) 40%, var(--af-line)); }
 .next__top { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }

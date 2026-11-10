@@ -130,7 +130,7 @@ const orderLabel = (h) => (h.order_id ? `AF-${h.order_id}` : h.trip_id ? `Trip #
 
           <section class="af-panel" aria-labelledby="wait-title">
             <SectionHead id="wait-title" title="Waiting to sync" :sub="pending.length ? 'Oldest first. They go in this order.' : ''" />
-            <EmptyState v-if="!pending.length" title="Nothing waiting" message="Everything you did is on the server." />
+            <EmptyState v-if="!pending.length" art="waves" title="Nothing waiting" message="Everything you did is on the server." />
             <ol v-else class="list">
               <li v-for="r in pending" :key="r.key" class="row">
                 <span class="row__icon" aria-hidden="true"><ion-icon :icon="timeOutline" /></span>
@@ -146,7 +146,7 @@ const orderLabel = (h) => (h.order_id ? `AF-${h.order_id}` : h.trip_id ? `Trip #
           <section class="af-panel" aria-labelledby="hist-title">
             <SectionHead id="hist-title" title="On the server" sub="Your last 50 synced actions" />
             <p v-if="historyError" class="af-small">{{ historyError }}</p>
-            <EmptyState v-else-if="!history.length" title="Nothing synced yet" message="Actions you sync show up here." />
+            <EmptyState v-else-if="!history.length" art="waves" title="Nothing synced yet" message="Actions you sync show up here." />
             <ol v-else class="list">
               <li v-for="h in history" :key="h.idempotency_key" class="row" :class="`row--${RESULT[h.result]?.tone}`">
                 <span class="row__icon" aria-hidden="true"><ion-icon :icon="RESULT[h.result]?.icon" /></span>
