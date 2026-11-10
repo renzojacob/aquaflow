@@ -6,7 +6,7 @@ import { env } from '@/config/env'
 import { CUSTOMER_CANCELLABLE, isActive } from '@/constants/orderStatus'
 import { clone, currentUser, db, mockDelay, mockError, saveDb } from '@/mocks/db'
 import { dateISO } from '@/utils/format'
-import { insideArea } from '@/utils/geo'
+import { distanceKm, insideArea } from '@/utils/geo'
 import { fromAddress, toAddress, toOrder, toOrderPayload } from './adapters'
 import { http } from './http'
 import { MINUTES_PER_STOP, ROAD_FACTOR, driveMinutes, mockRoute } from './riderService'
@@ -45,6 +45,60 @@ export async function getOrderSettings() {
     return clone({ ...st, products: (st.products ?? []).filter((p) => p.is_active !== false) })
   }
   const { data } = await http.get('/api/settings/public/')
+  return data
+}
+
+// ---------- slot capacity (Feature D) ----------
+/**
+ * @typedef {{ date: string, period: 'morning' | 'afternoon', open: boolean, limited: boolean,
+ *   capacity: number | null, booked: number, remaining: number | null, full: boolean,
+ *   almost_full: boolean, fits: boolean, delivery_nearby: boolean }} SlotAvailability
+ */
+
+// Demo mode has no vehicles table: pretend two 20-container tricycles
+const MOCK_FLEET_CAPACITY = 40
+const NOT_BOOKED = ['rejected', 'cancelled', 'failed_delivery']
+const ON_A_TRIP = ['confirmed', 'preparing', 'ready_for_pickup']
+
+function mockSlots(addressId, quantity) {
+  const data = db()
+  const me = currentUser()
+  const s = data.settings
+  const address = data.addresses.find((a) => a.id === addressId && a.user_id === me.id)
+  const radiusKm = (s.nearby_radius_m ?? 1000) / 1000
+  const out = []
+  for (const date of [dateISO(0), dateISO(1)]) {
+    for (const period of ['morning', 'afternoon']) {
+      const inSlot = data.orders.filter((o) => o.delivery_date === date && o.period === period && !NOT_BOOKED.includes(o.status))
+      const booked = inSlot.reduce((n, o) => n + (o.containers ?? o.quantity ?? 0), 0)
+      const remaining = Math.max(MOCK_FLEET_CAPACITY - booked, 0)
+      out.push({
+        date, period, open: periodOpen(s, date, period), limited: true,
+        capacity: MOCK_FLEET_CAPACITY, booked, remaining, full: remaining === 0,
+        almost_full: remaining > 0 && remaining <= Math.max(5, Math.floor(MOCK_FLEET_CAPACITY / 5)),
+        fits: quantity <= remaining,
+        delivery_nearby: !!address && inSlot.some((o) => ON_A_TRIP.includes(o.status) && o.customer_id !== me.id && distanceKm(address, o.address) <= radiusKm),
+      })
+    }
+  }
+  return out
+}
+
+/**
+ * Room left in each period the customer can order for (today and tomorrow), and whether a
+ * trip is already planned near the address. A hint for the form: the server checks again,
+ * and the form treats any error here as "unknown" (it never blocks ordering).
+ * @param {{ address_id?: string, quantity?: number }} q
+ * @returns {Promise<{ slots: SlotAvailability[], nearby_radius_m: number, best_time?: object | null }>}
+ */
+export async function getSlotAvailability({ address_id, quantity = 0 } = {}) {
+  if (env.useMock) {
+    await mockDelay(120)
+    return { slots: mockSlots(address_id, quantity), nearby_radius_m: db().settings.nearby_radius_m ?? 1000, best_time: null }
+  }
+  const params = { quantity }
+  if (address_id) params.address = address_id
+  const { data } = await http.get('/api/customer/slots/', { params })
   return data
 }
 
