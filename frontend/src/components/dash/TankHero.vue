@@ -8,8 +8,8 @@
       <h1>...</h1>
     </TankHero>
 
-  Text sits on deep water in BOTH themes (always light text). Contrast checked:
-  #e6f4f6 on the water 6.4:1, .tank__soft (#cfe6ea) 5.6:1.
+  Text sits on deep water in BOTH modes and every brand (always light text).
+  Water colors come from the --af-tank-* tokens of the active brand.
 -->
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
@@ -74,27 +74,27 @@ const front = wave(7, 240)
 
 <style scoped>
 .tank {
-  --surface-a: rgba(108, 236, 222, 0.55);
-  --water-top: #1d7f86;
-  --water-bottom: #0b3d47;
+  --surface-a: var(--af-tank-surface);
+  --water-top: var(--af-tank-top);
+  --water-bottom: var(--af-tank-bottom);
   position: relative;
   isolation: isolate;
   overflow: hidden;
   min-height: 300px;
   border-radius: 32px;
   background:
-    radial-gradient(70% 90% at 85% -10%, rgba(185, 180, 255, 0.22) 0%, transparent 60%),
-    radial-gradient(60% 70% at 0% 0%, rgba(79, 224, 210, 0.16) 0%, transparent 55%),
-    linear-gradient(180deg, #072a33 0%, #04161d 100%);
+    radial-gradient(70% 90% at 85% -10%, var(--af-tank-glow-a) 0%, transparent 60%),
+    radial-gradient(60% 70% at 0% 0%, var(--af-tank-glow-b) 0%, transparent 55%),
+    linear-gradient(180deg, var(--af-tank-bg-1) 0%, var(--af-tank-bg-2) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 0 0 1px rgba(159, 195, 201, 0.14),
-    0 30px 80px -20px rgba(2, 18, 26, 0.6);
-  color: #e6f4f6;
+    inset 0 0 0 1px var(--af-deep-line),
+    0 30px 80px -20px var(--af-hero-shadow);
+  color: var(--af-on-deep);
 }
 .tank--compact { min-height: 220px; border-radius: 28px; }
-.tank--sun { --surface-a: rgba(255, 220, 150, 0.6); --water-top: #86601a; --water-bottom: #2e2208; } /* light text on #86601a: 5.0:1 */
-.tank--warn { --surface-a: rgba(255, 190, 110, 0.5); --water-top: #7a4f1d; --water-bottom: #2e1c0a; }
+.tank--sun { --surface-a: var(--af-tank-sun-surface); --water-top: var(--af-tank-sun-top); --water-bottom: var(--af-tank-sun-bottom); } /* light text on the sun water: 5.0:1 */
+.tank--warn { --surface-a: var(--af-tank-warn-surface); --water-top: var(--af-tank-warn-top); --water-bottom: var(--af-tank-warn-bottom); }
 
 /* light from above, refracting into soft pearl + seafoam */
 .tank__sky {
@@ -103,7 +103,7 @@ const front = wave(7, 240)
   z-index: 0;
   background:
     linear-gradient(105deg, transparent 20%, rgba(255, 255, 255, 0.05) 32%, transparent 44%),
-    linear-gradient(75deg, transparent 52%, rgba(185, 180, 255, 0.06) 60%, transparent 70%);
+    linear-gradient(75deg, transparent 52%, color-mix(in srgb, var(--af-accent-on-deep) 6%, transparent) 60%, transparent 70%);
   pointer-events: none;
 }
 
@@ -122,12 +122,12 @@ const front = wave(7, 240)
   overflow: hidden;
   background: linear-gradient(180deg, var(--water-top) 0%, var(--water-bottom) 100%);
 }
-.tank__body :deep(.af-caustic) { --af-caustic: #bffcf3; opacity: 0.16; }
+.tank__body :deep(.af-caustic) { --af-caustic: var(--af-glow-c-hi); opacity: 0.16; }
 
 .tank__wave { position: absolute; left: 0; top: 0; width: 200%; height: 30px; }
 .tank__wave path { fill: var(--water-top); }
 .tank__wave--back { top: -4px; opacity: 0.55; animation: tank-slide 14s linear infinite reverse; }
-.tank__wave--back path { fill: color-mix(in srgb, var(--water-top) 70%, #7fe9df); }
+.tank__wave--back path { fill: color-mix(in srgb, var(--water-top) 70%, var(--af-glow-c-hi)); }
 .tank__wave--front { animation: tank-slide 9s linear infinite; filter: drop-shadow(0 -1px 0 var(--surface-a)); }
 @keyframes tank-slide { to { transform: translateX(-50%); } }
 
@@ -138,8 +138,8 @@ const front = wave(7, 240)
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  border: 1px solid rgba(220, 255, 250, 0.55);
-  background: rgba(220, 255, 250, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.12);
   animation: tank-bubble var(--d) ease-in infinite;
   animation-delay: calc(var(--w) * -1);
 }
@@ -157,7 +157,7 @@ const front = wave(7, 240)
   width: 14px;
   height: 1.5px;
   border-radius: 2px;
-  background: rgba(230, 244, 246, 0.35);
+  background: color-mix(in srgb, var(--af-on-deep) 35%, transparent);
 }
 .tank__marks span:nth-child(2) { width: 22px; }
 
@@ -171,7 +171,7 @@ const front = wave(7, 240)
   align-content: start;
 }
 .tank--compact .tank__content { padding: 22px; }
-.tank__content :deep(.tank__soft) { color: #cfe6ea; }
+.tank__content :deep(.tank__soft) { color: var(--af-on-deep-soft); }
 
 @media (min-width: 768px) {
   .tank__content { padding: 36px 40px; }

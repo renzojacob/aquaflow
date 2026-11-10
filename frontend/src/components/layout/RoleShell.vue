@@ -20,7 +20,7 @@ import {
 import { logOutOutline } from 'ionicons/icons'
 
 import AppLogo from '@/components/ui/AppLogo.vue'
-import ThemeSwitch from '@/components/ui/ThemeSwitch.vue'
+import ThemePicker from '@/components/ui/ThemePicker.vue'
 import { NAV, ROLE_LABEL } from '@/config/navigation'
 import { useAuthStore } from '@/stores/auth'
 import { initials } from '@/utils/format'
@@ -69,7 +69,7 @@ function logout() {
         </nav>
 
         <div class="af-side__foot">
-          <ThemeSwitch block />
+          <ThemePicker compact />
           <div class="af-side__user">
             <span class="af-avatar" aria-hidden="true">{{ initials(auth.user?.full_name) }}</span>
             <span class="af-side__who">
@@ -113,13 +113,13 @@ function logout() {
   gap: var(--af-s6);
   padding: var(--af-s5) var(--af-s4) calc(var(--af-s4) + env(safe-area-inset-bottom, 0px));
   background:
-    radial-gradient(140% 50% at 0% 0%, rgba(79, 224, 210, 0.16) 0%, transparent 60%),
-    linear-gradient(180deg, rgba(6, 48, 58, 0.82) 0%, rgba(2, 18, 26, 0.9) 100%);
+    radial-gradient(140% 50% at 0% 0%, rgba(var(--af-glow-rgb), 0.16) 0%, transparent 60%),
+    linear-gradient(180deg, color-mix(in srgb, var(--af-deep-2) 82%, transparent) 0%, color-mix(in srgb, var(--af-deep) 90%, transparent) 100%);
   backdrop-filter: blur(24px) saturate(150%);
   -webkit-backdrop-filter: blur(24px) saturate(150%);
   color: var(--af-on-deep);
-  border-right: 1px solid rgba(159, 195, 201, 0.14);
-  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.04), 12px 0 40px rgba(2, 18, 26, 0.25);
+  border-right: 1px solid var(--af-deep-line);
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.04), 12px 0 40px rgba(var(--af-deep-rgb), 0.25);
   overflow-y: auto;
 }
 .af-side__brand { padding: var(--af-s1) var(--af-s2); }
@@ -143,11 +143,11 @@ function logout() {
 .af-side__link ion-icon { font-size: 20px; flex: none; }
 .af-side__link:hover { background: rgba(255, 255, 255, 0.05); color: var(--af-on-deep); }
 .af-side__link[aria-current='page'] {
-  background: linear-gradient(90deg, rgba(79, 224, 210, 0.16), rgba(79, 224, 210, 0.04));
+  background: linear-gradient(90deg, rgba(var(--af-glow-rgb), 0.16), rgba(var(--af-glow-rgb), 0.04));
   color: var(--af-on-deep);
   font-weight: 800;
 }
-.af-side__link[aria-current='page'] ion-icon { color: var(--af-mint); }
+.af-side__link[aria-current='page'] ion-icon { color: var(--af-glow-c); }
 /* the glowing water line marking the current page */
 .af-side__link[aria-current='page']::before {
   content: '';
@@ -157,8 +157,8 @@ function logout() {
   bottom: 10px;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  background: var(--af-mint);
-  box-shadow: 0 0 12px var(--af-mint);
+  background: var(--af-glow-c);
+  box-shadow: 0 0 12px var(--af-glow-c);
 }
 .af-side__foot { margin-top: auto; display: grid; gap: var(--af-s4); }
 .af-side__user { display: flex; align-items: center; gap: var(--af-s3); padding: var(--af-s3); border-radius: var(--af-r-md); background: rgba(255, 255, 255, 0.05); border: 1px solid var(--af-deep-line); }
@@ -178,7 +178,7 @@ function logout() {
   cursor: pointer;
   transition: background var(--af-dur) var(--af-ease), color var(--af-dur) var(--af-ease);
 }
-.af-side__logout:hover { background: rgba(255, 138, 122, 0.14); color: #ff8a7a; }
+.af-side__logout:hover { background: var(--af-danger-tint); color: var(--af-danger); }
 
 .af-avatar {
   width: 40px;
@@ -187,8 +187,8 @@ function logout() {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: linear-gradient(140deg, #4fe0d2 0%, #1aa6b5 100%);
-  color: #022320;
+  background: linear-gradient(140deg, var(--af-glow-c) 0%, var(--af-glow-c-lo) 100%);
+  color: var(--af-on-glow);
   font-weight: 800;
   font-size: 14px;
 }
@@ -197,7 +197,7 @@ function logout() {
 .af-tabbar {
   --background: transparent;
   --border: 0;
-  background: linear-gradient(180deg, color-mix(in srgb, #ffffff 6%, transparent), transparent), color-mix(in srgb, var(--af-surface-solid) 72%, transparent);
+  background: linear-gradient(180deg, var(--af-glass-sheen), transparent), color-mix(in srgb, var(--af-surface-solid) 72%, transparent);
   --color: var(--af-ink-2);
   --color-selected: var(--af-ink);
   height: 68px;

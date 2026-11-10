@@ -1,0 +1,68 @@
+/* =====================================================================
+   AquaFlow design tokens: BASE (the same in every theme and mode)
+   Type, type scale, spacing, radius, motion, z-index, layout.
+   Colors live in brands/*.css (brand primitives) and tokens.mode.css (derived).
+   ===================================================================== */
+:root {
+  /* ---------- Type ---------- */
+  --af-font: 'Manrope Variable', 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  --af-display: 'Unbounded Variable', 'Manrope Variable', system-ui, sans-serif;
+  --af-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+
+  /* Type scale. Headings use --af-display. */
+  --af-t-xs: 11.5px;
+  --af-t-sm: 13px;
+  --af-t-base: 15px;
+  --af-t-md: 16px;
+  --af-t-lg: 18px;
+  --af-t-xl: 22px;
+  --af-t-2xl: 30px;
+  --af-t-3xl: 40px;
+  --af-t-metric: 52px;
+  --af-lh-tight: 1.1;
+  --af-lh-snug: 1.3;
+  --af-lh-body: 1.5;
+  --af-track-display: -0.03em;
+
+  /* ---------- 8-pt spacing ---------- */
+  --af-s1: 4px;
+  --af-s2: 8px;
+  --af-s3: 12px;
+  --af-s4: 16px;
+  --af-s5: 24px;
+  --af-s6: 32px;
+  --af-s7: 48px;
+  --af-s8: 64px;
+
+  /* ---------- Radius ---------- */
+  --af-r-xs: 10px;   /* chips, small icons */
+  --af-r-sm: 14px;   /* inputs, small buttons */
+  --af-r-md: 20px;   /* cards */
+  --af-r-lg: 28px;   /* hero cards, sheets */
+  --af-r-xl: 32px;   /* tank hero */
+  --af-r-pill: 999px;
+
+  /* ---------- Motion ---------- */
+  --af-dur-1: 150ms;
+  --af-dur: 220ms;
+  --af-dur-3: 300ms;
+  --af-dur-4: 500ms;
+  --af-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --af-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --af-ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --af-theme-fade: 320ms;
+
+  /* ---------- Layers ---------- */
+  --af-z-backdrop: 0;
+  --af-z-content: 1;
+  --af-z-sticky: 10;
+  --af-z-overlay: 100;
+
+  /* ---------- Layout ---------- */
+  --af-container: 1180px;
+  --af-dash: 1240px;
+  --af-touch: 44px;
+
+  /* Ionic: our font everywhere */
+  --ion-font-family: var(--af-font);
+}

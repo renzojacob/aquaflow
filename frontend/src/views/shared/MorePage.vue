@@ -6,7 +6,7 @@ import { IonContent, IonHeader, IonIcon, IonPage, IonTitle, IonToolbar, useIonRo
 import { chevronForward } from 'ionicons/icons'
 
 import AppButton from '@/components/ui/AppButton.vue'
-import ThemeSwitch from '@/components/ui/ThemeSwitch.vue'
+import ThemePicker from '@/components/ui/ThemePicker.vue'
 import { NAV, ROLE_LABEL } from '@/config/navigation'
 import { useAuthStore } from '@/stores/auth'
 import { initials } from '@/utils/format'
@@ -51,7 +51,7 @@ function logout() {
 
         <section class="af-card stack">
           <h2 class="af-h3">Appearance</h2>
-          <ThemeSwitch block />
+          <ThemePicker />
         </section>
 
         <AppButton variant="secondary" block @click="logout">Log out</AppButton>
@@ -65,7 +65,7 @@ function logout() {
 .me { display: flex; align-items: center; gap: var(--af-s3); }
 .me b { font-size: 16px; font-weight: 800; }
 .me p { margin: 2px 0 0; }
-.avatar { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(140deg, #4fe0d2 0%, #1aa6b5 100%); color: #022320; font-family: var(--af-display); font-weight: 700; flex: none; }
+.avatar { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(140deg, var(--af-brand-g2) 0%, var(--af-brand-g3) 100%); color: var(--af-on-brand); font-family: var(--af-display); font-weight: 700; flex: none; }
 .menu { padding: var(--af-s2); display: grid; }
 .menu__item {
   display: grid;

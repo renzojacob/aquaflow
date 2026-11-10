@@ -1,0 +1,155 @@
+/* =====================================================================
+   BRAND: Forest. Deep pine green, fresh mint light, a touch of lime.
+   ===================================================================== */
+[data-brand='forest'] {
+  --af-brand: #1b7a4a;
+  --af-brand-hover: #15633c;
+  --af-on-brand: #ffffff;
+  --af-brand-tint: #dcf3e6;
+  --af-brand-rgb: 27, 122, 74;
+  --af-on-brand-rgb: 255, 255, 255;
+  --af-brand-g1: #23875a;
+  --af-brand-g2: #1b7a4a;
+  --af-brand-g3: #14604f;
+  --af-accent: #4d6e08;
+  --af-accent-tint: #eaf3d4;
+  --af-accent-rgb: 77, 110, 8;
+
+  --af-liquid: #35c99a;
+  --af-liquid-deep: #0f9a73;
+  --af-liquid-hi: #7ff0c4;
+  --af-liquid-rgb: 53, 201, 154;
+
+  --af-bg: #e8f4ec;
+  --af-bg-rgb: 232, 244, 236;
+  --af-bg-solid: #f2f9f4;
+  --af-surface-solid: #ffffff;
+  --af-ink: #06231a;
+  --af-ink-rgb: 6, 35, 26;
+  --af-ink-2: #456b58;
+  --af-ink-3: #5f7f6e;
+  --af-tint-rgb: 6, 35, 26;
+  --af-shadow-rgb: 6, 35, 26;
+  --af-focus: #0b5cad;
+
+  --af-deep: #06281f;
+  --af-deep-2: #0b3a2d;
+  --af-deep-rgb: 6, 40, 31;
+  --af-deep-line: rgba(159, 203, 181, 0.22);
+  --af-on-deep: #e6f6ee;
+  --af-on-deep-2: #9fcbb5;
+  --af-on-deep-soft: #cfeadb;
+  --af-glow-c: #5ee6a8;
+  --af-accent-on-deep: #c6ec6a;
+  --af-glow-c-hi: #a6f5cf;
+  --af-glow-c-lo: #22b88a;
+  --af-glow-rgb: 94, 230, 168;
+  --af-on-glow: #04261a;
+  --af-caustic: #7ff0c4;
+  --af-caustic-opacity: 0.2;
+
+  --af-hero-1: rgba(10, 70, 48, 0.92);
+  --af-hero-2: rgba(4, 44, 30, 0.94);
+  --af-hero-3: rgba(2, 20, 14, 0.96);
+  --af-hero-glow-a: rgba(94, 230, 168, 0.22);
+  --af-hero-glow-b: rgba(198, 236, 106, 0.12);
+  --af-hero-shadow: rgba(2, 24, 16, 0.45);
+
+  --af-tank-bg-1: #073324;
+  --af-tank-bg-2: #041812;
+  --af-tank-top: #176e4a;
+  --af-tank-bottom: #0b4a33;
+  --af-tank-surface: rgba(140, 240, 190, 0.55);
+  --af-tank-glow-a: rgba(198, 236, 106, 0.18);
+  --af-tank-glow-b: rgba(94, 230, 168, 0.16);
+
+  --af-bd-top: #e6f7ec;
+  --af-bd-mid: #d8efe0;
+  --af-bd-bot: #c9e6d3;
+  --af-bd-glow: #ffffff;
+  --af-aur-1: rgba(94, 230, 168, 0.32);
+  --af-aur-2: rgba(120, 200, 140, 0.22);
+  --af-aur-3: rgba(198, 236, 106, 0.18);
+  --af-ray: rgba(255, 255, 255, 0.55);
+  --af-ray-intense: rgba(255, 255, 255, 0.7);
+  --af-particle: rgba(255, 255, 255, 0.95);
+
+  --af-chart-1: #1b7a4a;
+  --af-chart-2: #4d6e08;
+  --af-chart-3: #b45309;
+  --af-chart-4: #1d4ed8;
+  --af-chart-5: #be185d;
+  --af-chart-6: #0e7490;
+  --af-chart-money: #c98a12;
+  --af-chart-money-fill: #f2b544;
+  --af-map-route: #0f9a73;
+  --af-map-path: #1b7a4a;
+  --af-map-stop-ring: #4d6e08;
+  --af-map-tile-filter: none;
+
+  --af-meta-color: #f2f9f4;
+}
+
+[data-brand='forest'][data-theme='dark'] {
+  --af-brand: #5ee6a8;
+  --af-brand-hover: #85eebd;
+  --af-on-brand: #04261a;
+  --af-brand-tint: #0e3326;
+  --af-brand-rgb: 94, 230, 168;
+  --af-on-brand-rgb: 4, 38, 26;
+  --af-brand-g1: #a6f5cf;
+  --af-brand-g2: #5ee6a8;
+  --af-brand-g3: #22b88a;
+  --af-accent: #c6ec6a;
+  --af-accent-tint: #243312;
+  --af-accent-rgb: 198, 236, 106;
+
+  --af-liquid: #5ee6a8;
+  --af-liquid-deep: #1aa877;
+  --af-liquid-hi: #a6f5cf;
+  --af-liquid-rgb: 94, 230, 168;
+
+  --af-bg: #04150e;
+  --af-bg-rgb: 4, 21, 14;
+  --af-bg-solid: #07211a;
+  --af-surface-solid: #0a2a21;
+  --af-ink: #e6f6ee;
+  --af-ink-rgb: 230, 246, 238;
+  --af-ink-2: #8fbba6;
+  --af-ink-3: #6f9c88;
+  --af-tint-rgb: 160, 205, 185;
+  --af-shadow-rgb: 0, 0, 0;
+  --af-focus: #a6f5cf;
+
+  --af-deep: #03150f;
+  --af-deep-2: #0a2a21;
+  --af-deep-rgb: 3, 21, 15;
+  --af-deep-line: #164b3a;
+  --af-caustic-opacity: 0.18;
+
+  --af-bd-top: #072f22;
+  --af-bd-mid: #041a12;
+  --af-bd-bot: #020d09;
+  --af-bd-glow: #0e4a35;
+  --af-aur-1: rgba(94, 230, 168, 0.2);
+  --af-aur-2: rgba(60, 180, 120, 0.16);
+  --af-aur-3: rgba(198, 236, 106, 0.1);
+  --af-ray: rgba(170, 255, 210, 0.09);
+  --af-ray-intense: rgba(170, 255, 210, 0.13);
+  --af-particle: rgba(200, 255, 225, 0.7);
+
+  --af-chart-1: #5ee6a8;
+  --af-chart-2: #c6ec6a;
+  --af-chart-3: #ffb454;
+  --af-chart-4: #84ccf5;
+  --af-chart-5: #ff8db0;
+  --af-chart-6: #b9b4ff;
+  --af-chart-money: #ffd58a;
+  --af-chart-money-fill: #ffd58a;
+  --af-map-route: #1aa877;
+  --af-map-path: #5ee6a8;
+  --af-map-stop-ring: #c6ec6a;
+  --af-map-tile-filter: invert(1) hue-rotate(160deg) brightness(0.9) contrast(0.9) saturate(0.55);
+
+  --af-meta-color: #07211a;
+}

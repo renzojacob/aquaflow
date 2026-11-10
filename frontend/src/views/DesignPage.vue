@@ -14,24 +14,21 @@ import SkeletonList from '@/components/ui/SkeletonList.vue'
 import StatCard from '@/components/ui/StatCard.vue'
 import StatusPill from '@/components/ui/StatusPill.vue'
 import WaterLevelBar from '@/components/ui/WaterLevelBar.vue'
-import { useTheme } from '@/composables/useTheme'
+import ThemePicker from '@/components/ui/ThemePicker.vue'
 import { ORDER_STATUS } from '@/constants/orderStatus'
 
-const { preference, setTheme } = useTheme()
-const themes = [
-  { value: 'system', label: 'System' },
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-]
-
 const colors = [
-  { token: '--af-deep', name: 'Deep water', use: 'hero cards, sidebar' },
-  { token: '--af-primary', name: 'Mint primary', use: 'actions' },
-  { token: '--af-water', name: 'Water', use: 'fills, progress' },
-  { token: '--af-amber', name: 'Amber', use: 'warnings only' },
+  { token: '--af-brand', name: 'Brand', use: 'actions, links' },
+  { token: '--af-accent', name: 'Accent', use: 'second hue' },
+  { token: '--af-liquid', name: 'Liquid', use: 'fills, progress' },
+  { token: '--af-deep', name: 'Deep', use: 'hero cards, sidebar' },
+  { token: '--af-glow-c', name: 'Glow', use: 'accent on deep' },
   { token: '--af-bg', name: 'Ground', use: 'page background' },
-  { token: '--af-surface', name: 'Surface', use: 'cards' },
+  { token: '--af-surface-solid', name: 'Surface', use: 'cards, sheets' },
   { token: '--af-ink', name: 'Ink', use: 'text' },
+  { token: '--af-ink-2', name: 'Ink 2', use: 'secondary text' },
+  { token: '--af-sun', name: 'Sun', use: 'money only' },
+  { token: '--af-amber', name: 'Amber', use: 'warnings only' },
   { token: '--af-danger', name: 'Danger', use: 'errors, failed' },
 ]
 
@@ -67,20 +64,13 @@ function fakeSave() {
     <ion-content>
       <div class="af-container">
         <PageHeader crumb="Phase 1" title="Design system" subtitle="Tokens and base components in the current theme">
-          <template #actions>
-            <div class="seg" role="group" aria-label="Theme">
-              <button
-                v-for="t in themes"
-                :key="t.value"
-                type="button"
-                :aria-pressed="preference === t.value"
-                @click="setTheme(t.value)"
-              >
-                {{ t.label }}
-              </button>
-            </div>
-          </template>
         </PageHeader>
+
+        <!-- Theme -->
+        <section>
+          <h2 class="af-h3 sec-title">Theme</h2>
+          <div class="af-card"><ThemePicker /></div>
+        </section>
 
         <!-- Color -->
         <section>

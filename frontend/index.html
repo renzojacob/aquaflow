@@ -7,10 +7,41 @@
       content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0"
     />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#041A22" />
+    <meta name="theme-color" content="#f2f9f9" />
     <meta name="format-detection" content="telephone=no" />
     <link rel="icon" href="/favicon.ico" />
     <title>AquaFlow</title>
+    <!-- Apply the saved theme before any CSS or JS loads, so there is no flash of the wrong look.
+         Mirrors composables/useTheme.js (brand: ocean|forest|sunset, mode: light|dark|auto). -->
+    <script>
+      ;(function () {
+        var brand = 'ocean'
+        var mode = 'auto'
+        try {
+          var raw = localStorage.getItem('aquaflow.theme')
+          if (raw) {
+            try {
+              var v = JSON.parse(raw)
+              if (v && typeof v === 'object') {
+                if (/^(ocean|forest|sunset)$/.test(v.brand)) brand = v.brand
+                if (/^(light|dark|auto)$/.test(v.mode)) mode = v.mode
+              }
+            } catch (e) {
+              if (raw === 'light' || raw === 'dark') mode = raw
+            }
+          }
+          var q = new URLSearchParams(location.search)
+          var qb = q.get('brand') || q.get('theme')
+          var qm = q.get('mode')
+          if (/^(ocean|forest|sunset)$/.test(qb)) brand = qb
+          if (/^(light|dark|auto)$/.test(qm)) mode = qm
+        } catch (e) {}
+        var dark = mode === 'dark' || (mode === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches)
+        var h = document.documentElement
+        h.setAttribute('data-brand', brand)
+        h.setAttribute('data-theme', dark ? 'dark' : 'light')
+      })()
+    </script>
   </head>
   <body>
     <div id="app"></div>

@@ -137,9 +137,8 @@ const tip = computed(() => {
 .ac svg:focus-visible { outline: 3px solid var(--af-focus); outline-offset: 4px; }
 
 .ac { --c: var(--af-primary); --f: var(--af-water); }
-.ac--sun { --c: var(--af-sun-glow); --f: var(--af-sun-glow); }
-.ac--pearl { --c: var(--af-pearl); --f: var(--af-pearl); }
-:root:not([data-theme='dark']) .ac--sun { --c: #c98a12; --f: #f2b544; }
+.ac--sun { --c: var(--af-chart-money); --f: var(--af-chart-money-fill); }
+.ac--pearl { --c: var(--af-accent); --f: var(--af-accent); }
 .ac__f1 { stop-color: var(--f); stop-opacity: 0.38; }
 .ac__f2 { stop-color: var(--f); stop-opacity: 0; }
 .ac__line { fill: none; stroke: var(--c); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }

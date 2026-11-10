@@ -39,10 +39,9 @@ const v = computed(() => Math.min(1, Math.max(0, props.value)))
 <style scoped>
 .rg { position: relative; flex: none; display: grid; place-items: center; }
 .rg { --c: var(--af-primary); }
-.rg--sun { --c: var(--af-sun-glow); }
-.rg--pearl { --c: var(--af-pearl); }
+.rg--sun { --c: var(--af-chart-money); }
+.rg--pearl { --c: var(--af-accent); }
 .rg--warn { --c: var(--af-amber); }
-:root:not([data-theme='dark']) .rg--sun { --c: #d99a1e; }
 .rg svg { position: absolute; inset: 0; }
 .rg__track { fill: none; stroke: var(--af-surface-3); }
 .rg__bar {

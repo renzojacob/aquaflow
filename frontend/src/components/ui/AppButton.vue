@@ -51,18 +51,14 @@ const props = defineProps({
 .af-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
 .af-btn :deep(ion-icon) { font-size: 18px; }
 
-/* Primary: liquid mint gradient with a light sweep on hover */
+/* Primary: liquid brand gradient with a light sweep on hover (stops come from the theme) */
 .af-btn--primary {
-  --g1: #9bf6ec;
-  --g2: #4fe0d2;
-  --g3: #22b8c8;
   overflow: hidden;
   isolation: isolate;
-  background: linear-gradient(135deg, var(--g1) 0%, var(--g2) 45%, var(--g3) 100%);
-  color: var(--af-on-primary);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -2px 0 rgba(0, 0, 0, 0.12), var(--af-glow);
+  background: linear-gradient(135deg, var(--af-brand-g1) 0%, var(--af-brand-g2) 45%, var(--af-brand-g3) 100%);
+  color: var(--af-on-brand);
+  box-shadow: inset 0 1px 0 var(--af-btn-sheen-top), inset 0 -2px 0 var(--af-btn-sheen-bottom), var(--af-glow);
 }
-:root:not([data-theme='dark']) .af-btn--primary { --g1: #00796f; --g2: #007067; --g3: #005a62; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), inset 0 -2px 0 rgba(0, 0, 0, 0.18), var(--af-glow); }
 .af-btn--primary::after {
   content: '';
   position: absolute;

@@ -1,0 +1,254 @@
+/* =====================================================================
+   AquaFlow design tokens: MODE layer (derived from brand primitives)
+   :root = light, :root[data-theme='dark'] = dark. Works for every brand
+   because it only reads brand primitives (brands/*.css) via var()/color-mix().
+   Also: feedback + order-status colors, money, Ionic mapping, legacy aliases,
+   and .af-deep-scope (everything on deep water looks right in both modes).
+   ===================================================================== */
+
+/* ============================== LIGHT ============================== */
+:root,
+[data-brand] {
+  color-scheme: light;
+
+  /* Surfaces: frosted glass over the backdrop */
+  --af-surface: rgba(255, 255, 255, 0.74);
+  --af-surface-2: rgba(var(--af-tint-rgb), 0.05);     /* tracks, chips, hover */
+  --af-surface-3: rgba(var(--af-tint-rgb), 0.09);     /* pressed */
+  --af-line: rgba(var(--af-tint-rgb), 0.1);
+  --af-line-strong: rgba(var(--af-tint-rgb), 0.2);
+  --af-glass-blur: blur(22px) saturate(160%);
+  --af-glass-edge: rgba(255, 255, 255, 0.9);          /* bright top edge of glass */
+  --af-glass-sheen: rgba(255, 255, 255, 0.04);        /* soft gradient over cards */
+  --af-scrim: rgba(var(--af-deep-rgb), 0.45);
+
+  /* Elevation: soft, brand-tinted, layered */
+  --af-shadow-1: 0 1px 2px rgba(var(--af-shadow-rgb), 0.06), 0 1px 1px rgba(var(--af-shadow-rgb), 0.04);
+  --af-shadow-2: 0 2px 4px rgba(var(--af-shadow-rgb), 0.04), 0 8px 24px rgba(var(--af-shadow-rgb), 0.07);
+  --af-shadow-3: 0 4px 10px rgba(var(--af-shadow-rgb), 0.06), 0 24px 56px rgba(var(--af-shadow-rgb), 0.14);
+  --af-glow: 0 8px 22px rgba(var(--af-brand-rgb), 0.24);
+  --af-btn-sheen-top: rgba(255, 255, 255, 0.25);
+  --af-btn-sheen-bottom: rgba(0, 0, 0, 0.18);
+
+  /* Feedback (same hue in every brand, so meaning never changes) */
+  --af-amber: #f2a33a;          /* WARNINGS ONLY */
+  --af-amber-fg: #8a4b00;
+  --af-amber-tint: #fff1da;
+  --af-danger: #b42318;
+  --af-danger-tint: #fdecea;
+  --af-success: #12704a;
+  --af-success-tint: #ddf3e8;
+  --af-info: #0a659a;
+  --af-info-tint: #e0eff9;
+
+  /* Money ONLY: prices, sales, totals */
+  --af-sun: #8a5600;
+  --af-sun-tint: #fff3d9;
+  --af-sun-glow: #ffd58a;       /* decorative (never text) */
+  /* Liquid fills for money / warning / danger meters (same in both modes) */
+  --af-sun-liquid-hi: #ffe0a8;    --af-sun-liquid: #ffb454;    --af-sun-liquid-deep: #c47a12;
+  --af-danger-liquid-hi: #ffc2b8; --af-danger-liquid: #ff8a7a; --af-danger-liquid-deep: #b42318;
+  --af-tank-sun-top: #86601a;  --af-tank-sun-bottom: #2e2208;  --af-tank-sun-surface: rgba(255, 220, 150, 0.6);
+  --af-tank-warn-top: #7a4f1d; --af-tank-warn-bottom: #2e1c0a; --af-tank-warn-surface: rgba(255, 190, 110, 0.5);
+
+  /* Order status (text / tint). "Out for delivery" follows the brand. */
+  --af-st-pending: #4f5f73;   --af-st-pending-t: #ecf1f6;
+  --af-st-confirmed: #2a55c7; --af-st-confirmed-t: #e3eafc;
+  --af-st-preparing: #6544c2; --af-st-preparing-t: #ede7fb;
+  --af-st-ready: #0a659a;     --af-st-ready-t: #e0eff9;
+  --af-st-out: var(--af-brand);  --af-st-out-t: var(--af-brand-tint);
+  --af-st-delivered: #14714f; --af-st-delivered-t: #def3ea;
+  --af-st-rejected: #b0204f;  --af-st-rejected-t: #fbe5ec;
+  --af-st-cancelled: #5e6672; --af-st-cancelled-t: #edeef0;
+  --af-st-failed: #b8322b;    --af-st-failed-t: #fce7e5;
+}
+
+/* ============================== DARK ============================== */
+:root[data-theme='dark'],
+[data-brand][data-theme='dark'] {
+  color-scheme: dark;
+
+  --af-surface: color-mix(in srgb, var(--af-surface-solid) 62%, transparent);
+  --af-surface-2: rgba(255, 255, 255, 0.055);
+  --af-surface-3: rgba(255, 255, 255, 0.1);
+  --af-line: rgba(var(--af-tint-rgb), 0.15);
+  --af-line-strong: rgba(var(--af-tint-rgb), 0.28);
+  --af-glass-edge: rgba(255, 255, 255, 0.1);
+  --af-glass-sheen: rgba(255, 255, 255, 0.04);
+  --af-scrim: rgba(0, 0, 0, 0.55);
+
+  --af-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --af-shadow-2: 0 2px 6px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.35);
+  --af-shadow-3: 0 6px 16px rgba(0, 0, 0, 0.35), 0 28px 64px rgba(0, 0, 0, 0.55);
+  --af-glow: 0 0 0 6px rgba(var(--af-brand-rgb), 0.1), 0 10px 30px rgba(var(--af-brand-rgb), 0.22);
+  --af-btn-sheen-top: rgba(255, 255, 255, 0.55);
+  --af-btn-sheen-bottom: rgba(0, 0, 0, 0.12);
+
+  --af-amber: #ffb454;
+  --af-amber-fg: #ffb454;
+  --af-amber-tint: #33270f;
+  --af-danger: #ff8a7a;
+  --af-danger-tint: #3a1a18;
+  --af-success: #6fe3a5;
+  --af-success-tint: #0e3326;
+  --af-info: #84ccf5;
+  --af-info-tint: #0e2c40;
+
+  --af-sun: #ffd58a;
+  --af-sun-tint: #33280f;
+  --af-sun-glow: #ffd58a;
+
+  --af-st-pending: #a9c3c8;   --af-st-pending-t: #13323b;
+  --af-st-confirmed: #9db8ff; --af-st-confirmed-t: #17284a;
+  --af-st-preparing: #c6b2ff; --af-st-preparing-t: #251c46;
+  --af-st-ready: #84ccf5;     --af-st-ready-t: #0e2c40;
+  --af-st-out: var(--af-brand);  --af-st-out-t: var(--af-brand-tint);
+  --af-st-delivered: #6fe3a5; --af-st-delivered-t: #0e3326;
+  --af-st-rejected: #ff8db0;  --af-st-rejected-t: #3a1526;
+  --af-st-cancelled: #a7b4b8; --af-st-cancelled-t: #1a2a30;
+  --af-st-failed: #ff8a7a;    --af-st-failed-t: #3a1a18;
+}
+
+/* ====================== ALIASES (older names) ====================== */
+/* Components written before the brand system keep working unchanged. */
+:root,
+[data-brand] {
+  --af-primary: var(--af-brand);
+  --af-primary-hover: var(--af-brand-hover);
+  --af-on-primary: var(--af-on-brand);
+  --af-primary-tint: var(--af-brand-tint);
+  --af-water: var(--af-liquid);
+  --af-water-deep: var(--af-liquid-deep);
+  --af-mint: var(--af-glow-c);
+  --af-on-mint: var(--af-on-glow);
+  --af-pearl: var(--af-accent);
+  --af-pearl-tint: var(--af-accent-tint);
+  --af-navy: var(--af-deep);
+}
+
+/* ======================== IONIC MAPPING ======================== */
+/* Ionic's own components (toolbar, modals, toasts, alerts) follow the brand. */
+:root,
+[data-brand] {
+  --ion-background-color: var(--af-bg);
+  --ion-background-color-rgb: var(--af-bg-rgb);
+  --ion-text-color: var(--af-ink);
+  --ion-text-color-rgb: var(--af-ink-rgb);
+  --ion-toolbar-background: transparent;
+  --ion-toolbar-border-color: var(--af-line-strong);
+  --ion-item-background: var(--af-surface-solid);
+  --ion-card-background: var(--af-surface-solid);
+  --ion-tab-bar-background: var(--af-surface-solid);
+  --ion-border-color: var(--af-line-strong);
+  --ion-overlay-background-color: var(--af-bg-solid);
+
+  --ion-color-primary: var(--af-brand);
+  --ion-color-primary-rgb: var(--af-brand-rgb);
+  --ion-color-primary-contrast: var(--af-on-brand);
+  --ion-color-primary-contrast-rgb: var(--af-on-brand-rgb);
+  --ion-color-primary-shade: color-mix(in srgb, var(--af-brand) 88%, #000);
+  --ion-color-primary-tint: color-mix(in srgb, var(--af-brand) 90%, #fff);
+
+  --ion-color-secondary: var(--af-deep);
+  --ion-color-secondary-rgb: var(--af-deep-rgb);
+  --ion-color-secondary-contrast: var(--af-on-deep);
+  --ion-color-secondary-contrast-rgb: 230, 244, 246;
+  --ion-color-secondary-shade: color-mix(in srgb, var(--af-deep) 88%, #000);
+  --ion-color-secondary-tint: color-mix(in srgb, var(--af-deep) 88%, #fff);
+
+  --ion-color-success: var(--af-success);
+  --ion-color-success-rgb: 18, 112, 74;
+  --ion-color-success-contrast: #ffffff;
+  --ion-color-success-contrast-rgb: 255, 255, 255;
+  --ion-color-success-shade: color-mix(in srgb, var(--af-success) 88%, #000);
+  --ion-color-success-tint: color-mix(in srgb, var(--af-success) 88%, #fff);
+
+  --ion-color-warning: var(--af-amber);
+  --ion-color-warning-rgb: 242, 163, 58;
+  --ion-color-warning-contrast: #2b1a00;
+  --ion-color-warning-contrast-rgb: 43, 26, 0;
+  --ion-color-warning-shade: color-mix(in srgb, var(--af-amber) 88%, #000);
+  --ion-color-warning-tint: color-mix(in srgb, var(--af-amber) 88%, #fff);
+
+  --ion-color-danger: var(--af-danger);
+  --ion-color-danger-rgb: 180, 35, 24;
+  --ion-color-danger-contrast: #ffffff;
+  --ion-color-danger-contrast-rgb: 255, 255, 255;
+  --ion-color-danger-shade: color-mix(in srgb, var(--af-danger) 88%, #000);
+  --ion-color-danger-tint: color-mix(in srgb, var(--af-danger) 88%, #fff);
+
+  --ion-color-medium: var(--af-ink-2);
+  --ion-color-medium-rgb: var(--af-tint-rgb);
+  --ion-color-medium-contrast: var(--af-bg-solid);
+  --ion-color-medium-contrast-rgb: var(--af-bg-rgb);
+  --ion-color-medium-shade: color-mix(in srgb, var(--af-ink-2) 88%, #000);
+  --ion-color-medium-tint: color-mix(in srgb, var(--af-ink-2) 88%, #fff);
+}
+:root[data-theme='dark'],
+[data-brand][data-theme='dark'] {
+  --ion-color-success-rgb: 111, 227, 165;
+  --ion-color-success-contrast: #04261a;
+  --ion-color-success-contrast-rgb: 4, 38, 26;
+  --ion-color-warning-rgb: 255, 180, 84;
+  --ion-color-danger-rgb: 255, 138, 122;
+  --ion-color-danger-contrast: #2a0806;
+  --ion-color-danger-contrast-rgb: 42, 8, 6;
+}
+
+/* =====================================================================
+   .af-deep-scope: everything inside sits on deep water, in BOTH modes
+   (hero cards, the delivery code card, the sidebar). Light text, glowing brand.
+   Aliases are re-declared because var() resolves where it is written.
+   ===================================================================== */
+.af-deep-scope {
+  --af-surface: rgba(255, 255, 255, 0.05);
+  --af-surface-2: rgba(255, 255, 255, 0.08);
+  --af-surface-3: rgba(255, 255, 255, 0.12);
+  --af-line: color-mix(in srgb, var(--af-on-deep-2) 22%, transparent);
+  --af-line-strong: color-mix(in srgb, var(--af-on-deep-2) 34%, transparent);
+  --af-glass-edge: rgba(255, 255, 255, 0.12);
+  --af-ink: var(--af-on-deep);
+  --af-ink-2: var(--af-on-deep-2);
+  --af-ink-3: var(--af-on-deep-2);
+  --af-brand: var(--af-glow-c);
+  --af-brand-hover: var(--af-glow-c-hi);
+  --af-on-brand: var(--af-on-glow);
+  --af-brand-tint: rgba(var(--af-glow-rgb), 0.14);
+  --af-brand-rgb: var(--af-glow-rgb);
+  --af-brand-g1: var(--af-glow-c-hi);
+  --af-brand-g2: var(--af-glow-c);
+  --af-brand-g3: var(--af-glow-c-lo);
+  --af-primary: var(--af-glow-c);
+  --af-primary-hover: var(--af-glow-c-hi);
+  --af-on-primary: var(--af-on-glow);
+  --af-primary-tint: rgba(var(--af-glow-rgb), 0.14);
+  --af-liquid: var(--af-glow-c);
+  --af-liquid-hi: var(--af-glow-c-hi);
+  --af-water: var(--af-glow-c);
+  --af-accent: var(--af-accent-on-deep);
+  --af-accent-tint: color-mix(in srgb, var(--af-accent-on-deep) 14%, transparent);
+  --af-pearl: var(--af-accent-on-deep);
+  --af-pearl-tint: color-mix(in srgb, var(--af-accent-on-deep) 14%, transparent);
+  --af-glow: 0 0 0 6px rgba(var(--af-glow-rgb), 0.1), 0 10px 30px rgba(var(--af-glow-rgb), 0.22);
+  --af-btn-sheen-top: rgba(255, 255, 255, 0.55);
+  --af-btn-sheen-bottom: rgba(0, 0, 0, 0.12);
+  --af-amber-fg: #ffb454;
+  --af-amber-tint: rgba(255, 180, 84, 0.14);
+  --af-danger: #ff8a7a;
+  --af-danger-tint: rgba(255, 138, 122, 0.14);
+  --af-success: #6fe3a5;
+  --af-success-tint: rgba(111, 227, 165, 0.14);
+  --af-focus: var(--af-glow-c-hi);
+  --af-sun: #ffd58a;
+  --af-sun-tint: rgba(255, 213, 138, 0.14);
+  --af-st-pending: #a9c3c8;   --af-st-pending-t: rgba(169, 195, 200, 0.14);
+  --af-st-confirmed: #9db8ff; --af-st-confirmed-t: rgba(157, 184, 255, 0.14);
+  --af-st-preparing: #c6b2ff; --af-st-preparing-t: rgba(198, 178, 255, 0.14);
+  --af-st-ready: #84ccf5;     --af-st-ready-t: rgba(132, 204, 245, 0.14);
+  --af-st-out: var(--af-glow-c); --af-st-out-t: rgba(var(--af-glow-rgb), 0.14);
+  --af-st-delivered: #6fe3a5; --af-st-delivered-t: rgba(111, 227, 165, 0.14);
+  --af-st-rejected: #ff8db0;  --af-st-rejected-t: rgba(255, 141, 176, 0.14);
+  --af-st-cancelled: #a7b4b8; --af-st-cancelled-t: rgba(167, 180, 184, 0.14);
+  --af-st-failed: #ff8a7a;    --af-st-failed-t: rgba(255, 138, 122, 0.14);
+  color: var(--af-ink);
+}

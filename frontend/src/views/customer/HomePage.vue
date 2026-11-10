@@ -412,8 +412,8 @@ function reorder() {
 
 /* ---------- tank content ---------- */
 .t-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
-.t-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: var(--af-r-pill); background: rgba(255, 255, 255, 0.08); font-size: 13px; font-weight: 750; }
-.t-code { font-size: 13px; font-weight: 750; color: #cfe6ea; font-variant-numeric: tabular-nums; }
+.t-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: var(--af-r-pill); background: var(--af-surface-2); font-size: 13px; font-weight: 750; }
+.t-code { font-size: 13px; font-weight: 750; color: var(--af-on-deep-soft); font-variant-numeric: tabular-nums; }
 .t-main { display: grid; gap: 10px; max-width: 34ch; }
 .t-title {
   margin: 0;
@@ -425,13 +425,13 @@ function reorder() {
   text-wrap: balance;
 }
 .t-sub { margin: 0; font-size: 15.5px; line-height: 1.55; font-weight: 550; }
-.t-eta { margin: 0; justify-self: start; padding: 8px 14px; border-radius: 999px; background: rgba(2, 18, 26, 0.5); color: #7ff0e4; font-size: 15px; font-weight: 750; }
-.t-tracker { padding: 14px 8px 10px; border-radius: 20px; background: rgba(2, 18, 26, 0.38); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-.t-tracker :deep(.af-tracker__label) { color: #cfe6ea; }
-.t-tracker :deep(.is-done .af-tracker__label) { color: #e6f4f6; }
-.t-tracker :deep(.is-now .af-tracker__label) { color: #7ff0e4; }
+.t-eta { margin: 0; justify-self: start; padding: 8px 14px; border-radius: var(--af-r-pill); background: rgba(var(--af-deep-rgb), 0.5); color: var(--af-glow-c-hi); font-size: 15px; font-weight: 750; }
+.t-tracker { padding: 14px 8px 10px; border-radius: 20px; background: rgba(var(--af-deep-rgb), 0.38); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.t-tracker :deep(.af-tracker__label) { color: var(--af-on-deep-soft); }
+.t-tracker :deep(.is-done .af-tracker__label) { color: var(--af-on-deep); }
+.t-tracker :deep(.is-now .af-tracker__label) { color: var(--af-glow-c-hi); }
 .t-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: auto; }
-.t-codebox { display: grid; gap: 6px; padding: 10px 14px; border-radius: 18px; background: rgba(2, 18, 26, 0.42); }
+.t-codebox { display: grid; gap: 6px; padding: 10px 14px; border-radius: 18px; background: rgba(var(--af-deep-rgb), 0.42); }
 .t-codebox > span:first-child { font-size: 12.5px; font-weight: 700; }
 .t-digits { display: flex; gap: 6px; }
 .t-digits span {
@@ -443,17 +443,17 @@ function reorder() {
   font-family: var(--af-display);
   font-size: 24px;
   font-weight: 650;
-  color: #7ff0e4;
+  color: var(--af-glow-c-hi);
   background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(127, 240, 228, 0.3);
-  text-shadow: 0 0 14px rgba(79, 224, 210, 0.6);
+  border: 1px solid rgba(var(--af-glow-rgb), 0.3);
+  text-shadow: 0 0 14px rgba(var(--af-glow-rgb), 0.6);
 }
-.t-rider { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 8px; border-radius: 18px; background: rgba(2, 18, 26, 0.42); }
+.t-rider { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 18px; background: rgba(var(--af-deep-rgb), 0.42); }
 .t-rider > span:nth-child(2) { display: grid; line-height: 1.25; }
 .t-rider b { font-size: 14.5px; }
 .t-rider .tank__soft { font-size: 12.5px; font-weight: 650; }
-.t-avatar { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(140deg, #b9b4ff, #4fe0d2); color: #04161d; font-weight: 800; font-size: 14px; }
-.t-call { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; background: #4fe0d2; color: #022320; font-size: 19px; }
+.t-avatar { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(140deg, var(--af-accent-on-deep), var(--af-glow-c)); color: var(--af-on-glow); font-weight: 800; font-size: 14px; }
+.t-call { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; background: var(--af-glow-c); color: var(--af-on-glow); font-size: 19px; }
 
 /* ---------- shortcuts ---------- */
 .actions { display: grid; gap: 12px; align-content: start; }

@@ -35,9 +35,8 @@ const area = computed(() => `${line.value} L${props.width},${props.height} L0,${
 
 <style scoped>
 .sp { flex: none; overflow: visible; --c: var(--af-primary); }
-.sp--sun { --c: var(--af-sun-glow); }
-.sp--pearl { --c: var(--af-pearl); }
-:root:not([data-theme='dark']) .sp--sun { --c: #c98a12; }
+.sp--sun { --c: var(--af-chart-money); }
+.sp--pearl { --c: var(--af-accent); }
 .sp__f1 { stop-color: var(--c); stop-opacity: 0.3; }
 .sp__f2 { stop-color: var(--c); stop-opacity: 0; }
 .sp__line { fill: none; stroke: var(--c); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }

@@ -86,11 +86,10 @@ const isEndState = computed(() => ['rejected', 'cancelled'].includes(props.order
   transition: background var(--af-dur) var(--af-ease), border-color var(--af-dur) var(--af-ease), color var(--af-dur) var(--af-ease), box-shadow var(--af-dur) var(--af-ease);
 }
 .af-tracker__step.is-done .af-tracker__dot {
-  background: linear-gradient(135deg, #9bf6ec, #4fe0d2 60%, #22b8c8);
+  background: linear-gradient(135deg, var(--af-brand-g1), var(--af-brand-g2) 60%, var(--af-brand-g3));
   border-color: transparent;
-  color: var(--af-on-primary, #022320);
+  color: var(--af-on-brand);
 }
-:root:not([data-theme='dark']) .af-tracker__step.is-done .af-tracker__dot { color: #ffffff; }
 .af-tracker__step.is-now .af-tracker__dot { box-shadow: 0 0 0 5px color-mix(in srgb, var(--af-primary) 18%, transparent); }
 .af-tracker__pulse { width: 10px; height: 10px; border-radius: 50%; background: currentColor; animation: af-track-pulse 1.4s ease-in-out infinite; }
 .af-tracker__step.is-done .af-tracker__pulse { animation: none; }
@@ -116,7 +115,7 @@ const isEndState = computed(() => ['rejected', 'cancelled'].includes(props.order
   background: var(--af-line-strong);
   z-index: 0;
 }
-.af-tracker__line.is-filled { background: linear-gradient(90deg, #4fe0d2, #22b8c8); }
+.af-tracker__line.is-filled { background: linear-gradient(90deg, var(--af-brand-g2), var(--af-brand-g3)); }
 
 .af-tracker__end { margin: var(--af-s4) 0 0; font-size: 14px; font-weight: 650; color: var(--af-ink-2); text-align: center; }
 .af-tracker__end.is-danger { color: var(--af-danger); }

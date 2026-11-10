@@ -36,8 +36,8 @@ const hi = computed(() => (props.highlight >= 0 ? props.highlight : props.bars.l
 <style scoped>
 .bc { margin: 0; }
 .bc { --c: var(--af-water); --c2: var(--af-water-deep); }
-.bc--sun { --c: var(--af-sun-glow); --c2: #c98a12; }
-.bc--pearl { --c: var(--af-pearl); --c2: color-mix(in srgb, var(--af-pearl) 50%, #2a2470); }
+.bc--sun { --c: var(--af-chart-money-fill); --c2: var(--af-chart-money); }
+.bc--pearl { --c: var(--af-accent); --c2: color-mix(in srgb, var(--af-accent) 55%, var(--af-deep)); }
 .bc__plot {
   display: grid;
   grid-auto-flow: column;

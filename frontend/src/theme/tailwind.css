@@ -3,14 +3,14 @@
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
 
-/* AquaFlow brand colors, usable as bg-brand-600, text-brand-700, etc. */
+/* AquaFlow brand colors, usable as bg-brand-600, text-brand-700, etc.
+   They follow the active theme (Ocean / Forest / Sunset, light / dark). */
 @theme {
-  /* matched to the Deep Ocean design */
-  --color-brand-50: #e6faf8;
-  --color-brand-100: #c4f3ee;
-  --color-brand-500: #4fe0d2;
-  --color-brand-600: #007067;
-  --color-brand-700: #005a62;
+  --color-brand-50: var(--af-brand-tint);
+  --color-brand-100: color-mix(in srgb, var(--af-brand) 20%, var(--af-bg-solid));
+  --color-brand-500: var(--af-liquid);
+  --color-brand-600: var(--af-brand);
+  --color-brand-700: var(--af-brand-hover);
 }
 
 /* Ionic's colors come from theme/variables.css (the AquaFlow design tokens). */

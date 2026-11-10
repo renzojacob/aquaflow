@@ -1,0 +1,168 @@
+/* =====================================================================
+   BRAND: Ocean. Deep blues, aqua light. AquaFlow's identity.
+   Primitives only: everything else is derived in tokens.mode.css.
+   Ocean is also the fallback when <html> has no data-brand.
+   ===================================================================== */
+:root,
+[data-brand='ocean'] {
+  /* Brand + accent (light) */
+  --af-brand: #007067;
+  --af-brand-hover: #005d55;
+  --af-on-brand: #ffffff;
+  --af-brand-tint: #ddf3f0;
+  --af-brand-rgb: 0, 112, 103;
+  --af-on-brand-rgb: 255, 255, 255;
+  --af-brand-g1: #00796f;
+  --af-brand-g2: #007067;
+  --af-brand-g3: #005a62;
+  --af-accent: #5848c9;
+  --af-accent-tint: #ecebff;
+  --af-accent-rgb: 88, 72, 201;
+
+  /* Liquid: fills, waves, progress (never text) */
+  --af-liquid: #2bc4c0;
+  --af-liquid-deep: #0e8f93;
+  --af-liquid-hi: #6eeadf;
+  --af-liquid-rgb: 43, 196, 192;
+
+  /* Ground + text (light) */
+  --af-bg: #e6f3f3;
+  --af-bg-rgb: 230, 243, 243;
+  --af-bg-solid: #f2f9f9;
+  --af-surface-solid: #ffffff;
+  --af-ink: #06242b;
+  --af-ink-rgb: 6, 36, 43;
+  --af-ink-2: #44646b;
+  --af-ink-3: #5f7d83;
+  --af-tint-rgb: 6, 36, 43;        /* hue of lines, tracks, hover */
+  --af-shadow-rgb: 6, 36, 43;      /* hue of shadows */
+  --af-focus: #0b5cad;
+
+  /* Deep water: hero surfaces, sidebar (dark in BOTH modes) */
+  --af-deep: #052c35;
+  --af-deep-2: #0a3a45;
+  --af-deep-rgb: 5, 44, 53;
+  --af-deep-line: rgba(159, 195, 201, 0.22);
+  --af-on-deep: #e6f4f6;
+  --af-on-deep-2: #9fc3c9;
+  --af-on-deep-soft: #cfe6ea;
+  --af-glow-c: #4fe0d2;            /* the glowing accent on deep surfaces */
+  --af-accent-on-deep: #b9b4ff;
+  --af-glow-c-hi: #9bf6ec;
+  --af-glow-c-lo: #22b8c8;
+  --af-glow-rgb: 79, 224, 210;
+  --af-on-glow: #022320;
+  --af-caustic: #4fe0d2;
+  --af-caustic-opacity: 0.2;
+
+  /* Hero surface (deep gradient) */
+  --af-hero-1: rgba(10, 58, 70, 0.92);
+  --af-hero-2: rgba(4, 34, 44, 0.94);
+  --af-hero-3: rgba(2, 14, 20, 0.96);
+  --af-hero-glow-a: rgba(79, 224, 210, 0.22);
+  --af-hero-glow-b: rgba(60, 120, 255, 0.16);
+  --af-hero-shadow: rgba(2, 18, 26, 0.45);
+
+  /* Tank hero water */
+  --af-tank-bg-1: #072a33;
+  --af-tank-bg-2: #04161d;
+  --af-tank-top: #1d7f86;
+  --af-tank-bottom: #0b3d47;
+  --af-tank-surface: rgba(108, 236, 222, 0.55);
+  --af-tank-glow-a: rgba(185, 180, 255, 0.22);
+  --af-tank-glow-b: rgba(79, 224, 210, 0.16);
+
+  /* Backdrop (light) */
+  --af-bd-top: #e4f7f6;
+  --af-bd-mid: #d6efef;
+  --af-bd-bot: #c8e6ea;
+  --af-bd-glow: #ffffff;
+  --af-aur-1: rgba(79, 224, 210, 0.32);
+  --af-aur-2: rgba(80, 170, 255, 0.22);
+  --af-aur-3: rgba(160, 140, 255, 0.14);
+  --af-ray: rgba(255, 255, 255, 0.55);
+  --af-ray-intense: rgba(255, 255, 255, 0.7);
+  --af-particle: rgba(255, 255, 255, 0.95);
+
+  /* Charts + map */
+  --af-chart-1: #007067;
+  --af-chart-2: #5848c9;
+  --af-chart-3: #c2410c;
+  --af-chart-4: #1d4ed8;
+  --af-chart-5: #be185d;
+  --af-chart-6: #4d7c0f;
+  --af-chart-money: #c98a12;
+  --af-chart-money-fill: #f2b544;
+  --af-map-route: #1aa6b5;
+  --af-map-path: #007067;
+  --af-map-stop-ring: #5848c9;
+  --af-map-tile-filter: none;
+
+  /* Browser chrome color */
+  --af-meta-color: #f2f9f9;
+}
+
+:root[data-theme='dark'],
+[data-brand='ocean'][data-theme='dark'] {
+  --af-brand: #4fe0d2;
+  --af-brand-hover: #7beadf;
+  --af-on-brand: #022320;
+  --af-brand-tint: #0d3438;
+  --af-brand-rgb: 79, 224, 210;
+  --af-on-brand-rgb: 2, 35, 32;
+  --af-brand-g1: #9bf6ec;
+  --af-brand-g2: #4fe0d2;
+  --af-brand-g3: #22b8c8;
+  --af-accent: #b9b4ff;
+  --af-accent-tint: #1d1b3d;
+  --af-accent-rgb: 185, 180, 255;
+
+  --af-liquid: #4fe0d2;
+  --af-liquid-deep: #1aa6b5;
+  --af-liquid-hi: #8ff7ec;
+  --af-liquid-rgb: 79, 224, 210;
+
+  --af-bg: #03141b;
+  --af-bg-rgb: 3, 20, 27;
+  --af-bg-solid: #06202a;
+  --af-surface-solid: #0a2630;
+  --af-ink: #e6f4f6;
+  --af-ink-rgb: 230, 244, 246;
+  --af-ink-2: #8fb3ba;
+  --af-ink-3: #6f949b;
+  --af-tint-rgb: 159, 195, 201;
+  --af-shadow-rgb: 0, 0, 0;
+  --af-focus: #9ef0e8;
+
+  --af-deep: #02121a;
+  --af-deep-2: #0a2630;
+  --af-deep-rgb: 2, 18, 26;
+  --af-deep-line: #16404b;
+  --af-caustic-opacity: 0.18;
+
+  --af-bd-top: #072a35;
+  --af-bd-mid: #04181f;
+  --af-bd-bot: #020c11;
+  --af-bd-glow: #0e4a55;
+  --af-aur-1: rgba(79, 224, 210, 0.2);
+  --af-aur-2: rgba(40, 130, 220, 0.18);
+  --af-aur-3: rgba(120, 90, 240, 0.12);
+  --af-ray: rgba(140, 255, 240, 0.09);
+  --af-ray-intense: rgba(140, 255, 240, 0.13);
+  --af-particle: rgba(190, 255, 248, 0.7);
+
+  --af-chart-1: #4fe0d2;
+  --af-chart-2: #b9b4ff;
+  --af-chart-3: #ffb454;
+  --af-chart-4: #84ccf5;
+  --af-chart-5: #ff8db0;
+  --af-chart-6: #6fe3a5;
+  --af-chart-money: #ffd58a;
+  --af-chart-money-fill: #ffd58a;
+  --af-map-route: #1aa6b5;
+  --af-map-path: #4fe0d2;
+  --af-map-stop-ring: #b9b4ff;
+  --af-map-tile-filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.6);
+
+  --af-meta-color: #06202a;
+}

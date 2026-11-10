@@ -143,10 +143,10 @@ const bubbles = [
 .af-lf { overflow: visible; flex: none; }
 
 /* Water colors per tone and theme */
-.af-lf { --w1: #8ff7ec; --w2: #3fd6cf; --w3: #0f8ea0; --edge: rgba(190, 255, 248, 0.55); --cap: #1aa6b5; }
-:root:not([data-theme='dark']) .af-lf { --w1: #6eeadf; --w2: #22b8c0; --w3: #087a85; --edge: rgba(6, 36, 43, 0.28); --cap: #007067; }
-.af-lf--warn { --w1: #ffe0a8; --w2: #ffb454; --w3: #c47a12; }
-.af-lf--danger { --w1: #ffc2b8; --w2: #ff8a7a; --w3: #b42318; }
+.af-lf { --w1: var(--af-liquid-hi); --w2: var(--af-liquid); --w3: var(--af-liquid-deep); --edge: rgba(var(--af-tint-rgb), 0.28); --cap: var(--af-brand); }
+:root[data-theme='dark'] .af-lf, .af-deep-scope .af-lf { --edge: color-mix(in srgb, var(--af-liquid-hi) 55%, transparent); --cap: var(--af-liquid-deep); }
+.af-lf--warn { --w1: var(--af-sun-liquid-hi); --w2: var(--af-sun-liquid); --w3: var(--af-sun-liquid-deep); }
+.af-lf--danger { --w1: var(--af-danger-liquid-hi); --w2: var(--af-danger-liquid); --w3: var(--af-danger-liquid-deep); }
 .af-lf__w1 { stop-color: var(--w1); }
 .af-lf__w2 { stop-color: var(--w2); }
 .af-lf__w3 { stop-color: var(--w3); }
@@ -160,8 +160,8 @@ const bubbles = [
 .af-lf__ridge { fill: none; stroke: #ffffff; stroke-opacity: 0.16; stroke-width: 2; }
 .af-lf__shine { opacity: 0.8; }
 .af-lf__orbshine { fill: none; stroke: #ffffff; stroke-opacity: 0.55; stroke-width: 5; stroke-linecap: round; }
-.af-lf__text { font-family: var(--af-display); font-weight: 700; font-size: 44px; fill: #ffffff; paint-order: stroke; stroke: rgba(2, 18, 26, 0.35); stroke-width: 4px; }
-:root:not([data-theme='dark']) .af-lf__text { fill: #03262c; stroke: rgba(255, 255, 255, 0.6); }
+.af-lf__text { font-family: var(--af-display); font-weight: 700; font-size: 44px; fill: var(--af-ink); paint-order: stroke; stroke: rgba(255, 255, 255, 0.6); stroke-width: 4px; }
+:root[data-theme='dark'] .af-lf__text, .af-deep-scope .af-lf__text { fill: #ffffff; stroke: rgba(var(--af-deep-rgb), 0.35); }
 
 /* Level glides to its new height */
 .af-lf__level { transition: transform 900ms var(--af-ease-out); }

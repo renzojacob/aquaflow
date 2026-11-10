@@ -14,7 +14,7 @@ import MapPicker from '@/components/map/MapPicker.vue'
 import QuantityStepper from '@/components/form/QuantityStepper.vue'
 import SectionHead from '@/components/dash/SectionHead.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
-import ThemeSwitch from '@/components/ui/ThemeSwitch.vue'
+import ThemePicker from '@/components/ui/ThemePicker.vue'
 import { env } from '@/config/env'
 import { showToast } from '@/composables/useToast'
 import { resetMockDb } from '@/mocks/db'
@@ -234,8 +234,8 @@ function resetDemo() {
 
         <div class="af-bento af-bento--stretch">
           <section class="af-panel b-6">
-            <SectionHead title="Appearance" sub="Dark is AquaFlow's main look" />
-            <ThemeSwitch block />
+            <SectionHead title="Appearance" sub="Pick a color theme, then light or dark" />
+            <ThemePicker />
           </section>
           <section class="af-panel b-6">
             <SectionHead title="Account" />

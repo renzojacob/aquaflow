@@ -54,14 +54,11 @@ defineProps({
 
 .qa--primary {
   border: 0;
-  background: linear-gradient(135deg, #9bf6ec 0%, #4fe0d2 45%, #22b8c8 100%);
-  color: #022320;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), var(--af-glow);
+  background: linear-gradient(135deg, var(--af-brand-g1) 0%, var(--af-brand-g2) 45%, var(--af-brand-g3) 100%);
+  color: var(--af-on-brand);
+  box-shadow: inset 0 1px 0 var(--af-btn-sheen-top), var(--af-glow);
 }
-.qa--primary .qa__icon { background: rgba(2, 35, 32, 0.12); color: #022320; }
-.qa--primary .qa__text span { color: rgba(2, 35, 32, 0.78); }
-.qa--primary:hover { background: linear-gradient(135deg, #b0f8f0 0%, #62e5d8 45%, #34c2d0 100%); }
-:root:not([data-theme='dark']) .qa--primary { background: linear-gradient(135deg, #00796f 0%, #007067 45%, #005a62 100%); color: #ffffff; }
-:root:not([data-theme='dark']) .qa--primary .qa__icon { background: rgba(255, 255, 255, 0.16); color: #ffffff; }
-:root:not([data-theme='dark']) .qa--primary .qa__text span { color: rgba(255, 255, 255, 0.86); }
+.qa--primary .qa__icon { background: rgba(var(--af-on-brand-rgb), 0.14); color: var(--af-on-brand); }
+.qa--primary .qa__text span { color: rgba(var(--af-on-brand-rgb), 0.82); }
+.qa--primary:hover { filter: brightness(1.05); }
 </style>
