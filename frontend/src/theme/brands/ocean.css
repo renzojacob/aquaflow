@@ -12,7 +12,7 @@
   --af-brand-tint: #e3edff;
   --af-brand-rgb: 11, 91, 211;
   --af-on-brand-rgb: 255, 255, 255;
-  --af-brand-g1: #2f7cf0;
+  --af-brand-g1: #1f6ee0;
   --af-brand-g2: #0b5bd3;
   --af-brand-g3: #3b3fd6;
   --af-accent: #6d3fe0;
@@ -33,7 +33,7 @@
   --af-ink: #0b1630;
   --af-ink-rgb: 11, 22, 48;
   --af-ink-2: #4a5a78;
-  --af-ink-3: #66759a;
+  --af-ink-3: #566585;
   --af-tint-rgb: 11, 22, 48;        /* hue of lines, tracks, hover */
   --af-shadow-rgb: 20, 40, 110;     /* hue of shadows */
   --af-focus: #6d3fe0;
@@ -66,7 +66,7 @@
   /* Tank hero water */
   --af-tank-bg-1: #10255c;
   --af-tank-bg-2: #060f2a;
-  --af-tank-top: #1565c0;
+  --af-tank-top: #1159aa;
   --af-tank-bottom: #0b2a6b;
   --af-tank-surface: rgba(120, 220, 255, 0.55);
   --af-tank-glow-a: rgba(183, 164, 255, 0.22);
@@ -112,7 +112,7 @@
   --af-on-brand-rgb: 3, 32, 43;
   --af-brand-g1: #9bf0ff;
   --af-brand-g2: #38e1ff;
-  --af-brand-g3: #2f7cf0;
+  --af-brand-g3: #5db3ff;
   --af-accent: #b7a4ff;
   --af-accent-tint: #221c45;
   --af-accent-rgb: 183, 164, 255;
@@ -130,7 +130,7 @@
   --af-ink: #eaf1ff;
   --af-ink-rgb: 234, 241, 255;
   --af-ink-2: #9fb0d0;
-  --af-ink-3: #7585a8;
+  --af-ink-3: #8595b8;
   --af-tint-rgb: 170, 190, 230;
   --af-shadow-rgb: 0, 0, 0;
   --af-focus: #9bf0ff;
