@@ -9,6 +9,7 @@ from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -22,6 +23,7 @@ from apps.accounts.models import CustomerProfile
 from apps.accounts.permissions import IsDispatcherOrOwner
 from apps.inventory.models import StockLevel, StockMovement
 from apps.inventory.services import apply_movement
+from apps.inventory.supplies import consume_for_refills, supply_row
 from apps.orders.models import Order
 from apps.orders.serializers import StaffOrderSerializer
 from apps.orders.services import default_product, transition
@@ -225,7 +227,13 @@ class StockAdjustView(APIView):
                 raise ValidationError({"quantity": ["Enter how many containers you filled."]})
             if qty > stock.empty_count:
                 raise ValidationError({"quantity": [f"Only {stock.empty_count} empty containers are at the station."]})
-            apply_movement(product, "refill", request.user, available=qty, empty=-qty, note=reason or "Refill batch")
+            # The batch and the caps, seals and filters it used go down together or not at all.
+            with transaction.atomic():
+                apply_movement(product, "refill", request.user, available=qty, empty=-qty, note=reason or "Refill batch")
+                low_supplies = consume_for_refills(qty, by=request.user, note=f"Filled {qty} containers")
+            payload = stock_payload()
+            payload["supply_warnings"] = [supply_row(sp) for sp in low_supplies]
+            return Response(payload)
         elif kind == "correction":
             if len(reason) < 3:
                 raise ValidationError({"reason": ["Say why the count changed."]})

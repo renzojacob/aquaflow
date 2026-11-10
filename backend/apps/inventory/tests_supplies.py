@@ -169,6 +169,23 @@ class SupplyApiTests(APITestCase):
         self.assertEqual(caps.quantity, Decimal("2.00"))
         self.assertIn("Caps", str(r.data.get("supply_warnings")))                  # the dispatcher is told
 
+    def test_refill_without_supplies_or_other_stock_changes_leave_supplies_alone(self):
+        """Only a refill batch uses caps; counting or receiving containers must not."""
+        product = Product.objects.create(name="5-gallon refill", price=30)
+        StockLevel.objects.create(product=product, empty_count=20)
+        r = self.as_(self.dispatcher).post("/api/v1/dispatch/stock/adjust",
+                                           {"type": "refill", "quantity": 4}, format="json")
+        self.assertEqual(r.status_code, 200, r.data)
+        self.assertEqual(r.data["supply_warnings"], [])                            # nothing set up, nothing to warn
+        caps = make_supply(name="Caps", quantity=Decimal("50"), used_per_refill=Decimal("1"))
+        c = self.as_(self.dispatcher)
+        self.assertEqual(c.post("/api/v1/dispatch/stock/adjust",
+                                {"type": "receive", "quantity": 5}, format="json").status_code, 200)
+        self.assertEqual(c.post("/api/v1/dispatch/stock/adjust",
+                                {"type": "correction", "quantity": 4, "reason": "recount"}, format="json").status_code, 200)
+        caps.refresh_from_db()
+        self.assertEqual(caps.quantity, Decimal("50.00"))
+
     def test_payload_counts_and_alerts(self):
         make_supply(name="Fine", quantity=Decimal("900"), reorder_level=Decimal("10"))
         make_supply(name="Empty", quantity=Decimal("0"))
