@@ -61,3 +61,64 @@ class StockMovement(models.Model):
         ordering = ["-created_at"]
 
     
+
+class Supply(models.Model):
+    """
+    Something the station uses up that is NOT a container: caps, seals, filters, cleaning
+    solution. Quantity is a decimal so a filter can be "0.8 of its life left" and a
+    solution can be measured in litres.
+
+    used_per_refill: how much of this is used for ONE filled container. Caps and seals are
+    1 each; a filter that lasts 2000 containers is 0.0005. Leave it 0 for things that are
+    not used per container (then usage is worked out from what staff record by hand).
+    """
+    class Unit(models.TextChoices):
+        PIECE = "piece"
+        LITRE = "litre"
+        KILO = "kilo"
+        SET = "set"
+
+    name = models.CharField(max_length=60, unique=True)         # "Bottle caps"
+    unit = models.CharField(max_length=10, choices=Unit.choices, default=Unit.PIECE)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    used_per_refill = models.DecimalField(max_digits=8, decimal_places=4, default=0)
+    reorder_level = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    lead_time_days = models.PositiveSmallIntegerField(default=3)  # how long a delivery takes to arrive
+    is_active = models.BooleanField(default=True)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+    note = models.CharField(max_length=160, blank=True)          # "Supplier: Calapan Plastics"
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["sort_order", "name"]
+        verbose_name_plural = "supplies"
+        constraints = [
+            models.CheckConstraint(condition=models.Q(quantity__gte=0), name="supply_quantity_not_negative"),
+        ]
+
+    def __str__(self):
+        return f"{self.name}: {self.quantity} {self.unit}"
+
+
+class SupplyMovement(models.Model):
+    """Append-only log of every change to a supply, so a count can always be explained."""
+    class Reason(models.TextChoices):
+        RECEIVED = "received"      # a delivery arrived
+        USED = "used"              # used up (automatic when containers are filled, or recorded by hand)
+        CORRECTION = "correction"  # a physical count
+
+    supply = models.ForeignKey(Supply, on_delete=models.CASCADE, related_name="movements")
+    reason = models.CharField(max_length=12, choices=Reason.choices)
+    delta = models.DecimalField(max_digits=10, decimal_places=2)   # + in, - out
+    by_user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                on_delete=models.SET_NULL)
+    note = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["supply", "created_at"])]
+
+    def __str__(self):
+        return f"{self.supply.name} {self.delta:+} ({self.reason})"

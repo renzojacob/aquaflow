@@ -2,7 +2,8 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from .models import Address
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Value
+from django.db.models.functions import Greatest
 from apps.accounts.models import CustomerProfile
 from .models import ContainerMovement
 
@@ -11,7 +12,9 @@ from .models import ContainerMovement
 def record_containers(customer, delivered=0, returned=0, note="", order=None):
     profile, _ = CustomerProfile.objects.get_or_create(user=customer)
     CustomerProfile.objects.filter(pk=profile.pk).update(
-        containers_held=F("containers_held") + delivered - returned
+        # Never below zero: a customer can't hold a negative number of containers.
+        # (If a rider records more empties than we thought they had, the movement log still shows it.)
+        containers_held=Greatest(Value(0), F("containers_held") + delivered - returned)
     )
     return ContainerMovement.objects.create(
         customer=customer, delivered=delivered, returned=returned, note=note, order=order

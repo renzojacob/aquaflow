@@ -87,7 +87,7 @@ const routes = [
       { path: 'queue/:id', component: () => import('@/views/dispatcher/OrderAdminPage.vue') },
       { path: 'stock', component: () => import('@/views/dispatcher/StockPage.vue') },
       placeholder('forecast', 'Forecasting', 6, ['Forecast vs actual chart', 'Backtest error: naive, weekday average, Holt-Winters', 'Peak weekday × hour heatmap', 'Preparation recommendation and trips needed']),
-      placeholder('supplies', 'Stock & supplies', 6, ['Caps, seals, filters: days left', 'Restock alerts']),
+      { path: 'supplies', component: () => import('@/views/owner/SuppliesPage.vue') },
       { path: 'reports', component: () => import('@/views/owner/ReportsPage.vue') },
       { path: 'users', component: () => import('@/views/owner/UsersPage.vue') },
       { path: 'vehicles', component: () => import('@/views/owner/VehiclesPage.vue') },

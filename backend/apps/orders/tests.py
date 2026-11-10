@@ -132,3 +132,27 @@ class CartTest(APITestCase):
         self.assertEqual(next(o for o in r.data["others"] if o["id"] == pid)["available"], 12)
         self.client.force_authenticate(self.cust)
         self.assertEqual(self.client.get("/api/v1/owner/products").status_code, 403)
+
+
+class NegativeContainersTest(APITestCase):
+    """A customer's container count can never go below zero, and ordering still works if old data is negative."""
+
+    def test_balance_floors_at_zero_and_order_still_places(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from apps.accounts.models import CustomerProfile, User
+        from apps.customers.models import Address
+        from apps.customers.services import record_containers
+        from apps.inventory.models import Product
+        from apps.orders.services import place_order
+
+        Product.objects.create(name="5-gallon refill", price=30)
+        c = User.objects.create_user("neg@t.com", "neg@t.com", "Water2026!x", role="customer")
+        record_containers(c, delivered=0, returned=3)                       # rider returned more than held
+        self.assertEqual(CustomerProfile.objects.get(user=c).containers_held, 0)
+
+        CustomerProfile.objects.filter(user=c).update(containers_held=-3)   # old bad data
+        a = Address.objects.create(customer=c, label="Home", address_text="x", barangay="B", lat=13.41, lng=121.18)
+        o = place_order(c, address=a, quantity=5, period="afternoon",
+                        delivery_date=timezone.localdate() + timedelta(days=1))
+        self.assertEqual(o.expected_empties, 0)

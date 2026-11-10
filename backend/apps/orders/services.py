@@ -106,10 +106,22 @@ def default_product():
     return qs.filter(kind=Product.Kind.REFILL).first() or qs.first()
 
 
+def place_order(customer, *, address, delivery_date, period, **kwargs):
+    """
+    Book an order. The delivery slot is held for the whole booking, so two customers can't
+    both take the last containers; the lock is let go whether the order is saved or rejected.
+    """
+    from .slots import lock_slot
+
+    with lock_slot(delivery_date, period):
+        return _place_order(customer, address=address, delivery_date=delivery_date,
+                            period=period, **kwargs)
+
+
 @transaction.atomic
-def place_order(customer, *, address, delivery_date, period, items=None, quantity=None,
-                product=None, expected_empties=None, notes="",
-                source=Order.Source.MANUAL):
+def _place_order(customer, *, address, delivery_date, period, items=None, quantity=None,
+                 product=None, expected_empties=None, notes="",
+                 source=Order.Source.MANUAL):
     """
     items: [{"product": Product, "quantity": int}, ...]  (the cart)
     Older callers may still send just quantity (+ product): that is a one-line cart.
@@ -162,10 +174,16 @@ def place_order(customer, *, address, delivery_date, period, items=None, quantit
             {"period": ["That delivery time is closed for today. Pick another time."]}
         )
 
-    # TODO (#3, Feature D): reject the order here if the slot is full.
+    # Feature D: never promise a slot the fleet can't serve.
+    # place_order() already holds this slot, so the count below can't change under us.
+    if containers:
+        from .slots import full_slot_message, slot_availability
+        room = slot_availability(delivery_date, period, containers=containers)
+        if not room.fits:
+            raise ValidationError({"period": [full_slot_message(room, Order.Period(period).label)]})
 
     profile = CustomerProfile.objects.filter(user=customer).first()
-    held = profile.containers_held if profile else 0
+    held = max(0, profile.containers_held) if profile else 0
     if expected_empties is None:
         expected_empties = min(containers, held)
     elif expected_empties > held:

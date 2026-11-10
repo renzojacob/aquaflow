@@ -58,6 +58,10 @@ async function save(form, payload, done) {
   try {
     stock.value = await adjustStock(payload)
     showToast(done, 'success')
+    // Filling containers uses caps, seals and filter life. Say so while the batch is fresh.
+    if (stock.value.supply_warnings?.length) {
+      showToast(`${stock.value.supply_warnings.join('. ')}. Tell the owner to order more.`, 'danger')
+    }
     demand.value?.load()
     form.reason = ''
     if ('quantity' in form && payload.type === 'correction') form.quantity = ''
