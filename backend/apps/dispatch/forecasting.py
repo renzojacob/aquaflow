@@ -328,3 +328,94 @@ def build_forecast(horizon=HORIZON, today=None):
     return {"series": series,
             "orders": forecast_series(series.orders, series.start, horizon),
             "containers": forecast_series(series.containers, series.start, horizon)}
+
+
+# ---------------------------------------------------------------- planning hint and explanation
+
+TRIPS_PER_VEHICLE_PER_DAY = 2          # one morning trip and one afternoon trip
+TRIPS_NOTE = ("Rough planning number from the average vehicle size. It ignores routes and distances; "
+              "the Plan screen makes the real trips.")
+SHORT_NAMES = {"naive": "The naive method", "weekday_average": "The weekday average",
+               "holt_winters": "Holt-Winters"}
+
+
+def trips_hint(container_days, vehicle_capacities):
+    """
+    How many trips and riders the forecast containers might need. `container_days` are ForecastDay
+    objects for containers; `vehicle_capacities` is the capacity of every AVAILABLE vehicle.
+    Returns None when there is no vehicle to base it on.
+
+    Per day: trips = containers / average vehicle capacity, rounded up. A vehicle can go out
+    in the morning and again in the afternoon, so riders = trips / 2, rounded up. The "busy"
+    figures use the top of the prediction band instead of the forecast itself.
+    """
+    caps = [c for c in vehicle_capacities if c and c > 0]
+    if not caps:
+        return None
+    average = sum(caps) / len(caps)
+    fleet_trips = len(caps) * TRIPS_PER_VEHICLE_PER_DAY
+    rows = []
+    for d in container_days:
+        trips = math.ceil(d.value / average) if d.value > 0 else 0
+        top = d.upper if d.upper is not None else d.value
+        busy = math.ceil(top / average) if top > 0 else 0
+        rows.append({"date": d.date, "containers": d.value, "trips_needed": trips,
+                     "riders_needed": math.ceil(trips / TRIPS_PER_VEHICLE_PER_DAY),
+                     "busy_trips_needed": busy,
+                     "busy_riders_needed": math.ceil(busy / TRIPS_PER_VEHICLE_PER_DAY),
+                     "fleet_enough": busy <= fleet_trips})
+    peak = max(rows, key=lambda r: r["containers"], default=None)
+    return {"vehicles": len(caps), "total_capacity": sum(caps), "average_capacity": round(average, 1),
+            "fleet_trips_per_day": fleet_trips, "days": rows,
+            "peak_date": peak["date"] if peak else None,
+            "over_capacity_days": [r["date"] for r in rows if not r["fleet_enough"]],
+            "note": TRIPS_NOTE}
+
+
+def _plural(n, word):
+    return f"{n} {word}{'' if n == 1 else 's'}"
+
+
+def _day_label(iso):
+    d = date.fromisoformat(iso)
+    return f"{d:%A} {d.day} {d:%b}"
+
+
+def explain(orders, containers, trips, days):
+    """A few plain sentences for the owner. `orders` and `containers` are Forecast objects."""
+    if orders.history_days == 0 or not orders.days:
+        return ("There are no orders yet, so there is nothing to forecast. Once customers start "
+                "ordering, this page shows what to expect each day.")
+    peak = max(orders.days, key=lambda d: d.value)
+    boxes = {d.date: d.value for d in containers.days}.get(peak.date)
+    said = [f"Expect about {round(peak.value)} orders"
+            + (f" ({round(boxes)} containers)" if boxes is not None else "")
+            + f" on {_day_label(peak.date)}, the busiest day in the next {days} days."]
+    said.append(f"In all, about {round(sum(d.value for d in orders.days))} orders over the next {days} days.")
+
+    if trips is None:
+        said.append("Add your vehicles on the Vehicles screen to get a trips estimate.")
+    else:
+        row = next((r for r in trips["days"] if r["date"] == peak.date), None)
+        if row:
+            line = (f"On that day plan about {_plural(row['trips_needed'], 'trip')} and "
+                    f"{_plural(row['riders_needed'], 'rider')}")
+            if row["busy_trips_needed"] > row["trips_needed"]:
+                line += f" (up to {_plural(row['busy_trips_needed'], 'trip')} if it turns out busy)"
+            said.append(line + ".")
+        if trips["over_capacity_days"]:
+            said.append(f"Your {_plural(trips['vehicles'], 'available vehicle')} can make "
+                        f"{trips['fleet_trips_per_day']} trips a day, which may not be enough on "
+                        f"{_day_label(trips['over_capacity_days'][0])}.")
+
+    if orders.enough_data:
+        chosen = next(r for r in orders.backtest if r["chosen"])
+        wape = chosen["wape"]
+        how = f"{SHORT_NAMES[orders.method]} was chosen because it was the most accurate in testing"
+        if wape is not None:
+            how += f", off by about {round(wape * 100)}% on average"
+        said.append(how + f" (tested on {orders.backtest_rounds} past weeks).")
+    else:
+        said.append(f"There are only {orders.history_days} days of history (4 weeks are needed), so this "
+                    "is a rough weekday-average guess, not a tested forecast.")
+    return " ".join(said)

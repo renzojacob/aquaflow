@@ -2,7 +2,7 @@ from django.urls import path
 
 from apps.sync import views as sync_views
 
-from . import api, fleet_api, trips_api
+from . import api, fleet_api, forecast_api, trips_api
 
 urlpatterns = [
     path("orders", api.StaffOrderListView.as_view(), name="staff-orders"),
@@ -21,6 +21,7 @@ urlpatterns = [
     path("trips/<int:pk>/approve", trips_api.TripApproveView.as_view(), name="staff-trip-approve"),
     path("trips/<int:pk>/assign", trips_api.TripAssignView.as_view(), name="staff-trip-assign"),
     path("plan", trips_api.PlanSlotView.as_view(), name="staff-plan"),
+    path("forecast", forecast_api.ForecastView.as_view(), name="staff-forecast"),
     path("conflicts", sync_views.ConflictListView.as_view(), name="staff-conflicts"),
     path("conflicts/<int:pk>/resolve", sync_views.ConflictResolveView.as_view(), name="staff-conflict-resolve"),
 ]
