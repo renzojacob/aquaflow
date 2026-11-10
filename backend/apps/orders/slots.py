@@ -22,7 +22,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 
-from django.db import connection
+from django.db import connection, transaction
 from django.db.models import Q, Sum
 
 from apps.dispatch.models import Trip, TripStop, Vehicle
@@ -85,14 +85,19 @@ def lock_slot(day, period):
     """
     key = day.toordinal() * 2 + (1 if period == Order.Period.AFTERNOON else 0)
     if connection.vendor == "postgresql":
-        with connection.cursor() as cur:
-            cur.execute("SELECT pg_advisory_xact_lock(%s, %s)", [0xAF10, key])
-        yield                      # Postgres releases it at COMMIT or ROLLBACK
+        # The lock lasts until the END OF A TRANSACTION. Taken outside one (autocommit) it would
+        # be released at once and protect nothing, so open the transaction here and keep the
+        # whole booking inside it. Postgres releases the lock at COMMIT or ROLLBACK.
+        with transaction.atomic():
+            with connection.cursor() as cur:
+                cur.execute("SELECT pg_advisory_xact_lock(%s, %s)", [0xAF10, key])
+            yield
         return
     lock = _local_lock(key)
     lock.acquire()
     try:
-        yield
+        with transaction.atomic():  # commit BEFORE letting the next order in
+            yield
     finally:
         lock.release()             # released on success AND on a rejected order
 
