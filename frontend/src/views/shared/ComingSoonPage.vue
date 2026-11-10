@@ -24,7 +24,6 @@ const MEANWHILE = {
   conflicts: { text: 'Riders are not offline yet, so there is nothing to resolve. Every change happens live on the queue.', label: 'Open the order queue', href: '/dispatcher/orders' },
   trip: { text: 'Until the rider app is ready, the dispatcher sends orders out and marks them delivered. Customers already see your name and number.', label: '', href: '' },
   sync: { text: 'Nothing is stored on this phone yet, so there is nothing waiting to sync.', label: '', href: '' },
-  forecast: { text: 'Sales per day and the busiest weekday are already on the Reports screen.', label: 'Open reports', href: '/owner/reports' },
   supplies: { text: 'Containers (filled, empties, on the road, with customers) are tracked on the Stock screen.', label: 'Open stock', href: '/owner/stock' },
   vehicles: { text: 'Add tricycles and multicabs in Django admin for now (Dispatch > Vehicles).', label: '', href: '' },
   products: { text: 'Change the refill price in Django admin for now (Inventory > Products). The app picks it up right away.', label: '', href: '' },

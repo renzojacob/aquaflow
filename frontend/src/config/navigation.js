@@ -54,6 +54,7 @@ export const NAV = Object.freeze({
     { name: 'plan', label: 'Plan deliveries', href: '/dispatcher/plan', icon: mapOutline, tab: true },
     { name: 'stock', label: 'Stock', href: '/dispatcher/stock', icon: cubeOutline, tab: true },
     { name: 'conflicts', label: 'Conflicts', href: '/dispatcher/conflicts', icon: gitCompareOutline, tab: true },
+    { name: 'forecast', label: 'Forecasting', href: '/dispatcher/forecast', icon: analyticsOutline },
     more('dispatcher'),
   ],
   rider: [
