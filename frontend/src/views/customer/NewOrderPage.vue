@@ -28,6 +28,7 @@ import QuantityStepper from '@/components/form/QuantityStepper.vue'
 import SegmentedControl from '@/components/form/SegmentedControl.vue'
 import SkeletonList from '@/components/ui/SkeletonList.vue'
 import TextField from '@/components/form/TextField.vue'
+import LiquidFill from '@/components/ui/LiquidFill.vue'
 import { showToast } from '@/composables/useToast'
 import {
   createOrder,
@@ -55,6 +56,7 @@ const extras = reactive({}) // product id -> how many (everything except the mai
 const submitting = ref(false)
 const submitError = ref('')
 const addrOpen = ref(false)
+const placed = ref(null) // the order just created: shows the success moment for a beat
 
 const deliveryDate = computed(() => dateISO(form.day === 'today' ? 0 : 1))
 // ---------- the catalog and the cart ----------
@@ -240,8 +242,13 @@ async function submit() {
       empties_to_return: form.empties,
       notes: form.notes,
     })
-    showToast(`Order ${order.code} placed. We'll confirm it soon.`, 'success')
     form.notes = ''
+    // A satisfying beat: the jug fills and a check appears, then we open the order
+    placed.value = order
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    await new Promise((r) => setTimeout(r, still ? 250 : 1500))
+    placed.value = null
+    showToast(`Order ${order.code} placed. We'll confirm it soon.`, 'success')
     ionRouter.navigate(`/customer/orders/${order.id}`, 'forward', 'push')
   } catch (e) {
     submitError.value = e.message
@@ -470,6 +477,22 @@ function addNote(text) {
       </div>
 
       <AddressFormModal v-if="settings" :is-open="addrOpen" :settings="settings" @close="addrOpen = false" @saved="onAddressSaved" />
+
+      <!-- Order placed: a short celebration -->
+      <Transition name="placed">
+        <div v-if="placed" class="placed" role="status" aria-live="polite">
+          <div class="placed__card af-deep-scope">
+            <span class="placed__ring" aria-hidden="true"></span>
+            <span class="placed__ring placed__ring--2" aria-hidden="true"></span>
+            <LiquidFill shape="jug" :level="1" :size="96" class="placed__jug" />
+            <span class="placed__check" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </span>
+            <b class="placed__title">Order placed</b>
+            <span class="placed__code">{{ placed.code }}</span>
+          </div>
+        </div>
+      </Transition>
     </ion-content>
 
     <!-- Phone/tablet: the total stays in view -->
@@ -501,10 +524,10 @@ function addNote(text) {
 .prod__text { display: grid; gap: 8px; max-width: 30ch; }
 .prod__text p { margin: 0; font-size: 14.5px; line-height: 1.5; }
 .prod__name { margin: 0; font-family: var(--af-display); font-size: clamp(28px, 4vw, 40px); font-weight: 650; letter-spacing: -0.045em; line-height: 1; }
-.prod__price b { font-family: var(--af-display); font-size: 26px; font-weight: 650; color: #ffd58a; letter-spacing: -0.02em; }
-.prod__qty { display: grid; justify-items: center; gap: 8px; padding: 12px 16px; border-radius: 22px; background: rgba(2, 18, 26, 0.42); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-.prod__qty :deep(.af-step__btn) { background: rgba(255, 255, 255, 0.08); border-color: rgba(230, 244, 246, 0.3); color: #7ff0e4; }
-.prod__qty :deep(.af-step__value small) { color: #cfe6ea; }
+.prod__price b { font-family: var(--af-display); font-size: 26px; font-weight: 650; color: var(--af-sun); letter-spacing: -0.02em; }
+.prod__qty { display: grid; justify-items: center; gap: 8px; padding: 12px 16px; border-radius: 22px; background: rgba(var(--af-deep-rgb), 0.42); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.prod__qty :deep(.af-step__btn) { background: rgba(255, 255, 255, 0.08); border-color: color-mix(in srgb, var(--af-on-deep) 30%, transparent); color: var(--af-glow-c-hi); }
+.prod__qty :deep(.af-step__value small) { color: var(--af-on-deep-soft); }
 .prod__max { font-size: 12.5px; font-weight: 650; }
 
 /* ---------- addresses ---------- */
@@ -632,6 +655,24 @@ function addNote(text) {
 .fact__v { font-size: 14px; font-weight: 650; line-height: 1.4; }
 .pay { grid-template-columns: auto 1fr; align-items: center; gap: 10px; }
 .pay ion-icon { font-size: 20px; color: var(--af-sun); }
+
+/* ---------- order placed ---------- */
+.placed { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; background: var(--af-scrim); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.placed__card { position: relative; display: grid; justify-items: center; gap: 6px; padding: 32px 40px 28px; border-radius: 32px; background: linear-gradient(160deg, var(--af-hero-1), var(--af-hero-3)); box-shadow: 0 40px 80px var(--af-hero-shadow), 0 0 0 1px rgba(var(--af-glow-rgb), 0.2); animation: placed-pop 600ms var(--af-ease-spring) both; }
+.placed__jug { filter: drop-shadow(0 0 24px rgba(var(--af-glow-rgb), 0.55)); }
+.placed__jug :deep(.af-lf__level) { transition-duration: 1100ms; }
+.placed__ring { position: absolute; top: 60px; left: 50%; width: 140px; height: 140px; border-radius: 50%; border: 2px solid rgba(var(--af-glow-rgb), 0.6); transform: translate(-50%, -50%) scale(0.4); opacity: 0; animation: placed-ring 1.2s var(--af-ease-out) 300ms both; }
+.placed__ring--2 { animation-delay: 550ms; }
+.placed__check { display: grid; place-items: center; width: 44px; height: 44px; margin-top: -26px; border-radius: 50%; background: var(--af-glow-c); color: var(--af-on-glow); box-shadow: 0 0 0 6px rgba(var(--af-glow-rgb), 0.18), 0 10px 30px rgba(var(--af-glow-rgb), 0.4); animation: placed-pop 500ms var(--af-ease-spring) 700ms both; position: relative; z-index: 1; }
+.placed__check svg path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: placed-draw 400ms var(--af-ease-out) 900ms forwards; }
+.placed__title { margin-top: 8px; font-family: var(--af-display); font-size: 24px; font-weight: 650; letter-spacing: -0.03em; color: var(--af-on-deep); }
+.placed__code { font-family: var(--af-mono); font-weight: 600; letter-spacing: 0.1em; color: var(--af-glow-c-hi); }
+@keyframes placed-pop { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: none; } }
+@keyframes placed-ring { from { opacity: 0.9; transform: translate(-50%, -50%) scale(0.4); } to { opacity: 0; transform: translate(-50%, -50%) scale(1.6); } }
+@keyframes placed-draw { to { stroke-dashoffset: 0; } }
+.placed-enter-active, .placed-leave-active { transition: opacity var(--af-dur-3) var(--af-ease); }
+.placed-enter-from, .placed-leave-to { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .placed__card, .placed__ring, .placed__check { animation: none; } .placed__ring { display: none; } .placed__check svg path { stroke-dashoffset: 0; animation: none; } }
 
 /* ---------- bottom bar (phone/tablet) ---------- */
 .bar {

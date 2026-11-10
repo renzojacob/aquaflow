@@ -303,18 +303,18 @@ const again = () => ionRouter.push(`/customer/order?${reorderQuery(order.value)}
 <style scoped>
 /* ---------- tank content ---------- */
 .t-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
-.t-code { font-size: 13px; font-weight: 750; color: #cfe6ea; }
+.t-code { font-size: 13px; font-weight: 750; color: var(--af-on-deep-soft); }
 .t-main { display: grid; gap: 8px; }
 .t-title { margin: 0; font-family: var(--af-display); font-size: clamp(32px, 4.6vw, 54px); font-weight: 650; letter-spacing: -0.045em; line-height: 1; }
 .t-sub { margin: 0; font-size: 15.5px; font-weight: 550; line-height: 1.5; max-width: 40ch; }
-.t-tracker { padding: 14px 8px 10px; border-radius: 20px; background: rgba(2, 18, 26, 0.38); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-.t-tracker :deep(.af-tracker__label) { color: #cfe6ea; }
-.t-tracker :deep(.is-done .af-tracker__label) { color: #e6f4f6; }
-.t-tracker :deep(.is-now .af-tracker__label) { color: #7ff0e4; }
-.t-codebox { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border-radius: 18px; background: rgba(2, 18, 26, 0.42); }
+.t-tracker { padding: 14px 8px 10px; border-radius: 20px; background: rgba(var(--af-deep-rgb), 0.38); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.t-tracker :deep(.af-tracker__label) { color: var(--af-on-deep-soft); }
+.t-tracker :deep(.is-done .af-tracker__label) { color: var(--af-on-deep); }
+.t-tracker :deep(.is-now .af-tracker__label) { color: var(--af-glow-c-hi); }
+.t-codebox { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border-radius: 18px; background: rgba(var(--af-deep-rgb), 0.42); }
 .t-codebox > span:first-child { font-size: 13px; font-weight: 650; max-width: 26ch; line-height: 1.4; }
 .t-digits { display: flex; gap: 6px; }
-.t-digits span { width: 42px; height: 52px; display: grid; place-items: center; border-radius: 13px; font-family: var(--af-display); font-size: 26px; font-weight: 650; color: #7ff0e4; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(127, 240, 228, 0.3); text-shadow: 0 0 14px rgba(79, 224, 210, 0.6); }
+.t-digits span { width: 42px; height: 52px; display: grid; place-items: center; border-radius: 13px; font-family: var(--af-display); font-size: 26px; font-weight: 650; color: var(--af-glow-c-hi); background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(127, 240, 228, 0.3); text-shadow: 0 0 14px rgba(var(--af-glow-rgb), 0.6); }
 
 /* ---------- finished order header ---------- */
 .done { align-content: start; gap: 14px; }
@@ -335,7 +335,7 @@ const again = () => ionRouter.push(`/customer/order?${reorderQuery(order.value)}
 .mapcard__dot { width: 9px; height: 9px; border-radius: 50%; background: var(--af-success); box-shadow: 0 0 0 4px color-mix(in srgb, var(--af-success) 25%, transparent); }
 .mapcard__dot.is-sim { background: var(--af-pearl); box-shadow: 0 0 0 4px color-mix(in srgb, var(--af-pearl) 25%, transparent); }
 .mapcard__dot.is-off { background: var(--af-ink-2); box-shadow: none; }
-.t-eta { margin: 0; justify-self: start; padding: 8px 14px; border-radius: 999px; background: rgba(2, 18, 26, 0.5); color: #7ff0e4; font-size: 15px; font-weight: 750; }
+.t-eta { margin: 0; justify-self: start; padding: 8px 14px; border-radius: 999px; background: rgba(var(--af-deep-rgb), 0.5); color: var(--af-glow-c-hi); font-size: 15px; font-weight: 750; }
 .mapcard__label span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mapcard__label b { margin-right: 4px; }
 

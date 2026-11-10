@@ -263,12 +263,12 @@ function resetDemo() {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: linear-gradient(140deg, #b9b4ff 0%, #4fe0d2 100%);
-  color: #04161d;
+  background: linear-gradient(140deg, var(--af-accent-on-deep) 0%, var(--af-glow-c) 100%);
+  color: var(--af-on-glow);
   font-family: var(--af-display);
   font-size: 28px;
   font-weight: 700;
-  box-shadow: 0 0 0 4px var(--af-surface-solid), 0 0 0 5px color-mix(in srgb, var(--af-pearl) 50%, transparent), 0 14px 34px rgba(79, 224, 210, 0.25);
+  box-shadow: 0 0 0 4px var(--af-surface-solid), 0 0 0 5px color-mix(in srgb, var(--af-pearl) 50%, transparent), 0 14px 34px rgba(var(--af-glow-rgb), 0.25);
 }
 .me__text { display: grid; gap: 4px; min-width: 0; }
 .me__name { margin: 0 0 4px; font-family: var(--af-display); font-size: clamp(24px, 3vw, 32px); font-weight: 650; letter-spacing: -0.04em; line-height: 1.05; }

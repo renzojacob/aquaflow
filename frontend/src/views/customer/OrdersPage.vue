@@ -159,6 +159,7 @@ const again = (o) => go(`/customer/order?${reorderQuery(o)}`)
 
         <div v-else-if="!visible.length" class="af-panel">
           <EmptyState
+            art="drop"
             :title="search ? 'No matching orders' : orders.length ? 'Nothing in this list' : 'No orders yet'"
             :message="search ? 'Try another code or address.' : orders.length ? 'Pick another filter above.' : 'Your first refill is a few taps away.'"
             :action-label="orders.length ? '' : 'Order water'"
