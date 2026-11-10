@@ -10,6 +10,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 import { tripColor } from '@/constants/tripColors'
+import { mapColors } from '@/theme/mapTheme'
 
 const props = defineProps({
   station: { type: Object, default: null },
@@ -53,7 +54,7 @@ function draw(fit = true) {
     }
   })
   for (const o of props.unplanned) {
-    L.circleMarker([o.lat, o.lng], { radius: 7, color: '#5b6b72', weight: 2, fillColor: '#ffffff', fillOpacity: 0.9 })
+    L.circleMarker([o.lat, o.lng], { radius: 7, color: mapColors().muted, weight: 2, fillColor: mapColors().surface, fillOpacity: 0.9 })
       .bindTooltip(`${o.code} ${o.customer_name} (not planned)`).addTo(layer)
     pts.push([o.lat, o.lng])
   }
@@ -89,7 +90,6 @@ onBeforeUnmount(() => { ro?.disconnect(); map?.remove() })
 <style scoped>
 .tm { border-radius: var(--af-r-md); overflow: hidden; border: 1px solid var(--af-line); isolation: isolate; }
 .tm__map { width: 100%; height: 100%; background: var(--af-surface-2); }
-:global([data-theme='dark']) .tm__map :deep(.leaflet-tile-pane) { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.6); }
-:deep(.tm-station) { display: grid; place-items: center; border-radius: 10px; background: #02121a; color: #4fe0d2; font: 700 10px var(--af-display); border: 2px solid #4fe0d2; box-shadow: 0 0 0 4px rgba(79, 224, 210, 0.2); }
+:deep(.tm-station) { display: grid; place-items: center; border-radius: 10px; background: var(--af-deep); color: var(--af-glow-c); font: 700 10px var(--af-display); border: 2px solid var(--af-glow-c); box-shadow: 0 0 0 4px rgba(var(--af-glow-rgb), 0.2); }
 :deep(.tm-stop span) { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: #fff; font: 800 13px var(--af-font); border: 2px solid #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); }
 </style>

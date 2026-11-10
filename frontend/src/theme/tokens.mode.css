@@ -27,6 +27,7 @@
   --af-shadow-2: 0 2px 4px rgba(var(--af-shadow-rgb), 0.04), 0 8px 24px rgba(var(--af-shadow-rgb), 0.07);
   --af-shadow-3: 0 4px 10px rgba(var(--af-shadow-rgb), 0.06), 0 24px 56px rgba(var(--af-shadow-rgb), 0.14);
   --af-glow: 0 8px 22px rgba(var(--af-brand-rgb), 0.24);
+  --af-panel-glow: 0 18px 40px -24px rgba(var(--af-brand-rgb), 0.18);
   --af-btn-sheen-top: rgba(255, 255, 255, 0.25);
   --af-btn-sheen-bottom: rgba(0, 0, 0, 0.18);
 
@@ -45,6 +46,10 @@
   --af-sun: #8a5600;
   --af-sun-tint: #fff3d9;
   --af-sun-glow: #ffd58a;       /* decorative (never text) */
+  --af-sun-rgb: 255, 213, 138;
+  --af-on-sun: #2b1a00;         /* text on a gold avatar */
+  --af-on-sun-soft: #f5e3bf;    /* soft text on the money tank */
+  --af-tank-sun-scrim: rgba(20, 16, 4, 0.45);
   /* Liquid fills for money / warning / danger meters (same in both modes) */
   --af-sun-liquid-hi: #ffe0a8;    --af-sun-liquid: #ffb454;    --af-sun-liquid-deep: #c47a12;
   --af-danger-liquid-hi: #ffc2b8; --af-danger-liquid: #ff8a7a; --af-danger-liquid-deep: #b42318;
@@ -68,19 +73,20 @@
 [data-brand][data-theme='dark'] {
   color-scheme: dark;
 
-  --af-surface: color-mix(in srgb, var(--af-surface-solid) 62%, transparent);
+  --af-surface: color-mix(in srgb, var(--af-surface-solid) 66%, transparent);
   --af-surface-2: rgba(255, 255, 255, 0.055);
   --af-surface-3: rgba(255, 255, 255, 0.1);
   --af-line: rgba(var(--af-tint-rgb), 0.15);
   --af-line-strong: rgba(var(--af-tint-rgb), 0.28);
-  --af-glass-edge: rgba(255, 255, 255, 0.1);
-  --af-glass-sheen: rgba(255, 255, 255, 0.04);
-  --af-scrim: rgba(0, 0, 0, 0.55);
+  --af-glass-edge: rgba(255, 255, 255, 0.12);
+  --af-glass-sheen: rgba(255, 255, 255, 0.05);
+  --af-scrim: rgba(0, 0, 0, 0.6);
 
   --af-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35);
   --af-shadow-2: 0 2px 6px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.35);
   --af-shadow-3: 0 6px 16px rgba(0, 0, 0, 0.35), 0 28px 64px rgba(0, 0, 0, 0.55);
   --af-glow: 0 0 0 6px rgba(var(--af-brand-rgb), 0.1), 0 10px 30px rgba(var(--af-brand-rgb), 0.22);
+  --af-panel-glow: 0 0 0 1px rgba(var(--af-brand-rgb), 0.05), 0 30px 60px -30px rgba(var(--af-brand-rgb), 0.2);
   --af-btn-sheen-top: rgba(255, 255, 255, 0.55);
   --af-btn-sheen-bottom: rgba(0, 0, 0, 0.12);
 
@@ -201,6 +207,7 @@
    Aliases are re-declared because var() resolves where it is written.
    ===================================================================== */
 .af-deep-scope {
+  --af-panel-glow: 0 0 0 0 transparent;
   --af-surface: rgba(255, 255, 255, 0.05);
   --af-surface-2: rgba(255, 255, 255, 0.08);
   --af-surface-3: rgba(255, 255, 255, 0.12);

@@ -38,6 +38,7 @@ import '@ionic/vue/css/display.css'
 import './theme/variables.css'
 import './theme/global.css'
 import './theme/tailwind.css' // Tailwind utilities (no reset), added by the team
+import './theme/leaflet.css'  // maps dressed in the theme
 
 // Set light/dark before anything shows, so there's no flash
 initTheme()

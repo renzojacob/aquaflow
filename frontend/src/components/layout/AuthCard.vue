@@ -1,7 +1,9 @@
 <!--
   Shared frame for Login, Register and Forgot password screens.
-  A full underwater scene: sun rays, light net, rising particles, and a glowing
-  5-gallon container gently floating. The form sits on a frosted-glass panel.
+  The signature scene: a gradient mesh that breathes, light rays and a caustic net from the
+  backdrop, three layered waves rolling at the horizon, and a glowing 5-gallon container
+  floating above them. Every color is a theme token, so Ocean, Forest and Sunset each get
+  their own sky. The form sits on a frosted-glass panel.
   Phone: scene on top, glass sheet below. Desktop (>= 992px): scene fills the screen,
   glass panel floats on the right.
 -->
@@ -22,6 +24,14 @@ defineProps({
     <ion-content>
       <div class="af-auth">
         <OceanBackdrop intense />
+        <!-- gradient mesh: three soft lights that drift -->
+        <div class="af-auth__mesh" aria-hidden="true"><i></i><i></i><i></i></div>
+        <!-- the horizon: three waves -->
+        <svg class="af-auth__waves" viewBox="0 0 1440 320" preserveAspectRatio="none" aria-hidden="true">
+          <path class="w w1" d="M0 160c120-40 240-40 360 0s240 40 360 0 240-40 360 0 240 40 360 0 120-20 240-20V320H0Z" />
+          <path class="w w2" d="M0 200c120-40 240-40 360 0s240 40 360 0 240-40 360 0 240 40 360 0 120-20 240-20V320H0Z" />
+          <path class="w w3" d="M0 240c120-40 240-40 360 0s240 40 360 0 240-40 360 0 240 40 360 0 120-20 240-20V320H0Z" />
+        </svg>
 
         <!-- Brand scene (decoration only; the form below has its own title) -->
         <section class="af-auth__brand" aria-hidden="true">
@@ -29,7 +39,7 @@ defineProps({
 
           <div class="af-auth__stage">
             <div class="af-auth__pitch">
-              <p class="af-auth__eyebrow">Water refills for Calapan City</p>
+              <p class="af-auth__eyebrow af-eyebrow">Water refills for Calapan City</p>
               <p class="af-auth__big af-shimmer">Water before you run out.</p>
               <p class="af-auth__small">Order 5-gallon refills in seconds. Watch your rider come to you. Pay cash at your door.</p>
             </div>
@@ -73,6 +83,23 @@ defineProps({
   isolation: isolate;
 }
 
+/* ---------- Gradient mesh ---------- */
+.af-auth__mesh { position: absolute; inset: 0; z-index: 0; pointer-events: none; filter: blur(40px) saturate(130%); opacity: 0.9; }
+.af-auth__mesh i { position: absolute; border-radius: 50%; width: 60vmax; height: 60vmax; will-change: transform; }
+.af-auth__mesh i:nth-child(1) { left: -20vmax; top: -25vmax; background: radial-gradient(closest-side, rgba(var(--af-brand-rgb), 0.45), transparent); animation: af-mesh-a 22s ease-in-out infinite alternate; }
+.af-auth__mesh i:nth-child(2) { right: -25vmax; top: -10vmax; background: radial-gradient(closest-side, rgba(var(--af-accent-rgb), 0.38), transparent); animation: af-mesh-b 26s ease-in-out infinite alternate; }
+.af-auth__mesh i:nth-child(3) { left: 10vmax; bottom: -35vmax; background: radial-gradient(closest-side, rgba(var(--af-liquid-rgb), 0.4), transparent); animation: af-mesh-a 30s ease-in-out infinite alternate-reverse; }
+@keyframes af-mesh-a { to { transform: translate(10vmax, 8vmax) scale(1.15); } }
+@keyframes af-mesh-b { to { transform: translate(-12vmax, 10vmax) scale(0.9); } }
+
+/* ---------- Waves at the horizon ---------- */
+.af-auth__waves { position: absolute; left: -10%; right: -10%; bottom: -2px; width: 120%; height: 34%; z-index: 0; pointer-events: none; }
+.af-auth__waves .w { fill: var(--af-liquid); transform-origin: center bottom; }
+.af-auth__waves .w1 { opacity: 0.16; animation: af-wave-x 14s ease-in-out infinite alternate; }
+.af-auth__waves .w2 { opacity: 0.26; animation: af-wave-x 10s ease-in-out infinite alternate-reverse; }
+.af-auth__waves .w3 { fill: var(--af-liquid-deep); opacity: 0.42; animation: af-wave-x 8s ease-in-out infinite alternate; }
+@keyframes af-wave-x { to { transform: translateX(-6%); } }
+
 /* ---------- Brand scene ---------- */
 .af-auth__brand {
   position: relative;
@@ -85,18 +112,12 @@ defineProps({
 .af-auth__logo { animation: af-in var(--af-dur-3) var(--af-ease-out) both; }
 .af-auth__stage { display: flex; align-items: center; justify-content: space-between; gap: var(--af-s3); }
 .af-auth__pitch { min-width: 0; animation: af-in 600ms var(--af-ease-out) 80ms both; }
-.af-auth__eyebrow {
-  display: none;
-  margin: 0 0 var(--af-s4);
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--af-primary);
-}
+.af-auth__eyebrow { display: none; margin: 0 0 var(--af-s4); }
 .af-auth__big {
   margin: 0;
   font-family: var(--af-display);
-  font-size: 30px;
-  line-height: 1.04;
+  font-size: 32px;
+  line-height: 1.02;
   font-weight: 700;
   letter-spacing: -0.04em;
   text-wrap: balance;
@@ -105,12 +126,12 @@ defineProps({
 
 /* The floating container */
 .af-auth__jug { position: relative; flex: none; display: grid; place-items: center; width: 96px; animation: af-in 700ms var(--af-ease-out) 160ms both; }
-.af-auth__jugsvg { width: 84px; height: auto; position: relative; z-index: 1; animation: af-float 6s ease-in-out infinite; filter: drop-shadow(0 18px 30px rgba(2, 18, 26, 0.45)) drop-shadow(0 0 22px rgba(79, 224, 210, 0.35)); }
+.af-auth__jugsvg { width: 84px; height: auto; position: relative; z-index: 1; animation: af-float 6s ease-in-out infinite; filter: drop-shadow(0 18px 30px rgba(var(--af-deep-rgb), 0.45)) drop-shadow(0 0 22px rgba(var(--af-liquid-rgb), 0.45)); }
 .af-auth__halo {
   position: absolute;
   inset: -30%;
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(79, 224, 210, 0.35), transparent 70%);
+  background: radial-gradient(closest-side, rgba(var(--af-liquid-rgb), 0.38), transparent 70%);
   animation: af-pulse 6s ease-in-out infinite;
 }
 .af-auth__ripple {
@@ -120,7 +141,7 @@ defineProps({
   width: 120%;
   height: 22px;
   border-radius: 50%;
-  border: 1.5px solid color-mix(in srgb, var(--af-primary) 55%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--af-liquid) 55%, transparent);
   transform: translateX(-50%) scale(0.5);
   opacity: 0;
   animation: af-ripple-out 4s var(--af-ease-out) infinite;
@@ -152,11 +173,11 @@ defineProps({
   padding: var(--af-s6) var(--af-s5);
   border-radius: var(--af-r-lg);
   background:
-    linear-gradient(180deg, color-mix(in srgb, #ffffff 7%, transparent) 0%, transparent 30%),
+    linear-gradient(180deg, var(--af-glass-sheen) 0%, transparent 30%),
     var(--af-surface);
   backdrop-filter: blur(28px) saturate(160%);
   -webkit-backdrop-filter: blur(28px) saturate(160%);
-  box-shadow: inset 0 1px 0 var(--af-glass-edge), 0 40px 80px rgba(2, 18, 26, 0.35);
+  box-shadow: inset 0 1px 0 var(--af-glass-edge), 0 40px 80px rgba(var(--af-deep-rgb), 0.35);
   animation: af-in 500ms var(--af-ease-out) 140ms both;
 }
 .af-auth__inner header { display: grid; gap: var(--af-s2); }
@@ -171,6 +192,7 @@ defineProps({
 /* ---------- Desktop: cinematic split ---------- */
 @media (min-width: 992px) {
   .af-auth { flex-direction: row; min-height: 100vh; }
+  .af-auth__waves { height: 42%; }
   .af-auth__brand {
     flex: 1 1 56%;
     justify-content: space-between;
@@ -178,7 +200,7 @@ defineProps({
   }
   .af-auth__stage { flex-direction: row; align-items: center; gap: var(--af-s6); }
   .af-auth__eyebrow, .af-auth__small { display: block; }
-  .af-auth__big { font-size: clamp(48px, 5vw, 76px); }
+  .af-auth__big { font-size: clamp(52px, 5.4vw, 84px); }
   .af-auth__jug { width: clamp(180px, 18vw, 260px); }
   .af-auth__jugsvg { width: 100%; }
   .af-auth__ripple { bottom: -14px; height: 40px; }
@@ -196,12 +218,13 @@ defineProps({
     gap: 4px;
     padding: var(--af-s4);
     border-radius: var(--af-r-md);
-    background: var(--af-surface-2);
+    background: var(--af-surface);
     border: 1px solid var(--af-line);
+    box-shadow: inset 0 1px 0 var(--af-glass-edge);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
-  .af-auth__facts b { font-family: var(--af-display); font-size: 24px; font-weight: 600; color: var(--af-primary); letter-spacing: -0.02em; }
+  .af-auth__facts b { font-family: var(--af-display); font-size: 24px; font-weight: 600; color: var(--af-brand); letter-spacing: -0.02em; }
   .af-auth__facts span { font-size: 13px; color: var(--af-ink-2); }
 
   .af-auth__panel {
@@ -212,5 +235,9 @@ defineProps({
   }
   .af-auth__inner { padding: var(--af-s7) var(--af-s6); }
   .af-auth__title { font-size: 34px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .af-auth__mesh i, .af-auth__waves .w { animation: none; }
 }
 </style>

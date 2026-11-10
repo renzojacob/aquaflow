@@ -9,6 +9,7 @@ import { onBeforeUnmount, onMounted, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { ref } from 'vue'
+import { mapColors } from '@/theme/mapTheme'
 
 const props = defineProps({
   modelValue: { type: Object, required: true },        // { lat, lng }
@@ -27,8 +28,8 @@ function drawDots() {
   dots.clearLayers()
   for (const b of props.barangays) {
     L.circleMarker([b.lat, b.lng], {
-      radius: 6, weight: 2, color: b.served ? '#007067' : '#7a8a90',
-      fillColor: b.served ? '#4fe0d2' : '#ffffff', fillOpacity: b.served ? 0.9 : 0.5,
+      radius: 6, weight: 2, color: b.served ? mapColors().path : mapColors().muted,
+      fillColor: b.served ? mapColors().glow : mapColors().surface, fillOpacity: b.served ? 0.9 : 0.5,
     }).bindTooltip(`${b.name}${b.served ? '' : ' (not served)'}`).addTo(dots)
   }
 }
@@ -40,7 +41,7 @@ onMounted(() => {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   }).addTo(map)
-  circle = L.circle([c.lat, c.lng], { radius: props.radiusKm * 1000, color: '#1AA6B5', weight: 2, dashArray: '6 6', fillColor: '#4FE0D2', fillOpacity: 0.08, interactive: false }).addTo(map)
+  circle = L.circle([c.lat, c.lng], { radius: props.radiusKm * 1000, color: mapColors().route, weight: 2, dashArray: '6 6', fillColor: mapColors().glow, fillOpacity: 0.08, interactive: false }).addTo(map)
   marker = L.marker([c.lat, c.lng], { icon, draggable: true, title: 'Station' }).addTo(map)
   dots = L.layerGroup().addTo(map)
   drawDots()
@@ -66,6 +67,5 @@ onBeforeUnmount(() => { ro?.disconnect(); map?.remove() })
 <style scoped>
 .am { border-radius: var(--af-r-md); overflow: hidden; border: 1px solid var(--af-line); isolation: isolate; }
 .am__map { width: 100%; height: 100%; background: var(--af-surface-2); }
-:global([data-theme='dark']) .am__map :deep(.leaflet-tile-pane) { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.6); }
-:deep(.am-station) { display: grid; place-items: center; border-radius: 11px; background: #02121a; color: #4fe0d2; font: 700 11px var(--af-display); border: 2px solid #4fe0d2; box-shadow: 0 0 0 5px rgba(79, 224, 210, 0.22); cursor: grab; }
+:deep(.am-station) { display: grid; place-items: center; border-radius: 11px; background: var(--af-deep); color: var(--af-glow-c); font: 700 11px var(--af-display); border: 2px solid var(--af-glow-c); box-shadow: 0 0 0 5px rgba(var(--af-glow-rgb), 0.22); cursor: grab; }
 </style>

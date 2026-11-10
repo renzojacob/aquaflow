@@ -34,7 +34,7 @@ const tel = computed(() => (props.rider.phone ? props.rider.phone.replace(/\s+/g
 
 <style scoped>
 .rc { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 22px; background: var(--af-surface); border: 1px solid var(--af-line); box-shadow: inset 0 1px 0 var(--af-glass-edge); }
-.rc__avatar { width: 50px; height: 50px; flex: none; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(140deg, #b9b4ff 0%, #4fe0d2 100%); color: #04161d; font-weight: 800; font-size: 16px; box-shadow: 0 0 0 3px var(--af-surface-solid), 0 0 0 4px color-mix(in srgb, var(--af-primary) 45%, transparent); }
+.rc__avatar { width: 50px; height: 50px; flex: none; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(140deg, var(--af-accent-on-deep) 0%, var(--af-glow-c) 100%); color: var(--af-on-glow); font-weight: 800; font-size: 16px; box-shadow: 0 0 0 3px var(--af-surface-solid), 0 0 0 4px color-mix(in srgb, var(--af-primary) 45%, transparent); }
 .rc__info { min-width: 0; flex: 1; display: grid; gap: 3px; }
 .rc__name { font-size: 16px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rc__line { display: flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 650; color: var(--af-ink-2); }

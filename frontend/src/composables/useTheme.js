@@ -7,7 +7,7 @@ import { computed, ref } from 'vue'
 export const KEY = 'aquaflow.theme'
 
 export const BRANDS = Object.freeze([
-  { id: 'ocean', name: 'Ocean', tagline: 'Deep blues, aqua light', swatch: ['#052c35', '#007067', '#4fe0d2'] },
+  { id: 'ocean', name: 'Ocean', tagline: 'Deep blues, aqua light', swatch: ['#0a1a3f', '#0b5bd3', '#38e1ff'] },
   { id: 'forest', name: 'Forest', tagline: 'Pine green, fresh mint', swatch: ['#06281f', '#1b7a4a', '#5ee6a8'] },
   { id: 'sunset', name: 'Sunset', tagline: 'Warm coral, soft violet', swatch: ['#2a1230', '#c2410c', '#ff9b7a'] },
 ])
@@ -19,7 +19,7 @@ export const MODES = Object.freeze([
 
 const BRAND_IDS = BRANDS.map((b) => b.id)
 export const DEFAULT_BRAND = 'ocean'
-export const DEFAULT_MODE = 'auto'
+export const DEFAULT_MODE = 'dark'
 
 const media = window.matchMedia('(prefers-color-scheme: dark)')
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)')

@@ -109,10 +109,10 @@
   --af-liquid-hi: #ffc4a8;
   --af-liquid-rgb: 255, 155, 122;
 
-  --af-bg: #140a11;
-  --af-bg-rgb: 20, 10, 17;
-  --af-bg-solid: #1e1019;
-  --af-surface-solid: #27151f;
+  --af-bg: #0e060b;
+  --af-bg-rgb: 14, 6, 11;
+  --af-bg-solid: #170b12;
+  --af-surface-solid: #22101a;
   --af-ink: #fbeee8;
   --af-ink-rgb: 251, 238, 232;
   --af-ink-2: #c3a39a;
@@ -121,15 +121,15 @@
   --af-shadow-rgb: 0, 0, 0;
   --af-focus: #ffc4a8;
 
-  --af-deep: #140811;
-  --af-deep-2: #27151f;
-  --af-deep-rgb: 20, 8, 17;
+  --af-deep: #0e060b;
+  --af-deep-2: #22101a;
+  --af-deep-rgb: 14, 6, 11;
   --af-deep-line: #4a2436;
   --af-caustic-opacity: 0.16;
 
-  --af-bd-top: #3a1430;
-  --af-bd-mid: #1c0c18;
-  --af-bd-bot: #0c0509;
+  --af-bd-top: #33122b;
+  --af-bd-mid: #180a14;
+  --af-bd-bot: #090407;
   --af-bd-glow: #5a1e3a;
   --af-aur-1: rgba(255, 155, 122, 0.22);
   --af-aur-2: rgba(196, 181, 253, 0.16);
@@ -151,5 +151,5 @@
   --af-map-stop-ring: #c4b5fd;
   --af-map-tile-filter: invert(1) hue-rotate(200deg) brightness(0.85) contrast(0.9) saturate(0.5) sepia(0.2);
 
-  --af-meta-color: #1e1019;
+  --af-meta-color: #170b12;
 }

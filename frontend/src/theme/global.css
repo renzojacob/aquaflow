@@ -58,6 +58,18 @@ html.af-theming *::after {
 /* ---------- Helpers ---------- */
 .af-num { font-variant-numeric: tabular-nums; }     /* numbers line up in columns */
 .af-muted { color: var(--af-ink-2); }
+/* Small uppercase label above a heading (mono, brand colored) */
+.af-eyebrow { font-family: var(--af-mono); font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--af-brand); }
+
+/* Themed scrollbars (desktop) */
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--af-ink-2) 45%, transparent) transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--af-ink-2) 40%, transparent); border-radius: 999px; border: 3px solid transparent; background-clip: padding-box; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* Every tappable thing gives a little under the finger */
+button:not(:disabled), [role='button']:not([aria-disabled='true']), a[href] { -webkit-tap-highlight-color: transparent; }
+.af-press:active, .af-card:is(button, a):active, .af-chip:active { transform: scale(0.98); }
 
 .af-card {
   position: relative;
@@ -152,12 +164,18 @@ html.af-theming *::after {
   .af-container { padding-bottom: calc(var(--af-s8) + 56px); }
 }
 
-/* Pages don't slide in section by section: the tank's rising water is the one entrance moment.
-   af-rise is kept for things that appear because the person did something (new rows, sheets). */
+/* Entrance: each section of a page rises into place, one after another (short and soft).
+   Lists can add .af-stagger to their wrapper to do the same for their rows. */
 @keyframes af-rise {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: none; }
 }
+.af-container > *, .af-stagger > * { animation: af-rise var(--af-dur-4) var(--af-ease-out) both; }
+.af-container > :nth-child(2), .af-stagger > :nth-child(2) { animation-delay: 50ms; }
+.af-container > :nth-child(3), .af-stagger > :nth-child(3) { animation-delay: 100ms; }
+.af-container > :nth-child(4), .af-stagger > :nth-child(4) { animation-delay: 150ms; }
+.af-container > :nth-child(5), .af-stagger > :nth-child(5) { animation-delay: 200ms; }
+.af-container > :nth-child(n + 6), .af-stagger > :nth-child(n + 6) { animation-delay: 250ms; }
 
 /* ---------- Dashboard layout ---------- */
 .af-dash { max-width: var(--af-dash); gap: 20px; }
@@ -194,9 +212,11 @@ html.af-theming *::after {
   min-width: 0;
   padding: 22px;
   border-radius: 24px;
-  background: var(--af-surface);
+  background:
+    linear-gradient(180deg, var(--af-glass-sheen) 0%, transparent 38%),
+    var(--af-surface);
   border: 1px solid var(--af-line);
-  box-shadow: inset 0 1px 0 var(--af-glass-edge), var(--af-shadow-2);
+  box-shadow: inset 0 1px 0 var(--af-glass-edge), var(--af-shadow-2), var(--af-panel-glow);
   backdrop-filter: var(--af-glass-blur);
   -webkit-backdrop-filter: var(--af-glass-blur);
 }
@@ -250,6 +270,10 @@ ion-title {
   font-weight: 600;
   letter-spacing: -0.01em;
 }
+ion-header ion-toolbar {
+  --padding-top: 6px;
+  --padding-bottom: 2px;
+}
 ion-back-button { --color: var(--af-primary); font-weight: 700; }
 ion-back-button::part(text) { text-transform: none; letter-spacing: 0; font-family: var(--af-font); font-weight: 750; }
 ion-content { --background: transparent; }
@@ -268,7 +292,10 @@ ion-modal::part(handle) { background: var(--af-line-strong); width: 44px; }
 
 /* Toasts: floating pill */
 ion-toast {
-  --background: var(--af-surface-solid);
+  --background: var(--af-bg-solid);
+  --border-color: var(--af-line-strong);
+  --border-style: solid;
+  --border-width: 1px;
   --color: var(--af-ink);
   --border-radius: 18px;
   --box-shadow: var(--af-shadow-3);

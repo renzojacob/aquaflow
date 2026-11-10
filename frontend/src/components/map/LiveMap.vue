@@ -11,6 +11,7 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { mapColors, pinSvg } from '@/theme/mapTheme'
 
 const props = defineProps({
   station: { type: Object, default: null },
@@ -40,7 +41,7 @@ const stopIcon = (s) =>
   L.divIcon({
     className: `lm-stop${s.mine ? ' lm-stop--mine' : ''}`,
     html: s.mine
-      ? '<svg width="36" height="46" viewBox="0 0 34 44"><path d="M17 1C8.2 1 1 8 1 16.7 1 28.5 17 43 17 43s16-14.5 16-26.3C33 8 25.8 1 17 1Z" fill="#02121A" stroke="#4FE0D2" stroke-width="2"/><path d="M17 8.5c3.2 4 5.6 7.1 5.6 10a5.6 5.6 0 1 1-11.2 0c0-2.9 2.4-6 5.6-10Z" fill="#4FE0D2"/></svg>'
+      ? pinSvg(36, 46)
       : `<span>${s.seq ?? ''}</span>`,
     iconSize: s.mine ? [36, 46] : [30, 30],
     iconAnchor: s.mine ? [18, 45] : [15, 15],
@@ -61,7 +62,7 @@ function drawStops() {
 function drawRoad() {
   road?.remove()
   road = props.route?.length > 1
-    ? L.polyline(props.route, { color: '#1AA6B5', weight: 5, opacity: 0.75, lineJoin: 'round', interactive: false }).addTo(map)
+    ? L.polyline(props.route, { color: mapColors().route, weight: 5, opacity: 0.75, lineJoin: 'round', interactive: false }).addTo(map)
     : null
 }
 
@@ -70,7 +71,7 @@ function drawLine(from) {
   const ahead = road ? props.stops.slice(0, 1) : props.stops
   const pts = [from ? [from.lat, from.lng] : null, ...ahead.map((s) => [s.lat, s.lng])].filter(Boolean)
   if (line) line.setLatLngs(pts)
-  else line = L.polyline(pts, { color: '#4FE0D2', weight: 3, opacity: 0.85, dashArray: '2 9', lineCap: 'round' }).addTo(map)
+  else line = L.polyline(pts, { color: mapColors().path, weight: 3, opacity: 0.85, dashArray: '2 9', lineCap: 'round' }).addTo(map)
 }
 
 function fit() {
@@ -155,15 +156,13 @@ onBeforeUnmount(() => {
 <style scoped>
 .lm { position: relative; border-radius: inherit; overflow: hidden; isolation: isolate; }
 .lm__map { width: 100%; height: 100%; background: var(--af-surface-2); }
-:global([data-theme='dark']) .lm__map :deep(.leaflet-tile-pane) { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.6); }
-:deep(.leaflet-container) { font-family: var(--af-font); }
-:deep(.lm-station) { display: grid; place-items: center; border-radius: 10px; background: #02121a; color: #4fe0d2; font: 700 10px var(--af-display); border: 2px solid #4fe0d2; box-shadow: 0 0 0 4px rgba(79, 224, 210, 0.2); }
-:deep(.lm-stop) { display: grid; place-items: center; border-radius: 50%; background: #02121a; color: #e6f4f6; font: 800 13px var(--af-font); border: 2px solid #b9b4ff; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35); }
-:deep(.lm-stop--mine) { background: none; border: 0; border-radius: 0; box-shadow: none; filter: drop-shadow(0 4px 8px rgba(2, 18, 26, 0.45)) drop-shadow(0 0 6px rgba(79, 224, 210, 0.45)); }
+:deep(.lm-station) { display: grid; place-items: center; border-radius: 10px; background: var(--af-deep); color: var(--af-glow-c); font: 700 10px var(--af-display); border: 2px solid var(--af-glow-c); box-shadow: 0 0 0 4px rgba(var(--af-glow-rgb), 0.2); }
+:deep(.lm-stop) { display: grid; place-items: center; border-radius: 50%; background: var(--af-deep); color: var(--af-on-deep); font: 800 13px var(--af-font); border: 2px solid var(--af-map-stop-ring); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35); }
+:deep(.lm-stop--mine) { background: none; border: 0; border-radius: 0; box-shadow: none; filter: drop-shadow(0 4px 8px rgba(var(--af-deep-rgb), 0.45)) drop-shadow(0 0 6px rgba(var(--af-glow-rgb), 0.45)); }
 :deep(.lm-rider) { position: relative; }
-:deep(.lm-rider__pulse) { position: absolute; inset: 0; border-radius: 50%; background: rgba(79, 224, 210, 0.25); animation: lm-pulse 2s ease-out infinite; }
-:deep(.lm-rider__dot) { position: absolute; inset: 7px; display: grid; place-items: center; border-radius: 50%; background: #4fe0d2; color: #022320; border: 3px solid #ffffff; box-shadow: 0 4px 14px rgba(2, 18, 26, 0.45); }
-:deep(.lm-rider__dot.is-sim) { background: #b9b4ff; }
+:deep(.lm-rider__pulse) { position: absolute; inset: 0; border-radius: 50%; background: rgba(var(--af-glow-rgb), 0.25); animation: lm-pulse 2s ease-out infinite; }
+:deep(.lm-rider__dot) { position: absolute; inset: 7px; display: grid; place-items: center; border-radius: 50%; background: var(--af-glow-c); color: var(--af-on-glow); border: 3px solid var(--af-surface-solid); box-shadow: 0 4px 14px rgba(var(--af-deep-rgb), 0.45); }
+:deep(.lm-rider__dot.is-sim) { background: var(--af-accent-on-deep); }
 @keyframes lm-pulse { 0% { transform: scale(0.6); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { :deep(.lm-rider__pulse) { animation: none; } }
 </style>

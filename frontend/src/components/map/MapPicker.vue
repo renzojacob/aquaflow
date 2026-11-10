@@ -10,6 +10,7 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { mapColors, pinSvg } from '@/theme/mapTheme'
 
 const props = defineProps({
   modelValue: { type: Object, default: null }, // { lat, lng } or null
@@ -30,12 +31,7 @@ let resizeObserver = null
 const CALAPAN = { lat: 13.4108, lng: 121.1792 }
 
 // Pins drawn with HTML instead of image files (avoids Leaflet's broken-icon problem with Vite)
-const pinIcon = L.divIcon({
-  className: 'af-map-pin',
-  html: '<svg width="34" height="44" viewBox="0 0 34 44" aria-hidden="true"><path d="M17 1C8.2 1 1 8 1 16.7 1 28.5 17 43 17 43s16-14.5 16-26.3C33 8 25.8 1 17 1Z" fill="#02121A" stroke="#4FE0D2" stroke-width="2"/><path d="M17 8.5c3.2 4 5.6 7.1 5.6 10a5.6 5.6 0 1 1-11.2 0c0-2.9 2.4-6 5.6-10Z" fill="#4FE0D2"/></svg>',
-  iconSize: [34, 44],
-  iconAnchor: [17, 43],
-})
+const pinIcon = () => L.divIcon({ className: 'af-map-pin', html: pinSvg(), iconSize: [34, 44], iconAnchor: [17, 43] })
 const stationIcon = L.divIcon({
   className: 'af-map-station',
   html: '<span>AF</span>',
@@ -49,7 +45,7 @@ const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 
 function setPin(latlng, notify) {
   if (!pin) {
-    pin = L.marker(latlng, { icon: pinIcon, draggable: !props.readonly, keyboard: !props.readonly, title: 'Delivery pin' }).addTo(map)
+    pin = L.marker(latlng, { icon: pinIcon(), draggable: !props.readonly, keyboard: !props.readonly, title: 'Delivery pin' }).addTo(map)
     pin.on('dragend', () => {
       const p = pin.getLatLng()
       emit('update:modelValue', { lat: round(p.lat), lng: round(p.lng) })
@@ -82,10 +78,10 @@ onMounted(() => {
     if (props.radiusKm > 0) {
       L.circle([props.station.lat, props.station.lng], {
         radius: props.radiusKm * 1000,
-        color: '#1AA6B5',
+        color: mapColors().route,
         weight: 1.5,
         dashArray: '6 6',
-        fillColor: '#4FE0D2',
+        fillColor: mapColors().glow,
         fillOpacity: 0.06,
         interactive: false,
       }).addTo(map)
@@ -136,8 +132,6 @@ onBeforeUnmount(() => {
 /* Fill the box with width/height, not position: Leaflet may set its own position
    on the element (it does when it measures before styles load, e.g. inside a modal). */
 .af-map { width: 100%; height: 100%; background: var(--af-surface-2); }
-/* Dark theme: recolor the light map instead of loading a second (paid) dark map */
-:global([data-theme='dark']) .af-map :deep(.leaflet-tile-pane) { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.6); }
 .af-map__hint {
   position: absolute;
   left: 50%;
@@ -147,26 +141,24 @@ onBeforeUnmount(() => {
   margin: 0;
   padding: 10px 16px;
   border-radius: var(--af-r-pill);
-  background: rgba(2, 18, 26, 0.88);
-  color: #e6f4f6;
-  border: 1px solid rgba(79, 224, 210, 0.3);
+  background: color-mix(in srgb, var(--af-deep) 88%, transparent);
+  color: var(--af-on-deep);
+  border: 1px solid rgba(var(--af-glow-rgb), 0.3);
   font-size: 13px;
   font-weight: 750;
   pointer-events: none;
   white-space: nowrap;
   backdrop-filter: blur(8px);
 }
-:deep(.af-map-pin) { background: none; border: 0; filter: drop-shadow(0 4px 8px rgba(2, 18, 26, 0.45)) drop-shadow(0 0 6px rgba(79, 224, 210, 0.45)); }
+:deep(.af-map-pin) { background: none; border: 0; filter: drop-shadow(0 4px 8px rgba(var(--af-deep-rgb), 0.45)) drop-shadow(0 0 6px rgba(var(--af-glow-rgb), 0.45)); }
 :deep(.af-map-station) {
   display: grid;
   place-items: center;
   border-radius: 10px;
-  background: #02121a;
-  color: #4fe0d2;
+  background: var(--af-deep);
+  color: var(--af-glow-c);
   font: 700 10px var(--af-display);
-  border: 2px solid #4fe0d2;
-  box-shadow: 0 0 0 4px rgba(79, 224, 210, 0.2), 0 4px 10px rgba(0, 0, 0, 0.35);
+  border: 2px solid var(--af-glow-c);
+  box-shadow: 0 0 0 4px rgba(var(--af-glow-rgb), 0.2), 0 4px 10px rgba(0, 0, 0, 0.35);
 }
-:deep(.leaflet-container) { font-family: var(--af-font); }
-:deep(.leaflet-control-zoom a) { color: #02121a; }
 </style>

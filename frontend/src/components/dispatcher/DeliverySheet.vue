@@ -134,7 +134,7 @@ function submit() {
   cursor: pointer;
 }
 .rider[aria-checked='true'] { border-color: var(--af-primary); background: var(--af-primary-tint); }
-.rider__av { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(140deg, #b9b4ff, #4fe0d2); color: #04161d; font-weight: 800; }
+.rider__av { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(140deg, var(--af-accent-on-deep), var(--af-glow-c)); color: var(--af-on-glow); font-weight: 800; }
 .rider__av--none { background: var(--af-surface-3); color: var(--af-ink-2); font-size: 20px; }
 .rider__text { display: grid; gap: 2px; }
 .rider__text b { font-size: 15px; font-weight: 800; }

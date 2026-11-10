@@ -20,7 +20,7 @@
   --af-liquid-hi: #7ff0c4;
   --af-liquid-rgb: 53, 201, 154;
 
-  --af-bg: #e8f4ec;
+  --af-bg: #eaf6ee;
   --af-bg-rgb: 232, 244, 236;
   --af-bg-solid: #f2f9f4;
   --af-surface-solid: #ffffff;
@@ -109,10 +109,10 @@
   --af-liquid-hi: #a6f5cf;
   --af-liquid-rgb: 94, 230, 168;
 
-  --af-bg: #04150e;
-  --af-bg-rgb: 4, 21, 14;
-  --af-bg-solid: #07211a;
-  --af-surface-solid: #0a2a21;
+  --af-bg: #040c08;
+  --af-bg-rgb: 4, 12, 8;
+  --af-bg-solid: #071511;
+  --af-surface-solid: #0b1f18;
   --af-ink: #e6f6ee;
   --af-ink-rgb: 230, 246, 238;
   --af-ink-2: #8fbba6;
@@ -121,15 +121,15 @@
   --af-shadow-rgb: 0, 0, 0;
   --af-focus: #a6f5cf;
 
-  --af-deep: #03150f;
-  --af-deep-2: #0a2a21;
-  --af-deep-rgb: 3, 21, 15;
+  --af-deep: #030a07;
+  --af-deep-2: #0b1f18;
+  --af-deep-rgb: 3, 10, 7;
   --af-deep-line: #164b3a;
   --af-caustic-opacity: 0.18;
 
-  --af-bd-top: #072f22;
-  --af-bd-mid: #041a12;
-  --af-bd-bot: #020d09;
+  --af-bd-top: #072c20;
+  --af-bd-mid: #04140e;
+  --af-bd-bot: #020805;
   --af-bd-glow: #0e4a35;
   --af-aur-1: rgba(94, 230, 168, 0.2);
   --af-aur-2: rgba(60, 180, 120, 0.16);
@@ -151,5 +151,5 @@
   --af-map-stop-ring: #c6ec6a;
   --af-map-tile-filter: invert(1) hue-rotate(160deg) brightness(0.9) contrast(0.9) saturate(0.55);
 
-  --af-meta-color: #07211a;
+  --af-meta-color: #071511;
 }

@@ -1,0 +1,62 @@
+/* =====================================================================
+   Leaflet maps, dressed in the theme. Loaded once from main.js.
+   Tiles stay OpenStreetMap (free); dark/warm looks come from --af-map-tile-filter.
+   The attribution stays visible: it is the condition for using the tiles.
+   ===================================================================== */
+.leaflet-container {
+  font-family: var(--af-font);
+  background: var(--af-surface-2);
+}
+.leaflet-tile-pane { filter: var(--af-map-tile-filter, none); }
+
+/* Zoom buttons: small glass pills */
+.leaflet-bar {
+  border: 0 !important;
+  border-radius: 14px !important;
+  overflow: hidden;
+  box-shadow: var(--af-shadow-2) !important;
+}
+.leaflet-bar a {
+  width: 36px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  background: color-mix(in srgb, var(--af-surface-solid) 92%, transparent) !important;
+  color: var(--af-ink) !important;
+  border-bottom: 1px solid var(--af-line) !important;
+  font: 700 18px/36px var(--af-font) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.leaflet-bar a:hover { background: var(--af-surface-solid) !important; color: var(--af-brand) !important; }
+.leaflet-bar a:last-child { border-bottom: 0 !important; }
+.leaflet-bar a.leaflet-disabled { color: var(--af-ink-3) !important; }
+
+/* Attribution: legible on every look, never hidden */
+.leaflet-control-attribution {
+  background: color-mix(in srgb, var(--af-surface-solid) 85%, transparent) !important;
+  color: var(--af-ink-2) !important;
+  font: 600 10.5px var(--af-font) !important;
+  padding: 2px 8px !important;
+  border-radius: 10px 0 0 0;
+  backdrop-filter: blur(6px);
+}
+.leaflet-control-attribution a { color: var(--af-brand) !important; }
+
+/* Popups + tooltips: our cards */
+.leaflet-popup-content-wrapper,
+.leaflet-tooltip {
+  background: var(--af-surface-solid) !important;
+  color: var(--af-ink) !important;
+  border: 1px solid var(--af-line-strong) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--af-shadow-2) !important;
+  font: 650 13px/1.4 var(--af-font) !important;
+}
+.leaflet-popup-content { margin: 10px 14px !important; }
+.leaflet-popup-tip { background: var(--af-surface-solid) !important; box-shadow: none !important; }
+.leaflet-tooltip::before { border-color: transparent !important; }
+.leaflet-popup-close-button { color: var(--af-ink-2) !important; font-size: 18px !important; padding: 6px 8px 0 0 !important; }
+
+/* Our HTML markers */
+.leaflet-marker-icon.af-map-pin,
+.leaflet-marker-icon.lm-stop--mine { background: none; border: 0; }
