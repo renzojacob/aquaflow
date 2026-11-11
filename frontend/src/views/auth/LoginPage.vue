@@ -6,7 +6,7 @@ import { useIonRouter } from '@ionic/vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AuthCard from '@/components/layout/AuthCard.vue'
 import TextField from '@/components/form/TextField.vue'
-import { env } from '@/config/env'
+import { builtInApiBase, env, saveApiBase, savedApiBase } from '@/config/env'
 import { ROLE_LABEL } from '@/config/navigation'
 import { showToast } from '@/composables/useToast'
 import { resetMockDb } from '@/mocks/db'
@@ -52,6 +52,23 @@ function useDemo(account) {
   submit()
 }
 
+// Point the app at a different backend (for example the laptop's address on today's Wi-Fi).
+// Saved on this device only. Leave it empty to go back to the address built into the app.
+function changeServer() {
+  const answer = window.prompt(
+    `Server address, for example http://192.168.1.168:8000
+
+Leave it empty to use the built-in address (${builtInApiBase || 'this site'}).`,
+    savedApiBase() || env.apiBaseUrl,
+  )
+  if (answer === null) return // cancelled
+  if (!saveApiBase(answer)) {
+    formError.value = 'The server address must start with http:// or https://. Nothing was changed.'
+    return
+  }
+  window.location.reload() // the address is read once, when the app starts
+}
+
 function resetDemo() {
   resetMockDb()
   demos.value = demoAccounts()
@@ -72,6 +89,11 @@ function resetDemo() {
     </form>
 
     <p class="af-switch">New customer? <router-link to="/register" class="af-link">Create an account</router-link></p>
+
+    <p v-if="!env.useMock" class="af-switch af-server">
+      <button type="button" class="af-link" @click="changeServer">Server address</button>
+      <span class="af-server__now" :title="env.apiBaseUrl">{{ env.apiBaseUrl || 'this site' }}</span>
+    </p>
 
     <section v-if="env.useMock" class="af-demo" aria-labelledby="demo-title">
       <div class="af-demo__head">
@@ -108,6 +130,9 @@ function resetDemo() {
 .af-link { color: var(--af-primary); font-weight: 750; font-size: 14px; text-decoration: none; background: none; border: 0; padding: 4px 0; cursor: pointer; font-family: var(--af-font); text-underline-offset: 3px; }
 .af-link:hover { text-decoration: underline; }
 .af-switch { margin: 0; text-align: center; color: var(--af-ink-2); font-size: 14px; }
+.af-server { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 2px var(--af-s2); font-size: 12px; }
+.af-server .af-link { font-size: 13px; min-height: 44px; padding: 0 var(--af-s2); }
+.af-server__now { font-family: var(--af-mono); font-size: 12px; overflow-wrap: anywhere; }
 
 .af-demo { display: grid; gap: var(--af-s3); padding: var(--af-s4); border: 1px dashed var(--af-line-strong); border-radius: var(--af-r-md); background: color-mix(in srgb, var(--af-surface) 50%, transparent); }
 .af-demo__head { display: flex; justify-content: space-between; align-items: center; gap: var(--af-s2); flex-wrap: wrap; }
