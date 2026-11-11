@@ -146,6 +146,26 @@ button:not(:disabled), [role='button']:not([aria-disabled='true']), a[href] { -w
 :root[data-theme='dark'] .af-shimmer { --shimmer-base: #ffffff; --shimmer-hi: var(--af-glow-c-hi); }
 @keyframes af-shimmer-text { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
 
+/* ---------- Lighter effects: phones ---------- */
+@media (max-width: 991px) {
+  .af-shimmer {
+    animation: none;
+    background-position: 0 0;
+  }
+  body:has(.ion-page:not(.ion-page-hidden) .af-auth) .af-app-ocean {
+    display: none;
+  }
+}
+
+/* ...and the same lighter rules inside the installed Android app (any screen width) */
+html.af-native .af-shimmer {
+  animation: none;
+  background-position: 0 0;
+}
+html.af-native body:has(.ion-page:not(.ion-page-hidden) .af-auth) .af-app-ocean {
+  display: none;
+}
+
 /* Page content width + gutters (works from 360px phones to 1280px+ desktops) */
 .af-container {
   max-width: var(--af-container);

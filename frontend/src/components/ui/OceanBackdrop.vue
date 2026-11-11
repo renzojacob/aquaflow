@@ -147,4 +147,52 @@ const particles = [
 
 .af-ocean--intense .af-ocean__rays span { width: 12%; }
 .af-ocean--intense { --ray: var(--af-ray-intense); }
+
+/* ---------- Lighter backdrop: phones ---------- */
+@media (max-width: 991px) {
+  .af-ocean .af-ocean__rays {
+    display: none;
+  }
+  .af-ocean .af-ocean__grain {
+    display: none;
+  }
+  .af-ocean .af-ocean__aurora {
+    animation: none;
+    will-change: auto;
+  }
+  .af-ocean span.af-ocean__p:nth-of-type(n + 5) {
+    display: none;
+  }
+  .af-ocean .af-ocean__net :deep(.af-caustic__glow) {
+    display: none;
+  }
+  .af-ocean .af-ocean__net :deep(.af-caustic__net) {
+    animation: none;
+  }
+}
+</style>
+
+<style>
+/* ---------- Lighter backdrop: installed Android app (html.af-native) ----------
+   The same lighter rules as the phone block above, for any screen width inside the app.
+   A separate, unscoped block on purpose: :global() in a scoped block loses the descendant selectors. */
+html.af-native .af-ocean .af-ocean__rays {
+  display: none;
+}
+html.af-native .af-ocean .af-ocean__grain {
+  display: none;
+}
+html.af-native .af-ocean .af-ocean__aurora {
+  animation: none;
+  will-change: auto;
+}
+html.af-native .af-ocean span.af-ocean__p:nth-of-type(n + 5) {
+  display: none;
+}
+html.af-native .af-ocean .af-ocean__net .af-caustic__glow {
+  display: none;
+}
+html.af-native .af-ocean .af-ocean__net .af-caustic__net {
+  animation: none;
+}
 </style>

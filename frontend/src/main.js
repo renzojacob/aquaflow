@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { IonicVue } from '@ionic/vue'
+import { Capacitor } from '@capacitor/core'
 
 import App from './App.vue'
 import router from './router'
@@ -43,6 +44,9 @@ import './theme/leaflet.css'  // maps dressed in the theme
 // Set light/dark before anything shows, so there's no flash
 initTheme()
 initSpotlight()
+
+// Inside the installed Android app: lighter visual effects (see the html.af-native rules in the CSS)
+if (Capacitor.isNativePlatform()) document.documentElement.classList.add('af-native')
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
