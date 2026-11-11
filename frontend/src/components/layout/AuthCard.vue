@@ -237,7 +237,97 @@ defineProps({
   .af-auth__title { font-size: 34px; }
 }
 
+/* ---------- Lighter effects: phones ---------- */
+@media (max-width: 991px) {
+  .af-auth .af-auth__mesh {
+    filter: none;
+    opacity: 1;
+    background:
+    radial-gradient(circle 30vmax at 10vmax 5vmax, rgba(var(--af-brand-rgb), 0.45), transparent),
+    radial-gradient(circle 30vmax at calc(100% - 5vmax) 20vmax, rgba(var(--af-accent-rgb), 0.38), transparent),
+    radial-gradient(circle 30vmax at 40vmax calc(100% + 5vmax), rgba(var(--af-liquid-rgb), 0.4), transparent);
+  }
+  .af-auth .af-auth__mesh i {
+    display: none;
+    animation: none;
+    will-change: auto;
+  }
+  .af-auth .af-auth__inner {
+    background: linear-gradient(180deg, var(--af-glass-sheen) 0%, transparent 30%), var(--af-surface-solid);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: inset 0 1px 0 var(--af-glass-edge), 0 12px 28px rgba(var(--af-deep-rgb), 0.25);
+  }
+  .af-auth .af-auth__waves .w {
+    animation: none;
+  }
+  .af-auth .af-auth__halo {
+    animation: none;
+    opacity: 0.9;
+    box-shadow: 0 0 32px 6px rgba(var(--af-liquid-rgb), 0.2);
+  }
+  .af-auth .af-auth__ripple {
+    display: none;
+  }
+  .af-auth .af-auth__jugsvg {
+    filter: none;
+  }
+  .af-auth .af-auth__jugsvg :deep(.af-lf__wave),
+  .af-auth .af-auth__jugsvg :deep(.af-lf__bubble) {
+    animation: none;
+  }
+  .af-auth .af-auth__jugsvg :deep(.af-lf__bubble) {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .af-auth__mesh i, .af-auth__waves .w { animation: none; }
+}
+</style>
+
+<style>
+/* ---------- Lighter effects: installed Android app (html.af-native) ----------
+   The same lighter rules as the phone block above, for any screen width inside the app.
+   A separate, unscoped block on purpose: :global() in a scoped block loses the descendant selectors. */
+html.af-native .af-auth .af-auth__mesh {
+  filter: none;
+  opacity: 1;
+  background:
+    radial-gradient(circle 30vmax at 10vmax 5vmax, rgba(var(--af-brand-rgb), 0.45), transparent),
+    radial-gradient(circle 30vmax at calc(100% - 5vmax) 20vmax, rgba(var(--af-accent-rgb), 0.38), transparent),
+    radial-gradient(circle 30vmax at 40vmax calc(100% + 5vmax), rgba(var(--af-liquid-rgb), 0.4), transparent);
+}
+html.af-native .af-auth .af-auth__mesh i {
+  display: none;
+  animation: none;
+  will-change: auto;
+}
+html.af-native .af-auth .af-auth__inner {
+  background: linear-gradient(180deg, var(--af-glass-sheen) 0%, transparent 30%), var(--af-surface-solid);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: inset 0 1px 0 var(--af-glass-edge), 0 12px 28px rgba(var(--af-deep-rgb), 0.25);
+}
+html.af-native .af-auth .af-auth__waves .w {
+  animation: none;
+}
+html.af-native .af-auth .af-auth__halo {
+  animation: none;
+  opacity: 0.9;
+  box-shadow: 0 0 32px 6px rgba(var(--af-liquid-rgb), 0.2);
+}
+html.af-native .af-auth .af-auth__ripple {
+  display: none;
+}
+html.af-native .af-auth .af-auth__jugsvg {
+  filter: none;
+}
+html.af-native .af-auth .af-auth__jugsvg .af-lf__wave,
+html.af-native .af-auth .af-auth__jugsvg .af-lf__bubble {
+  animation: none;
+}
+html.af-native .af-auth .af-auth__jugsvg .af-lf__bubble {
+  display: none;
 }
 </style>
