@@ -1,0 +1,106 @@
+# Builds a DEBUG Android APK of AquaFlow on GitHub's computers and publishes it as a GitHub Release,
+# so you can download it from the Releases page on your phone. Free for public repos and within the
+# free minutes for private ones.
+#
+# How to run it: GitHub > Actions > "Build Android APK" > Run workflow (type the server address),
+# or push a tag that starts with v (for example v1.0).
+name: Build Android APK
+
+on:
+  # The "Run workflow" button. api_url is where the app looks for the backend (your laptop on Wi-Fi).
+  # It can also be changed later inside the app (login screen > Server address), so a wrong guess here
+  # does not need a rebuild.
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: "Backend address the app should talk to (no slash at the end)"
+        required: false
+        default: "http://192.168.1.168:8000"
+  # Pushing a tag like v1.0 also builds an APK.
+  push:
+    tags: ["v*"]
+
+# Needed so the job may create a Release and upload files to it.
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # On a tag push there is no input, so fall back to the default address.
+      API_URL: ${{ inputs.api_url || 'http://192.168.1.168:8000' }}
+
+    steps:
+      # 1. Get the code of the branch or tag that was run.
+      - uses: actions/checkout@v4
+
+      # 2. Node 22 builds the web app. "cache: npm" re-uses downloaded packages to save time.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # 3. Java 21 (Temurin) is what Capacitor 8 and Gradle need to build an Android app.
+      #    "cache: gradle" re-uses downloaded Android libraries between runs.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      # 4. Install the exact package versions from package-lock.json.
+      - name: Install web packages
+        working-directory: frontend
+        run: npm ci
+
+      # 5. Build the web app. Vite bakes the server address into the app at this point.
+      #    (API_URL goes in through env so it is never pasted into a shell command.)
+      - name: Build the web app
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: ${{ env.API_URL }}
+          VITE_USE_MOCK: "false"
+        run: npm run build
+
+      # 6. Copy the built web app into the Android project (and register the plugins).
+      - name: Copy the web app into the Android project
+        working-directory: frontend
+        run: npx cap sync android
+
+      # 7. Build the debug APK with Gradle. Debug APKs are signed with an automatic debug key,
+      #    so no keystore or secret is needed.
+      - name: Build the debug APK
+        working-directory: frontend/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      # 8. Give the file a friendly name.
+      - name: Rename the APK
+        run: cp frontend/android/app/build/outputs/apk/debug/app-debug.apk AquaFlow-debug.apk
+
+      # 9. Keep a copy on the run page (Actions > the run > Artifacts). Kept for 14 days.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AquaFlow-debug
+          path: AquaFlow-debug.apk
+          retention-days: 14
+
+      # 10. Publish a Release named apk-<run number> with the APK attached. Open the Releases page
+      #     in your phone's browser and tap AquaFlow-debug.apk to download it.
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: AquaFlow debug APK #${{ github.run_number }}
+          body: |
+            Debug build of AquaFlow for Android (for demos, not for the Play Store).
+
+            - Built from commit `${{ github.sha }}`
+            - Default server address: `${{ env.API_URL }}`
+            - Change it in the app: login screen > Server address
+            - If the phone refuses to install it over an older version, uninstall the old one first.
+          files: AquaFlow-debug.apk
