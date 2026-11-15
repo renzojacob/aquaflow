@@ -3,7 +3,11 @@
 
 // The server address baked in when the app was built (VITE_API_BASE_URL).
 const strip = (url) => url.trim().replace(/\/+$/, '')
-export const builtInApiBase = strip(import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000')
+// Only `npm run dev` may fall back to the local backend; a production build never points at localhost
+// by accident (set VITE_API_BASE_URL in the build environment).
+export const builtInApiBase = strip(
+  import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:8000' : ''),
+)
 
 // An address saved on THIS device wins over the built-in one, so the same APK works on any Wi-Fi
 // without a rebuild. It is set from the login screen ("Server address"). Empty means "use the built-in one".

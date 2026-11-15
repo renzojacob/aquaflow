@@ -7,7 +7,7 @@
 name: Build Android APK
 
 on:
-  # The "Run workflow" button. api_url is where the app looks for the backend (your laptop on Wi-Fi).
+  # The "Run workflow" button. api_url is where the app looks for the backend (replace YOUR-BACKEND with your Railway backend address).
   # It can also be changed later inside the app (login screen > Server address), so a wrong guess here
   # does not need a rebuild.
   workflow_dispatch:
@@ -15,7 +15,7 @@ on:
       api_url:
         description: "Backend address the app should talk to (no slash at the end)"
         required: false
-        default: "http://192.168.1.168:8000"
+        default: "https://YOUR-BACKEND.up.railway.app"
   # Pushing a tag like v1.0 also builds an APK.
   push:
     tags: ["v*"]
@@ -30,7 +30,7 @@ jobs:
     timeout-minutes: 30
     env:
       # On a tag push there is no input, so fall back to the default address.
-      API_URL: ${{ inputs.api_url || 'http://192.168.1.168:8000' }}
+      API_URL: ${{ inputs.api_url || 'https://YOUR-BACKEND.up.railway.app' }}
 
     steps:
       # 1. Get the code of the branch or tag that was run.

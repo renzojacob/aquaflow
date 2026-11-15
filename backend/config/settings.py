@@ -56,6 +56,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # serves collected static files (Django admin CSS/JS)
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -127,10 +128,18 @@ AUTH_PASSWORD_VALIDATORS = [
 
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS")
 
+# Comma-separated full origins (with https://) that may submit forms to Django, e.g. the Railway
+# backend and frontend addresses.
 CSRF_TRUSTED_ORIGINS = env.list(
     "CSRF_TRUSTED_ORIGINS",
-       default=["http://localhost:8100", "http://127.0.0.1:8100"],
+    default=["http://localhost:8100", "http://127.0.0.1:8100"] if DEBUG else [],
 )
+
+# Production-only safety (Railway terminates HTTPS at its proxy and forwards the original scheme).
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 # OpenRouteService (heiGIT): road distances, travel times and route lines for trips.
 # Leave ORS_API_KEY empty to use straight-line estimates (no network calls at all).
@@ -161,6 +170,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"   # `collectstatic` gathers files here; WhiteNoise serves them
+# (Django 5.2 configures this through STORAGES; the old STATICFILES_STORAGE setting no longer exists.)
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
